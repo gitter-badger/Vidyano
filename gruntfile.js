@@ -41,6 +41,13 @@ module.exports = function (grunt) {
                 options: {
                     fast: 'never'
                 }
+            },
+            serviceworker: {
+                cwd: 'src/ServiceWorker/',
+                tsconfig: 'src/ServiceWorker/tsconfig.json',
+                options: {
+                    fast: 'never'
+                }
             }
         },
         tslint: {

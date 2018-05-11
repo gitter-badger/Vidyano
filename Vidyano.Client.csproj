@@ -59,6 +59,7 @@
     <None Include="package.json" />
     <None Include="packages.config" />
     <None Include="src\Libs\Vidyano\tsconfig.json" />
+    <None Include="src\ServiceWorker\tsconfig.json" />
     <None Include="tsconfig.json" />
     <None Include="tslint.json" />
   </ItemGroup>

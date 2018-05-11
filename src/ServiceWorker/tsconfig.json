@@ -1,0 +1,19 @@
+{
+  "compileOnSave": true,
+  "compilerOptions": {
+    "removeComments": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": false,
+    "inlineSourceMap": true,
+    "inlineSources": true,
+    "noEmitHelpers": true,
+    "lib": [
+      "es6",
+      "webworker"
+    ],
+    "outFile": "service-worker.js"
+  },
+  "include": [
+    "**/*.ts"
+  ]
+}
