@@ -6,12 +6,12 @@
         response: string;
     }
 
-    export class ServiceWorker {
+    export abstract class ServiceWorker {
         private readonly _initializeDB: Promise<void>;
         private _db: IDBDatabase;
         private _rootPath: string;
 
-        constructor(public self: WorkerGlobalScope, private _verbose?: boolean) {
+        constructor(private _verbose?: boolean) {
             this._initializeDB = new Promise<void>(resolve => {
                 const dboOpen = indexedDB.open("vidyano.offline", 1);
                 dboOpen.onupgradeneeded = function () {
@@ -25,8 +25,8 @@
                 }
             });
 
-            self.addEventListener("install", (e: ExtendableEvent) => e.waitUntil(this._onInstall()));
-            self.addEventListener("activate", (e: ExtendableEvent) => e.waitUntil(this._onActivate()));
+            self.addEventListener("install", (e: ExtendableEvent) => e.waitUntil(this._onInstall(e)));
+            self.addEventListener("activate", (e: ExtendableEvent) => e.waitUntil(this._onActivate(e)));
             self.addEventListener("fetch", (e: FetchEvent) => e.respondWith(this._onFetch(e)));
         }
 
@@ -37,11 +37,11 @@
             console.log("SW: " + message);
         }
 
-        private async _onInstall(): Promise<void> {
+        private async _onInstall(e: ExtendableEvent): Promise<void> {
             this._log("Installed ServiceWorker");
 
-            this._rootPath = self.location.href.split("serviceworker")[0];
-            const base = location.href.substr(location.origin.length).split("serviceworker")[0];
+            this._rootPath = self.location.href.split("service-worker.js")[0];
+            const base = location.href.substr(location.origin.length).split("service-worker.js")[0];
 
             const urls = [
                 `${base}`,
@@ -139,8 +139,11 @@
             await Promise.all(urls.map(url => fetch(url)));
         }
 
-        private async _onActivate() {
+        private async _onActivate(e: ExtendableEvent) {
             this._log("Activated ServiceWorker");
+
+            // MISSING JS FILES DURING DEVELOPMENT, SO RELOAD IS STILL REQUIERD
+            e.waitUntil((self as ServiceWorkerGlobalScope).clients.claim());
 
             const cacheNames = await caches.keys();
             await caches.open(CACHE_NAME);
@@ -208,5 +211,3 @@
         }
     }
 }
-
-const vidyanoServiceWorker = new Vidyano.ServiceWorker(self, false);

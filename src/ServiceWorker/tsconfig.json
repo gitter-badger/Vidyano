@@ -4,16 +4,16 @@
     "removeComments": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": false,
-    "inlineSourceMap": true,
-    "inlineSources": true,
-    "noEmitHelpers": true,
+    "sourceMap": false,
+    "target": "es2017",
     "lib": [
       "es6",
       "webworker"
     ],
-    "outFile": "service-worker.js"
+    "outFile": "service-worker.js",
+    "declaration": true
   },
   "include": [
-    "**/*.ts"
+    "service-worker.ts"
   ]
 }
