@@ -1,3 +1,4 @@
+/// <reference path="../../ServiceWorker/service.ts" />
 /// <reference path="../Typings/bignumber.js/bignumber.d.ts" />
 /// <reference path="../Typings/es6-shim/es6-shim.d.ts" />
 /// <reference path="../Typings/linq/linq.d.ts" />

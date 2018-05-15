@@ -6,8 +6,8 @@
         response: string;
     }
 
-    export abstract class ServiceWorker {
-        private readonly _initializeDB: Promise<void>;
+    export class ServiceWorker {
+        private _initializeDB: Promise<void>;
         private _db: IDBDatabase;
         private _rootPath: string;
 
@@ -144,60 +144,77 @@
 
             // MISSING JS FILES DURING DEVELOPMENT, SO RELOAD IS STILL REQUIERD
             e.waitUntil((self as ServiceWorkerGlobalScope).clients.claim());
-
-            const cacheNames = await caches.keys();
-            await caches.open(CACHE_NAME);
         }
 
         private async _onFetch(e: FetchEventInit) {
             this._log(`Fetch (${e.request.url})`);
             await this._initializeDB;
 
-            let request = e.request;
-
-            const cached = await caches.match(request);
-            let networked;
-
             try {
+                let response: Response;
                 try {
-                    networked = await fetch(request);
-                    if (networked) {
-                        if (request.method === "GET") {
-                            const cache = await caches.open(CACHE_NAME);
-                            cache.put(request, networked.clone());
-                        }
-                        else {
-                            const data = await networked.clone().json();
-                            const tx = this._db.transaction("Requests", "readwrite");
-                            const requests = tx.objectStore("Requests");
-
-                            requests.put({
-                                id: request.url,
-                                response: JSON.stringify(data)
-                            });
-                        }
-                    }
+                    response = await fetch(e.request);
                 }
-                catch (ee) {
-                    if (request.method !== "GET") {
-                        const tx = this._db.transaction("Requests", "readwrite");
-                        const requests = tx.objectStore("Requests");
+                catch (error) { }
 
-                        const result = await new Promise<IDBRequest>(resolve => {
-                            const getData = requests.get(request.url);
-                            getData.onsuccess = () => resolve(getData.result);
-                        });
-
-                        return new Response(result.response, {
-                            status: 200,
-                            headers: new Headers({
-                                "Content-Type": "application/json; charset=utf-8"
-                            })
-                        });
+                if (e.request.method === "POST" && e.request.url.startsWith(this._rootPath)) {
+                    debugger;
+                }
+                else if (e.request.method === "GET") {
+                    if (response) {
+                        const cache = await caches.open(CACHE_NAME);
+                        cache.put(e.request, response.clone());
                     }
+                    else
+                        response = await caches.match(e.request);
                 }
 
-                return networked || cached || await caches.match(this._rootPath);
+                if (e.request.url.endsWith("GetClientData?v=2")) {
+                    const clientData = response.clone().json();
+
+                }
+
+                //try {
+                //    if (response) {
+                //        if (e.request.method === "GET") {
+                //            const cache = await caches.open(CACHE_NAME);
+                //            cache.put(e.request, response.clone());
+                //        }
+                //        else {
+                //            const data = await response.clone().json();
+                //            const tx = this._db.transaction("Requests", "readwrite");
+                //            const requests = tx.objectStore("Requests");
+
+                //            requests.put({
+                //                id: e.request.url,
+                //                response: JSON.stringify(data)
+                //            });
+                //        }
+                //    }
+                //}
+                //catch (ee) {
+                //    if (e.request.method !== "GET") {
+                //        const tx = this._db.transaction("Requests", "readwrite");
+                //        const requests = tx.objectStore("Requests");
+
+                //        const result = await new Promise<IDBRequest>(resolve => {
+                //            const getData = requests.get(e.request.url);
+                //            getData.onsuccess = () => resolve(getData.result);
+                //        });
+
+                //        return new Response(result.response, {
+                //            status: 200,
+                //            headers: new Headers({
+                //                "Content-Type": "application/json; charset=utf-8"
+                //            })
+                //        });
+                //    }
+                //}
+
+                if (!response && e.request.url.startsWith(this._rootPath))
+                    return await caches.match(this._rootPath); // Fallback to root document when a deeplink is loaded directly
+
+                return response;
             }
             catch (ee) {
                 return new Response("<h1>Service Unavailable</h1>", {
@@ -208,6 +225,10 @@
                     })
                 });
             }
+        }
+
+        onGetClientData(clientData: Vidyano.IServiceClientData): Vidyano.IServiceClientData {
+            return clientData;
         }
     }
 }

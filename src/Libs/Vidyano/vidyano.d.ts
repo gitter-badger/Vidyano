@@ -1078,25 +1078,6 @@ declare namespace Vidyano {
         cancelOption?: number;
         persistentObject?: PersistentObject;
     }
-    interface IServiceClientData {
-        defaultUser: string;
-        exception: string;
-        languages: {
-            [code: string]: {
-                name: string;
-                isDefault: boolean;
-                messages: {
-                    [key: string]: string;
-                };
-            };
-        };
-        providers: {
-            [name: string]: {
-                parameters: IProviderParameters;
-            };
-        };
-        windowsAuthentication: boolean;
-    }
     interface IServiceRequest {
         when: Date;
         profiler: IServiceRequestProfiler;

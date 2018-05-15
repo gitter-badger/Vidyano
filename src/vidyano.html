@@ -28,3 +28,8 @@
 <link rel="import" href="Libs/layout/layout.html" />
 <link rel="import" href="vidyano-lite.html" />
 <link rel="import" href="WebComponents/App/app.html" />
+
+<script type="text/javascript">
+    if ("serviceWorker" in navigator)
+        navigator.serviceWorker.register("service-worker.js");
+</script>
