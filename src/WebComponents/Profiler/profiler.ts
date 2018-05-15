@@ -1,17 +1,17 @@
 namespace Vidyano.WebComponents {
     "use strict";
 
-    export interface IProfilerServiceRequest extends Vidyano.IServiceRequest {
+    export interface IProfilerRequestExt extends Service.IProfilerRequest {
         hasNPlusOne: boolean;
         parameters: {
             key: string;
             value: string;
         }[];
-        flattenedEntries: IFlattenedServiceRequestProfilerEntry[];
+        flattenedEntries: IFlattenedProfilerEntry[];
     }
 
-    export interface IFlattenedServiceRequestProfilerEntry {
-        entry: IServiceRequestProfilerEntry;
+    export interface IFlattenedProfilerEntry {
+        entry: Service.IProfilerEntry;
         level: number;
     }
 
@@ -65,13 +65,13 @@ namespace Vidyano.WebComponents {
     })
     export class Profiler extends WebComponent {
         private _boundMousehweel = this._onMousewheel.bind(this);
-        readonly lastRequest: IProfilerServiceRequest; private _setLastRequest: (request: Vidyano.IServiceRequest) => void;
-        readonly selectedRequest: IProfilerServiceRequest; private _setSelectedRequest: (request: Vidyano.IServiceRequest) => void;
-        readonly hoveredEntry: IServiceRequestProfilerEntry; private _setHoveredEntry: (entry: IServiceRequestProfilerEntry) => void;
-        readonly selectedEntry: IServiceRequestProfilerEntry; private _setSelectedEntry: (entry: IServiceRequestProfilerEntry) => void;
+        readonly lastRequest: IProfilerRequestExt; private _setLastRequest: (request: IProfilerRequestExt) => void;
+        readonly selectedRequest: IProfilerRequestExt; private _setSelectedRequest: (request: IProfilerRequestExt) => void;
+        readonly hoveredEntry: Service.IProfilerEntry; private _setHoveredEntry: (entry: Service.IProfilerEntry) => void;
+        readonly selectedEntry: Service.IProfilerEntry; private _setSelectedEntry: (entry: Service.IProfilerEntry) => void;
         readonly zoom: number; private _setZoom: (value: number) => void;
         timelineSize: ISize;
-        profiledRequests: IProfilerServiceRequest[];
+        profiledRequests: IProfilerRequestExt[];
 
         attached() {
             super.attached();
@@ -85,23 +85,23 @@ namespace Vidyano.WebComponents {
             this.$.timeline.removeEventListener("DOMMouseScroll", this._boundMousehweel);
         }
 
-        private _computeSQL(request: IProfilerServiceRequest): string {
+        private _computeSQL(request: IProfilerRequestExt): string {
             return request.profiler.sql ? this._formatMs(request.profiler.sql.reduce((current, entry) => current + entry.elapsedMilliseconds, 0)) : "0ms";
         }
 
-        private _computeSharpSQL(request: IProfilerServiceRequest): string {
+        private _computeSharpSQL(request: IProfilerRequestExt): string {
             return (request.profiler.sql ? request.profiler.sql.length : 0).toString();
         }
 
-        private _isSelected(request: IProfilerServiceRequest, selectedRequest: IProfilerServiceRequest): boolean {
+        private _isSelected(request: IProfilerRequestExt, selectedRequest: IProfilerRequestExt): boolean {
             return request === selectedRequest;
         }
 
-        private _hasWarnings(request: IProfilerServiceRequest): boolean {
+        private _hasWarnings(request: IProfilerRequestExt): boolean {
             return request.hasNPlusOne || (request.profiler.exceptions && request.profiler.exceptions.length > 0);
         }
 
-        private _hasNPlusOne(request: IServiceRequest, entries: IServiceRequestProfilerEntry[] = request.profiler.entries): boolean {
+        private _hasNPlusOne(request: Service.IProfilerRequest, entries: Service.IProfilerEntry[] = request.profiler.entries): boolean {
             if (!entries)
                 return false;
 
@@ -118,11 +118,11 @@ namespace Vidyano.WebComponents {
             return hasNPlusOne;
         }
 
-        private _hasSelectedEntry(selectedEntry: IServiceRequestProfilerEntry): boolean {
+        private _hasSelectedEntry(selectedEntry: Service.IProfilerEntry): boolean {
             return !!selectedEntry;
         }
 
-        private _hasLastRequest(request: IProfilerServiceRequest): boolean {
+        private _hasLastRequest(request: IProfilerRequestExt): boolean {
             return !!request;
         }
 
@@ -151,7 +151,7 @@ namespace Vidyano.WebComponents {
             this._setSelectedEntry(null);
         }
 
-        private _profiledRequestsChanged(profiledRequests: IProfilerServiceRequest[] = []) {
+        private _profiledRequestsChanged(profiledRequests: IProfilerRequestExt[] = []) {
             profiledRequests.forEach(request => {
                 if (request.hasNPlusOne === undefined)
                     request.hasNPlusOne = this._hasNPlusOne(request);
@@ -195,7 +195,7 @@ namespace Vidyano.WebComponents {
             this._setLastRequest(profiledRequests[0]);
         }
 
-        private _renderRequestTimeline(request: IProfilerServiceRequest, size: ISize, zoom: number) {
+        private _renderRequestTimeline(request: IProfilerRequestExt, size: ISize, zoom: number) {
             const width = (size.width - 2) * zoom; // Strip vi-scroller borders
             const headerHeight = parseInt(this.getComputedStyleValue("--vi-profiler-header-height"));
             const entryHeight = parseInt(this.getComputedStyleValue("--vi-profiler-entry-height"));
@@ -273,7 +273,7 @@ namespace Vidyano.WebComponents {
             entryGroupSelection.exit().remove();
         }
 
-        private _flattenEntries(entries: IServiceRequestProfilerEntry[] = [], level: number = 1, flattenedEntries: IFlattenedServiceRequestProfilerEntry[] = []): IFlattenedServiceRequestProfilerEntry[] {
+        private _flattenEntries(entries: Service.IProfilerEntry[] = [], level: number = 1, flattenedEntries: IFlattenedProfilerEntry[] = []): IFlattenedProfilerEntry[] {
             entries.forEach(entry => {
                 flattenedEntries.push({
                     entry: entry,
@@ -286,7 +286,7 @@ namespace Vidyano.WebComponents {
             return flattenedEntries;
         };
 
-        private _computeEntryClassName(e: IServiceRequestProfilerEntry): string {
+        private _computeEntryClassName(e: Service.IProfilerEntry): string {
             let className = "entry";
             let hasDetails = false;
 
@@ -311,7 +311,7 @@ namespace Vidyano.WebComponents {
             return className;
         }
 
-        private _formatRequestParameters(request: IProfilerServiceRequest): string {
+        private _formatRequestParameters(request: IProfilerRequestExt): string {
             if (!request || !request.parameters)
                 return "";
 
@@ -326,7 +326,7 @@ namespace Vidyano.WebComponents {
             return StringEx.format(`{0:${Vidyano.CultureInfo.currentCulture.dateFormat.shortDatePattern} ${Vidyano.CultureInfo.currentCulture.dateFormat.shortTimePattern}}`, date);
         }
 
-        private _selectedEntryChanged(entry: IServiceRequestProfilerEntry) {
+        private _selectedEntryChanged(entry: Service.IProfilerEntry) {
             const info = document.createDocumentFragment();
             this.empty(this.$.selectedEntryInfo);
 

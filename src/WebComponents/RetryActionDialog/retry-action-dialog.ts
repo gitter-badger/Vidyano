@@ -11,7 +11,7 @@ namespace Vidyano.WebComponents {
         }
     })
     export class RetryActionDialog extends Dialog {
-        constructor(public retry: IRetryAction) {
+        constructor(public retry: Service.IRetryAction) {
             super();
 
             if (typeof retry.message === "undefined")

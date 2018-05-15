@@ -19,34 +19,6 @@ namespace Vidyano {
         inverse: boolean;
     }
 
-    export interface IQueryGroupingInfo {
-        readonly groupedBy: string;
-        groups?: QueryResultItemGroup[];
-    }
-
-    export interface IServiceQueryChart {
-        label: string;
-        name: string;
-        type: string;
-        options: any;
-    }
-
-    export interface IServiceQueryResult {
-        pageSize: number;
-        totalItems: number;
-        columns: Vidyano.QueryColumn[];
-        items: Vidyano.QueryResultItem[];
-        groupingInfo: IQueryGroupingInfo;
-        groupedBy: string;
-        notification: string;
-        notificationType: Vidyano.NotificationType;
-        notificationDuration: number;
-        sortOptions: string;
-        charts: IServiceQueryChart[];
-        totalItem: Vidyano.QueryResultItem;
-        continuation?: string;
-    }
-
     class QuerySelectAllImpl extends Vidyano.Common.Observable<IQuerySelectAll> implements IQuerySelectAll {
         private _allSelected: boolean = false;
         private _inverse: boolean = false;
@@ -116,7 +88,7 @@ namespace Vidyano {
     }
 
     export class Query extends ServiceObjectWithActions {
-        private _lastResult: IServiceQueryResult;
+        private _lastResult: Service.IQueryResult;
         private _asLookup: boolean;
         private _isSelectionModifying: boolean;
         private _totalItems: number;
@@ -136,7 +108,7 @@ namespace Vidyano {
         private _isFiltering: boolean;
         private _columnObservers: Common.ISubjectDisposer[];
         private _hasMore: boolean = null;
-        private _groupingInfo: IQueryGroupingInfo;
+        private _groupingInfo: Service.IQueryGroupingInfo;
 
         persistentObject: PersistentObject;
         columns: QueryColumn[];
@@ -156,6 +128,7 @@ namespace Vidyano {
         items: QueryResultItem[];
         selectAll: IQuerySelectAll;
 
+        constructor(service: Service, query: Service.IQuery, parent?: PersistentObject, asLookup?: boolean, maxSelectedItems?: number);
         constructor(service: Service, query: any, public parent?: PersistentObject, asLookup: boolean = false, public maxSelectedItems?: number) {
             super(service, query._actionNames || query.actions, query.actionLabels);
 
@@ -299,11 +272,11 @@ namespace Vidyano {
                 this.currentChart = this.charts.firstOrDefault(c => c.name === this._defaultChartName);
         }
 
-        get groupingInfo(): IQueryGroupingInfo {
+        get groupingInfo(): Service.IQueryGroupingInfo {
             return this._groupingInfo;
         }
 
-        private _setGroupingInfo(groupingInfo: IQueryGroupingInfo) {
+        private _setGroupingInfo(groupingInfo: Service.IQueryGroupingInfo) {
             const oldValue = this._groupingInfo;
             if (oldValue === groupingInfo)
                 return;
@@ -526,7 +499,7 @@ namespace Vidyano {
             return result;
         }
 
-        _setResult(result: IServiceQueryResult) {
+        _setResult(result: Service.IQueryResult) {
             this._lastResult = result;
 
             this.continuation = result.continuation;

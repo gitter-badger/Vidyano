@@ -9,17 +9,17 @@ namespace Vidyano {
         private static _token: string;
         private _lastAuthTokenUpdate: Date = new Date();
         private _isUsingDefaultCredentials: boolean;
-        private _clientData: IServiceClientData;
+        private _clientData: Service.IClientData;
         private _language: ServiceLanguage;
         private _languages: ILanguage[];
         private _windowsAuthentication: boolean;
-        private _providers: { [name: string]: IProviderParameters };
+        private _providers: { [name: string]: Service.IProviderParameters };
         private _isSignedIn: boolean;
         private _application: Application;
         private _userName: string;
         private _authToken: string;
         private _profile: boolean;
-        private _profiledRequests: IServiceRequest[];
+        private _profiledRequests: Service.IProfilerRequest[];
         private _queuedClientOperations: ClientOperations.IClientOperation[] = [];
         private _initial: Vidyano.PersistentObject;
         staySignedIn: boolean;
@@ -186,7 +186,7 @@ namespace Vidyano {
                 if (elapsedMs)
                     result.profiler.elapsedMilliseconds = Service.fromServiceString(elapsedMs, "Int32");
 
-                const request: IServiceRequest = {
+                const request: Service.IProfilerRequest = {
                     when: createdRequest,
                     profiler: result.profiler,
                     transport: Math.round(requestEnd - requestStart - result.profiler.elapsedMilliseconds),
@@ -436,7 +436,7 @@ namespace Vidyano {
             return this._windowsAuthentication;
         }
 
-        get providers(): { [name: string]: IProviderParameters } {
+        get providers(): { [name: string]: Service.IProviderParameters } {
             return this._providers;
         }
 
@@ -517,11 +517,11 @@ namespace Vidyano {
             this.notifyPropertyChanged("profile", val, oldValue);
         }
 
-        get profiledRequests(): IServiceRequest[] {
+        get profiledRequests(): Service.IProfilerRequest[] {
             return this._profiledRequests;
         }
 
-        private _setProfiledRequests(requests: IServiceRequest[]) {
+        private _setProfiledRequests(requests: Service.IProfilerRequest[]) {
             this.notifyPropertyChanged("profiledRequests", this._profiledRequests = requests);
         }
 
@@ -1339,115 +1339,5 @@ namespace Vidyano {
         label: string;
         objectId: string;
         breadcrumb: string;
-    }
-
-    export interface IRetryAction {
-        title: string;
-        message: string;
-        options: string[];
-        defaultOption?: number;
-        cancelOption?: number;
-        persistentObject?: PersistentObject;
-    }
-
-    export interface IServiceRequest {
-        when: Date;
-        profiler: IServiceRequestProfiler;
-        transport: number;
-        method: string;
-        request: any;
-        response: any;
-    }
-
-    export interface IServiceRequestProfiler {
-        taskId: number;
-        elapsedMilliseconds: number;
-        entries: IServiceRequestProfilerEntry[];
-        sql: IServiceRequestProfilerSQL[];
-        exceptions: {
-            id: string;
-            message: string;
-        }[];
-    }
-
-    export interface IServiceRequestProfilerEntry {
-        entries: IServiceRequestProfilerEntry[];
-        methodName: string;
-        sql: string[];
-        started: number;
-        elapsedMilliseconds: number;
-        hasNPlusOne?: boolean;
-        exception: string;
-        arguments: any[];
-    }
-
-    export interface IServiceRequestProfilerSQL {
-        commandId: string;
-        commandText: string;
-        elapsedMilliseconds: number;
-        recordsAffected: number;
-        taskId: number;
-        type: string;
-        parameters: IServiceRequestProfilerSQLParameter[];
-    }
-
-    export interface IServiceRequestProfilerSQLParameter {
-        name: string;
-        type: string;
-        value: string;
-    }
-
-    export interface IServiceClientData {
-        defaultUser: string;
-        exception: string;
-        languages: { [code: string]: { name: string; isDefault: boolean; messages: { [key: string]: string; } } };
-        providers: { [name: string]: { parameters: IProviderParameters } };
-    }
-
-    export interface IServiceRequest {
-        when: Date;
-        profiler: IServiceRequestProfiler;
-        transport: number;
-        method: string;
-        request: any;
-        response: any;
-    }
-
-    export interface IServiceRequestProfiler {
-        taskId: number;
-        elapsedMilliseconds: number;
-        entries: IServiceRequestProfilerEntry[];
-        sql: IServiceRequestProfilerSQL[];
-        exceptions: {
-            id: string;
-            message: string;
-        }[];
-    }
-
-    export interface IServiceRequestProfilerEntry {
-        entries: IServiceRequestProfilerEntry[];
-        methodName: string;
-        sql: string[];
-        started: number;
-        elapsedMilliseconds: number;
-        hasNPlusOne?: boolean;
-        exception: string;
-        arguments: any[];
-    }
-
-    export interface IServiceRequestProfilerSQL {
-        commandId: string;
-        commandText: string;
-        elapsedMilliseconds: number;
-        recordsAffected: number;
-        taskId: number;
-        type: string;
-        parameters: IServiceRequestProfilerSQLParameter[];
-    }
-
-    export interface IServiceRequestProfilerSQLParameter {
-        name: string;
-        type: string;
-        value: string;
     }
 }

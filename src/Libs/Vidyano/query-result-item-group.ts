@@ -1,18 +1,13 @@
 ﻿namespace Vidyano {
     "use strict";
 
-    export interface IServiceQueryResultItemGroup {
-        name: string;
-        count: number;
-    }
-
-    export class QueryResultItemGroup implements IServiceQueryResultItemGroup {
+    export class QueryResultItemGroup implements Service.IQueryResultItemGroup {
         private _name: string;
         private _count: number;
         private _items: QueryResultItem[];
         isCollapsed: boolean;
 
-        constructor(public readonly query: Query, group: IServiceQueryResultItemGroup, private _start: number, private _end: number) {
+        constructor(public readonly query: Query, group: Service.IQueryResultItemGroup, private _start: number, private _end: number) {
             this._name = group.name;
             this._count = group.count;
 
@@ -43,7 +38,7 @@
             return this._items;
         }
 
-        update(group: IServiceQueryResultItemGroup, start: number, end: number) {
+        update(group: Service.IQueryResultItemGroup, start: number, end: number) {
             this._count = group.count;
             this._start = start;
             this._end = end;

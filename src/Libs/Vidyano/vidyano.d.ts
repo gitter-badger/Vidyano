@@ -3,6 +3,156 @@
 /// <reference path="../Typings/linq/linq.d.ts" />
 /// <reference path="../Typings/PromiseQueue/promise-queue.d.ts" />
 /// <reference path="../Typings/Vidyano.Common/vidyano.common.d.ts" />
+declare namespace Vidyano.Service {
+    interface IProviderParameters {
+        label: string;
+        description: string;
+        requestUri: string;
+        signOutUri: string;
+        redirectUri: string;
+        registerPersistentObjectId?: string;
+        registerUser?: string;
+        forgotPassword?: boolean;
+        getCredentialType?: boolean;
+    }
+    interface IClientData {
+        defaultUser: string;
+        exception: string;
+        languages: {
+            [code: string]: {
+                name: string;
+                isDefault: boolean;
+                messages: {
+                    [key: string]: string;
+                };
+            };
+        };
+        providers: {
+            [name: string]: {
+                parameters: IProviderParameters;
+            };
+        };
+        windowsAuthentication: boolean;
+    }
+    interface IApplication {
+        application: IPersistentObject;
+        authToken: string;
+        userCultureInfo: string;
+        userLanguage: string;
+        userName: string;
+        hasSensitive: boolean;
+    }
+    interface IPersistentObject {
+        type?: string;
+        breadcrumb?: string;
+        isBreadcrumbSensitive?: boolean;
+        attributes?: IPersistentObjectAttribute[];
+        stateBehavior?: "OpenInEdit" | "StayInEdit" | "AsDialog";
+    }
+    interface IPersistentObjectAttribute {
+        name: string;
+        type: string;
+        label: string;
+        value?: string;
+        isReadOnly?: boolean;
+        isRequired?: boolean;
+        isSensitive?: boolean;
+        rules?: string;
+        visibility: string;
+    }
+    interface IRetryAction {
+        title: string;
+        message: string;
+        options: string[];
+        defaultOption?: number;
+        cancelOption?: number;
+        persistentObject?: IPersistentObject;
+    }
+    interface IProfilerRequest {
+        when: Date;
+        profiler: IProfiler;
+        transport: number;
+        method: string;
+        request: any;
+        response: any;
+    }
+    interface IProfiler {
+        taskId: number;
+        elapsedMilliseconds: number;
+        entries: IProfilerEntry[];
+        sql: IProfilerSQL[];
+        exceptions: {
+            id: string;
+            message: string;
+        }[];
+    }
+    interface IProfilerEntry {
+        entries: IProfilerEntry[];
+        methodName: string;
+        sql: string[];
+        started: number;
+        elapsedMilliseconds: number;
+        hasNPlusOne?: boolean;
+        exception: string;
+        arguments: any[];
+    }
+    interface IProfilerSQL {
+        commandId: string;
+        commandText: string;
+        elapsedMilliseconds: number;
+        recordsAffected: number;
+        taskId: number;
+        type: string;
+        parameters: IProfilerSQLParameter[];
+    }
+    interface IProfilerSQLParameter {
+        name: string;
+        type: string;
+        value: string;
+    }
+    interface IProfilerRequest {
+        when: Date;
+        profiler: IProfiler;
+        transport: number;
+        method: string;
+        request: any;
+        response: any;
+    }
+    interface IProfiler {
+        taskId: number;
+        elapsedMilliseconds: number;
+        entries: IProfilerEntry[];
+        sql: IProfilerSQL[];
+        exceptions: {
+            id: string;
+            message: string;
+        }[];
+    }
+    interface IProfilerEntry {
+        entries: IProfilerEntry[];
+        methodName: string;
+        sql: string[];
+        started: number;
+        elapsedMilliseconds: number;
+        hasNPlusOne?: boolean;
+        exception: string;
+        arguments: any[];
+    }
+    interface IProfilerSQL {
+        commandId: string;
+        commandText: string;
+        elapsedMilliseconds: number;
+        recordsAffected: number;
+        taskId: number;
+        type: string;
+        parameters: IProfilerSQLParameter[];
+    }
+    interface IProfilerSQLParameter {
+        name: string;
+        type: string;
+        value: string;
+    }
+}
 declare namespace Vidyano {
     class CultureInfo {
         name: string;
@@ -262,18 +412,6 @@ declare namespace Vidyano {
 }
 declare namespace Vidyano {
     type PersistentObjectAttributeVisibility = "Always" | "Read" | "New" | "Never" | "Query" | "Read, Query" | "Read, New" | "Query, New";
-    interface IServicePersistentObjectAttribute {
-        name: string;
-        type: string;
-        label: string;
-        value?: string;
-        isReadOnly?: boolean;
-        isRequired?: boolean;
-        isSensitive?: boolean;
-        isValueChanged: boolean;
-        rules?: string;
-        visibility: PersistentObjectAttributeVisibility;
-    }
     class PersistentObjectAttribute extends ServiceObject {
         parent: PersistentObject;
         private _isSystem;
@@ -311,7 +449,7 @@ declare namespace Vidyano {
         triggersRefresh: boolean;
         column: number;
         columnSpan: number;
-        constructor(service: Service, attr: IServicePersistentObjectAttribute, parent: PersistentObject);
+        constructor(service: Service, attr: Service.IPersistentObjectAttribute, parent: PersistentObject);
         readonly groupKey: string;
         group: PersistentObjectAttributeGroup;
         readonly tabKey: string;
@@ -421,14 +559,6 @@ declare namespace Vidyano {
         FullPage = 0,
         MasterDetail = 1
     }
-    interface IServicePersistentObject {
-        type?: string;
-        breadcrumb?: string;
-        isBreadcrumbSensitive?: boolean;
-        attributes?: IServicePersistentObjectAttribute[];
-        stateBehavior?: "OpenInEdit" | "StayInEdit" | "AsDialog";
-        dialogSaveAction?: string;
-    }
     class PersistentObject extends ServiceObjectWithActions {
         private _isSystem;
         private _lastResult;
@@ -504,10 +634,6 @@ declare namespace Vidyano {
     }
 }
 declare namespace Vidyano {
-    interface IServiceApplication {
-        application: IServicePersistentObject;
-        hasSensitive: boolean;
-    }
     class Application extends PersistentObject {
         private _userId;
         private _friendlyUserName;
@@ -907,13 +1033,13 @@ declare namespace Vidyano {
         readonly service: Vidyano.Service;
         createData(data: any): void;
         trackEvent(name: string, option: string, owner: ServiceObjectWithActions): void;
-        onInitialize(clientData: IServiceClientData): Promise<IServiceClientData>;
+        onInitialize(clientData: Service.IClientData): Promise<Service.IClientData>;
         onSessionExpired(): Promise<boolean>;
         onActionConfirmation(action: Action, option: number): Promise<boolean>;
         onAction(args: ExecuteActionArgs): Promise<PersistentObject>;
         onOpen(obj: ServiceObject, replaceCurrent?: boolean, fromAction?: boolean): void;
         onClose(obj: ServiceObject): void;
-        onConstructApplication(application: IServiceApplication): Application;
+        onConstructApplication(application: Service.IApplication): Application;
         onConstructPersistentObject(service: Service, po: any): PersistentObject;
         onConstructPersistentObjectAttributeTab(service: Service, groups: linqjs.Enumerable<PersistentObjectAttributeGroup>, key: string, id: string, name: string, layout: any, parent: PersistentObject, columnCount: number, isVisible: boolean): PersistentObjectAttributeTab;
         onConstructPersistentObjectQueryTab(service: Service, query: Query): PersistentObjectQueryTab;
@@ -935,7 +1061,7 @@ declare namespace Vidyano {
         onSelectedItemsActions(query: Query, selectedItems: QueryResultItem[], action: ISelectedItemsActionArgs): void;
         onRefreshFromResult(po: PersistentObject): void;
         onUpdateAvailable(): void;
-        onRetryAction(retry: IRetryAction): Promise<string>;
+        onRetryAction(retry: Service.IRetryAction): Promise<string>;
         onGetAttributeDisplayValue(attribute: Vidyano.PersistentObjectAttribute, value: any): string;
         setDefaultTranslations(languages: ILanguage[]): void;
     }
@@ -991,7 +1117,7 @@ declare namespace Vidyano {
         readonly languages: ILanguage[];
         readonly windowsAuthentication: boolean;
         readonly providers: {
-            [name: string]: IProviderParameters;
+            [name: string]: Service.IProviderParameters;
         };
         readonly isUsingDefaultCredentials: boolean;
         private _setIsUsingDefaultCredentials;
@@ -1032,17 +1158,6 @@ declare namespace Vidyano {
         OK = 2,
         Warning = 3
     }
-    interface IProviderParameters {
-        label: string;
-        description: string;
-        requestUri: string;
-        signOutUri: string;
-        redirectUri: string;
-        registerPersistentObjectId?: string;
-        registerUser?: string;
-        forgotPassword?: boolean;
-        getCredentialType?: boolean;
-    }
     interface IForgotPassword {
         notification: string;
         notificationType: NotificationType;
@@ -1069,116 +1184,6 @@ declare namespace Vidyano {
         label: string;
         objectId: string;
         breadcrumb: string;
-    }
-    interface IRetryAction {
-        title: string;
-        message: string;
-        options: string[];
-        defaultOption?: number;
-        cancelOption?: number;
-        persistentObject?: PersistentObject;
-    }
-    interface IServiceRequest {
-        when: Date;
-        profiler: IServiceRequestProfiler;
-        transport: number;
-        method: string;
-        request: any;
-        response: any;
-    }
-    interface IServiceRequestProfiler {
-        taskId: number;
-        elapsedMilliseconds: number;
-        entries: IServiceRequestProfilerEntry[];
-        sql: IServiceRequestProfilerSQL[];
-        exceptions: {
-            id: string;
-            message: string;
-        }[];
-    }
-    interface IServiceRequestProfilerEntry {
-        entries: IServiceRequestProfilerEntry[];
-        methodName: string;
-        sql: string[];
-        started: number;
-        elapsedMilliseconds: number;
-        hasNPlusOne?: boolean;
-        exception: string;
-        arguments: any[];
-    }
-    interface IServiceRequestProfilerSQL {
-        commandId: string;
-        commandText: string;
-        elapsedMilliseconds: number;
-        recordsAffected: number;
-        taskId: number;
-        type: string;
-        parameters: IServiceRequestProfilerSQLParameter[];
-    }
-    interface IServiceRequestProfilerSQLParameter {
-        name: string;
-        type: string;
-        value: string;
-    }
-    interface IServiceClientData {
-        defaultUser: string;
-        exception: string;
-        languages: {
-            [code: string]: {
-                name: string;
-                isDefault: boolean;
-                messages: {
-                    [key: string]: string;
-                };
-            };
-        };
-        providers: {
-            [name: string]: {
-                parameters: IProviderParameters;
-            };
-        };
-    }
-    interface IServiceRequest {
-        when: Date;
-        profiler: IServiceRequestProfiler;
-        transport: number;
-        method: string;
-        request: any;
-        response: any;
-    }
-    interface IServiceRequestProfiler {
-        taskId: number;
-        elapsedMilliseconds: number;
-        entries: IServiceRequestProfilerEntry[];
-        sql: IServiceRequestProfilerSQL[];
-        exceptions: {
-            id: string;
-            message: string;
-        }[];
-    }
-    interface IServiceRequestProfilerEntry {
-        entries: IServiceRequestProfilerEntry[];
-        methodName: string;
-        sql: string[];
-        started: number;
-        elapsedMilliseconds: number;
-        hasNPlusOne?: boolean;
-        exception: string;
-        arguments: any[];
-    }
-    interface IServiceRequestProfilerSQL {
-        commandId: string;
-        commandText: string;
-        elapsedMilliseconds: number;
-        recordsAffected: number;
-        taskId: number;
-        type: string;
-        parameters: IServiceRequestProfilerSQLParameter[];
-    }
-    interface IServiceRequestProfilerSQLParameter {
-        name: string;
-        type: string;
-        value: string;
     }
 }
 declare namespace Vidyano {

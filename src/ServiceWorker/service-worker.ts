@@ -158,7 +158,9 @@
                 catch (error) { }
 
                 if (e.request.method === "POST" && e.request.url.startsWith(this._rootPath)) {
-                    debugger;
+                    if (e.request.url.endsWith("GetApplication")) {
+
+                    }
                 }
                 else if (e.request.method === "GET") {
                     if (response) {
@@ -169,9 +171,9 @@
                         response = await caches.match(e.request);
                 }
 
-                if (e.request.url.endsWith("GetClientData?v=2")) {
-                    const clientData = response.clone().json();
-
+                if (e.request.url.endsWith("GetClientData?v=2") && Vidyano.ServiceWorker.prototype.onGetClientData !== this.onGetClientData) {
+                    const clientData = this.onGetClientData(await response.clone().json());
+                    return this._createResponse(clientData);
                 }
 
                 //try {
@@ -227,7 +229,18 @@
             }
         }
 
-        onGetClientData(clientData: Vidyano.IServiceClientData): Vidyano.IServiceClientData {
+        protected _createResponse(data: any, response?: Response): Response {
+            if (typeof data === "object")
+                data = JSON.stringify(data);
+
+            return new Response(data, response ? {
+                headers: response.headers,
+                status: response.status,
+                statusText: response.statusText
+            } : null);
+        }
+
+        onGetClientData(clientData: Service.IClientData): Service.IClientData {
             return clientData;
         }
     }

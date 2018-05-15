@@ -6,15 +6,6 @@ namespace Vidyano {
         MasterDetail
     }
 
-    export interface IServicePersistentObject {
-        type?: string;
-        breadcrumb?: string;
-        isBreadcrumbSensitive?: boolean;
-        attributes?: IServicePersistentObjectAttribute[];
-        stateBehavior?: "OpenInEdit" | "StayInEdit" | "AsDialog";
-        dialogSaveAction?: string;
-    }
-
     export class PersistentObject extends ServiceObjectWithActions {
         private _isSystem: boolean;
         private _lastResult: any;
@@ -53,7 +44,7 @@ namespace Vidyano {
         attributes: PersistentObjectAttribute[];
         queries: Query[];
 
-        constructor(service: Service, po: IServicePersistentObject);
+        constructor(service: Service, po: Service.IPersistentObject);
         constructor(service: Service, po: any) {
             super(service, (po._actionNames || po.actions || []).map(a => a === "Edit" && po.isNew ? "Save" : a), po.actionLabels);
 

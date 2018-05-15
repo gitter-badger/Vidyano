@@ -106,7 +106,7 @@
             return Enumerable.from(queryChartConfigs).firstOrDefault(c => c.type === type);
         }
 
-        onConstructApplication(application: IServiceApplication): Application {
+        onConstructApplication(application: Service.IApplication): Application {
             const app = super.onConstructApplication(application);
             this.app.sensitive = app.hasSensitive && BooleanEx.parse(Vidyano.cookie("sensitive")) !== false;
 
@@ -379,7 +379,7 @@
             }, true);
         }
 
-        async onRetryAction(retry: IRetryAction): Promise<string> {
+        async onRetryAction(retry: Service.IRetryAction): Promise<string> {
             if (retry.persistentObject) {
                 await this.app.importComponent("RetryActionDialog");
                 return this.app.showDialog(new Vidyano.WebComponents.RetryActionDialog(retry));

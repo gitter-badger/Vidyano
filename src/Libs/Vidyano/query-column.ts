@@ -8,10 +8,6 @@ namespace Vidyano {
         hasMore: boolean;
     }
 
-    export interface IServiceQueryColumn {
-        isSensitive?: boolean;
-    }
-
     export class QueryColumn extends ServiceObject {
         private displayAttribute: string;
         private _id: string;
@@ -35,7 +31,7 @@ namespace Vidyano {
         width: string;
         typeHints: any;
 
-        constructor(service: Service, col: IServiceQueryColumn, query: Query);
+        constructor(service: Service, col: Service.IQueryColumn, query: Query);
         constructor(service: Service, col: any, public query: Query) {
             super(service);
 
