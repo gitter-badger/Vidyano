@@ -1,8 +1,8 @@
 ﻿namespace Vidyano {
     const CACHE_NAME = "vidyano.offline";
 
-    export type Store = "Requests" | "GetQueries";
-    type RequestMapKey = "GetApplication" | "GetQuery";
+    export type Store = "Requests" | "GetQueries" | "GetPersistentObjects";
+    type RequestMapKey = "GetApplication" | "GetQuery" | "GetPersistentObject";
 
     export class ServiceWorker {
         private _initializeDB: Promise<void>;
@@ -17,6 +17,7 @@
                     var db = <IDBDatabase>dboOpen.result;
                     db.createObjectStore("Requests", { keyPath: "id" });
                     db.createObjectStore("GetQueries", { keyPath: "id" });
+                    db.createObjectStore("GetPersistentObjects", { keyPath: "typeId" });
                 };
 
                 dboOpen.onsuccess = () => {
@@ -159,6 +160,8 @@
                 }
                 else if (handler instanceof ServiceWorkerGetQueryRequestHandler)
                     addRequestHandler("GetQuery", handler);
+                else if (handler instanceof ServiceWorkerGetPersistentObjectRequestHandler)
+                    addRequestHandler("GetPersistentObject", handler);
 
                 handler["_db"] = this._db;
             };
@@ -170,6 +173,8 @@
                 registerRequestHandler(new ServiceWorkerGetApplicationRequestHandler());
             if (!this._requestHandlerMap.has("GetQuery") && this._offline)
                 registerRequestHandler(new ServiceWorkerGetQueryRequestHandler());
+            if (!this._requestHandlerMap.has("GetPersistentObject") && this._offline)
+                registerRequestHandler(new ServiceWorkerGetPersistentObjectRequestHandler());
 
             // NOTE: MISSING JS FILES DURING DEVELOPMENT, SO RELOAD IS STILL REQUIRED
             e.waitUntil((self as ServiceWorkerGlobalScope).clients.claim());
@@ -185,11 +190,13 @@
             try {
                 if (e.request.method === "POST" && e.request.url.startsWith(this._rootPath)) {
                     const fetchResponse: { body?: any; response?: Response; } = {};
-
+                    
                     if (e.request.url.endsWith("GetApplication") && this._requestHandlerMap.has("GetApplication"))
                         fetchResponse.body = await this._requestHandlerMap.get("GetApplication")[0].fetch(await e.request.clone().json(), this._createFetcher(e.request, fetchResponse));
                     else if (e.request.url.endsWith("GetQuery") && this._requestHandlerMap.has("GetQuery"))
                         await this._callFetchHanders("GetQuery", e.request, fetchResponse);
+                    else if (e.request.url.endsWith("GetPersistentObject") && this._requestHandlerMap.has("GetPersistentObject"))
+                        await this._callFetchHanders("GetPersistentObject", e.request, fetchResponse);
 
                     if (fetchResponse.body)
                         return this.createResponse(fetchResponse.body, fetchResponse.response);
@@ -300,6 +307,8 @@
     export type IApplication = Service.IApplication;
     export type IGetQueryRequest = Service.IGetQueryRequest;
     export type IQuery = Service.IQuery;
+    export type IGetPersistentObjectRequest = Service.IGetPersistentObjectRequest;
+    export type IPersistentObject = Service.IPersistentObject;
 
     export abstract class ServiceWorkerRequestHandler {
         protected save(store: Store, entry: any) {
@@ -369,6 +378,26 @@
             });
 
             return query;
+        }
+    }
+
+    export class ServiceWorkerGetPersistentObjectRequestHandler extends ServiceWorkerRequestHandler {
+        async fetch(payload: IGetPersistentObjectRequest, fetcher: Fetcher<IGetPersistentObjectRequest, IPersistentObject>): Promise<IPersistentObject> {
+            const po = await fetcher(payload);
+            if (!po) {
+                const cachedPO = await this.load("GetPersistentObjects", payload.persistentObjectTypeId);
+                return cachedPO ? JSON.parse(cachedPO.response) : null;
+            }
+
+            this.save("GetPersistentObjects", {
+                typeId: payload.persistentObjectTypeId,
+                objectId: payload.objectId,
+                isNew: payload.isNew,
+                parent: JSON.stringify(payload.parent),
+                response: JSON.stringify(po)
+            });
+
+            return po;
         }
     }
 }

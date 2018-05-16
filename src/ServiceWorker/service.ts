@@ -21,6 +21,13 @@ namespace Vidyano.Service {
         id: string;
     }
 
+    export interface IGetPersistentObjectRequest extends IRequest {
+        persistentObjectTypeId: string;
+        objectId?: string;
+        isNew?: boolean;
+        parent?: IPersistentObject;
+    }
+
     export interface IProviderParameters {
         label: string;
         description: string;

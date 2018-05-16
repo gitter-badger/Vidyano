@@ -17,6 +17,12 @@ declare namespace Vidyano.Service {
     interface IGetQueryRequest extends IRequest {
         id: string;
     }
+    interface IGetPersistentObjectRequest extends IRequest {
+        persistentObjectTypeId: string;
+        objectId?: string;
+        isNew?: boolean;
+        parent?: IPersistentObject;
+    }
     interface IProviderParameters {
         label: string;
         description: string;
@@ -255,7 +261,7 @@ declare namespace Vidyano.Service {
     }
 }
 declare namespace Vidyano {
-    type Store = "Requests" | "GetQueries";
+    type Store = "Requests" | "GetQueries" | "GetPersistentObjects";
     class ServiceWorker {
         private _offline;
         private _verbose;
@@ -280,6 +286,8 @@ declare namespace Vidyano {
     type IApplication = Service.IApplication;
     type IGetQueryRequest = Service.IGetQueryRequest;
     type IQuery = Service.IQuery;
+    type IGetPersistentObjectRequest = Service.IGetPersistentObjectRequest;
+    type IPersistentObject = Service.IPersistentObject;
     abstract class ServiceWorkerRequestHandler {
         protected save(store: Store, entry: any): void;
         protected load(store: Store, key: any): Promise<any>;
@@ -292,5 +300,8 @@ declare namespace Vidyano {
     }
     class ServiceWorkerGetQueryRequestHandler extends ServiceWorkerRequestHandler {
         fetch(payload: IGetQueryRequest, fetcher: Fetcher<IGetQueryRequest, IQuery>): Promise<IQuery>;
+    }
+    class ServiceWorkerGetPersistentObjectRequestHandler extends ServiceWorkerRequestHandler {
+        fetch(payload: IGetPersistentObjectRequest, fetcher: Fetcher<IGetPersistentObjectRequest, IPersistentObject>): Promise<IPersistentObject>;
     }
 }

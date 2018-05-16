@@ -22,6 +22,12 @@ declare namespace Vidyano.Service {
     interface IGetQueryRequest extends IRequest {
         id: string;
     }
+    interface IGetPersistentObjectRequest extends IRequest {
+        persistentObjectTypeId: string;
+        objectId?: string;
+        isNew?: boolean;
+        parent?: IPersistentObject;
+    }
     interface IProviderParameters {
         label: string;
         description: string;
