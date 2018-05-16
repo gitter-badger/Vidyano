@@ -213,7 +213,7 @@
                 //    }
                 //}
 
-                if (!response && e.request.url.startsWith(this._rootPath))
+                if (!response && e.request.url.startsWith(this._rootPath) && e.request.method === "GET")
                     return await caches.match(this._rootPath); // Fallback to root document when a deeplink is loaded directly
 
                 return response;

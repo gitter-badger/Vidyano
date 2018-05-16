@@ -97,6 +97,7 @@ namespace Vidyano {
                 const r = new XMLHttpRequest();
                 r.open("POST", url, true);
                 r.overrideMimeType("application/json; charset=utf-8");
+                r.setRequestHeader("Content-type", "application/json");
                 r.onload = async () => {
                     if (r.status !== 200) {
                         if (r.status === 429) {
@@ -148,7 +149,7 @@ namespace Vidyano {
 
                     this._postJSONProcess(data, result, requestMethod, createdRequest, requestStart, result.profiler ? r.getResponseHeader("X-ElapsedMilliseconds") : undefined);
                 };
-                r.onerror = () => { reject(`${r.statusText} (${r.status})`); };
+                r.onerror = () => { reject(r.status !== 0 ? r.statusText : NoInternetMessage.messages.get(navigator.language.split("-")[0].toLowerCase()) || NoInternetMessage.messages.get("en")); };
 
                 r.send(JSON.stringify(data));
             });

@@ -1405,11 +1405,6 @@ declare namespace Vidyano {
     }
 }
 declare namespace Vidyano {
-    namespace ClientOperations {
-        function refreshForUpdate(hooks: ServiceHooks, path: string, replaceCurrent?: boolean): void;
-    }
-}
-declare namespace Vidyano {
     interface IQueryGroupingInfo extends Service.IQueryGroupingInfo {
         groups?: QueryResultItemGroup[];
     }

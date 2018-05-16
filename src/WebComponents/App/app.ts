@@ -618,11 +618,11 @@ namespace Vidyano.WebComponents {
                 this._setInitializing(false);
             }
             catch (e) {
-                const noInternet = Vidyano.NoInternetMessage.messages.get(navigator.language.split("-")[0].toLowerCase()) || Vidyano.NoInternetMessage.messages.get("en");
+                const noInternet = e instanceof Vidyano.NoInternetMessage ? e : Vidyano.NoInternetMessage.messages.get(navigator.language.split("-")[0].toLowerCase()) || Vidyano.NoInternetMessage.messages.get("en");
 
                 await this.showMessageDialog({
-                    title: e === noInternet.message ? noInternet.title : this.app.label || document.title,
-                    message: e,
+                    title: e instanceof Vidyano.NoInternetMessage ? noInternet.title : this.app.label || document.title,
+                    message: e instanceof Vidyano.NoInternetMessage ? noInternet.message : e,
                     actions: [noInternet.tryAgain],
                     actionTypes: ["Danger"],
                     noClose: true
