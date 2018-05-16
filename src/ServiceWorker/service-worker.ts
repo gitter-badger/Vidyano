@@ -165,9 +165,11 @@
 
             this.onRegisterRequestHandlers(registerRequestHandler);
 
-            // Install default GetApplication handler
+            // Install default handlers
             if (!this._requestHandlerMap.has("GetApplication") && (this._requestHandlerMap.size > 0 || this._offline))
                 registerRequestHandler(new ServiceWorkerGetApplicationRequestHandler());
+            if (!this._requestHandlerMap.has("GetQuery") && this._offline)
+                registerRequestHandler(new ServiceWorkerGetQueryRequestHandler());
 
             // NOTE: MISSING JS FILES DURING DEVELOPMENT, SO RELOAD IS STILL REQUIRED
             e.waitUntil((self as ServiceWorkerGlobalScope).clients.claim());
@@ -219,6 +221,8 @@
                 return response;
             }
             catch (ee) {
+                console.error(ee);
+
                 return new Response("<h1>Service Unavailable</h1>", {
                     status: 503,
                     statusText: "Service Unavailable",
@@ -249,7 +253,7 @@
                 return;
 
             for (let i = 0; i < handlers.length; i++) {
-                const responseBody = await handlers[i].fetch(request.clone().json(), this._createFetcher(request, response));
+                const responseBody = await handlers[i].fetch(await request.clone().json(), this._createFetcher(request, response));
                 if (!responseBody)
                     continue;
 
@@ -353,7 +357,18 @@
 
     export class ServiceWorkerGetQueryRequestHandler extends ServiceWorkerRequestHandler {
         async fetch(payload: IGetQueryRequest, fetcher: Fetcher<IGetQueryRequest, IQuery>): Promise<IQuery> {
-            return fetcher(payload);
+            const query = await fetcher(payload);
+            if (!query) {
+                const cachedQuery = await this.load("GetQueries", payload.id);
+                return cachedQuery ? JSON.parse(cachedQuery.response) : null;
+            }
+
+            this.save("GetQueries", {
+                id: payload.id,
+                response: JSON.stringify(query)
+            });
+
+            return query;
         }
     }
 }
