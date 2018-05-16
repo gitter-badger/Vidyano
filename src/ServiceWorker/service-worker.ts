@@ -1,17 +1,14 @@
 ﻿namespace Vidyano {
     const CACHE_NAME = "vidyano.offline";
 
-    interface IDBRequest {
-        id: string;
-        response: string;
-    }
-
-    export type Store = "Requests";
+    export type Store = "Requests" | "GetQueries";
+    type RequestMapKey = "GetApplication" | "GetQuery";
 
     export class ServiceWorker {
         private _initializeDB: Promise<void>;
         private _db: IDBDatabase;
         private _rootPath: string;
+        private _requestHandlerMap = new Map<RequestMapKey, ServiceWorkerRequestHandler[]>();
 
         constructor(private _offline?: boolean, private _verbose?: boolean) {
             this._initializeDB = new Promise<void>(resolve => {
@@ -19,6 +16,7 @@
                 dboOpen.onupgradeneeded = () => {
                     var db = <IDBDatabase>dboOpen.result;
                     db.createObjectStore("Requests", { keyPath: "id" });
+                    db.createObjectStore("GetQueries", { keyPath: "id" });
                 };
 
                 dboOpen.onsuccess = () => {
@@ -143,9 +141,39 @@
 
         private async _onActivate(e: ExtendableEvent) {
             this._log("Activated ServiceWorker");
+            await this._initializeDB;
 
-            // MISSING JS FILES DURING DEVELOPMENT, SO RELOAD IS STILL REQUIERD
+            const addRequestHandler = (key: RequestMapKey, handler: ServiceWorkerRequestHandler) => {
+                if (!this._requestHandlerMap.has(key))
+                    this._requestHandlerMap.set(key, [handler]);
+                else
+                    this._requestHandlerMap.get(key).push(handler);
+            }
+
+            const registerRequestHandler = (handler: ServiceWorkerRequestHandler) => {
+                if (handler instanceof ServiceWorkerGetApplicationRequestHandler) {
+                    if (!this._requestHandlerMap.has("GetApplication"))
+                        this._requestHandlerMap.set("GetApplication", [handler]);
+                    else
+                        throw "A handler for GetApplication was already registered.";
+                }
+                else if (handler instanceof ServiceWorkerGetQueryRequestHandler)
+                    addRequestHandler("GetQuery", handler);
+
+                handler["_db"] = this._db;
+            };
+
+            this.onRegisterRequestHandlers(registerRequestHandler);
+
+            // Install default GetApplication handler
+            if (!this._requestHandlerMap.has("GetApplication") && (this._requestHandlerMap.size > 0 || this._offline))
+                registerRequestHandler(new ServiceWorkerGetApplicationRequestHandler());
+
+            // NOTE: MISSING JS FILES DURING DEVELOPMENT, SO RELOAD IS STILL REQUIRED
             e.waitUntil((self as ServiceWorkerGlobalScope).clients.claim());
+        }
+
+        protected async onRegisterRequestHandlers(register: (handler: ServiceWorkerRequestHandler) => void) {
         }
 
         private async _onFetch(e: FetchEventInit) {
@@ -153,18 +181,25 @@
             await this._initializeDB;
 
             try {
+                if (e.request.method === "POST" && e.request.url.startsWith(this._rootPath)) {
+                    const fetchResponse: { body?: any; response?: Response; } = {};
+
+                    if (e.request.url.endsWith("GetApplication") && this._requestHandlerMap.has("GetApplication"))
+                        fetchResponse.body = await this._requestHandlerMap.get("GetApplication")[0].fetch(await e.request.clone().json(), this._createFetcher(e.request, fetchResponse));
+                    else if (e.request.url.endsWith("GetQuery") && this._requestHandlerMap.has("GetQuery"))
+                        await this._callFetchHanders("GetQuery", e.request, fetchResponse);
+
+                    if (fetchResponse.body)
+                        return this.createResponse(fetchResponse.body, fetchResponse.response);
+                }
+
                 let response: Response;
                 try {
                     response = await fetch(e.request);
                 }
                 catch (error) { }
 
-                if (e.request.method === "POST" && e.request.url.startsWith(this._rootPath)) {
-                    if (e.request.url.endsWith("GetApplication")) {
-
-                    }
-                }
-                else if (e.request.method === "GET") {
+                if (e.request.method === "GET") {
                     if (response) {
                         const cache = await caches.open(CACHE_NAME);
                         cache.put(e.request, response.clone());
@@ -174,46 +209,9 @@
                 }
 
                 if (e.request.url.endsWith("GetClientData?v=2") && Vidyano.ServiceWorker.prototype.onGetClientData !== this.onGetClientData) {
-                    const clientData = this.onGetClientData(await response.clone().json());
-                    return this._createResponse(clientData);
+                    const clientData = await this.onGetClientData(await response.clone().json());
+                    return this.createResponse(clientData);
                 }
-
-                //try {
-                //    if (response) {
-                //        if (e.request.method === "GET") {
-                //            const cache = await caches.open(CACHE_NAME);
-                //            cache.put(e.request, response.clone());
-                //        }
-                //        else {
-                //            const data = await response.clone().json();
-                //            const tx = this._db.transaction("Requests", "readwrite");
-                //            const requests = tx.objectStore("Requests");
-
-                //            requests.put({
-                //                id: e.request.url,
-                //                response: JSON.stringify(data)
-                //            });
-                //        }
-                //    }
-                //}
-                //catch (ee) {
-                //    if (e.request.method !== "GET") {
-                //        const tx = this._db.transaction("Requests", "readwrite");
-                //        const requests = tx.objectStore("Requests");
-
-                //        const result = await new Promise<IDBRequest>(resolve => {
-                //            const getData = requests.get(e.request.url);
-                //            getData.onsuccess = () => resolve(getData.result);
-                //        });
-
-                //        return new Response(result.response, {
-                //            status: 200,
-                //            headers: new Headers({
-                //                "Content-Type": "application/json; charset=utf-8"
-                //            })
-                //        });
-                //    }
-                //}
 
                 if (!response && e.request.url.startsWith(this._rootPath) && e.request.method === "GET")
                     return await caches.match(this._rootPath); // Fallback to root document when a deeplink is loaded directly
@@ -231,7 +229,57 @@
             }
         }
 
-        protected _createResponse(data: any, response?: Response): Response {
+        private _createFetcher(originalRequest: Request, response: { response?: Response; }): Fetcher<Service.IRequest, any> {
+            return async payload => {
+                const fetchRquest = this.createRequest(payload, originalRequest);
+                try {
+                    response.response = await fetch(fetchRquest);
+                }
+                catch (ex) {
+                    return;
+                }
+
+                return response.response.json();
+            };
+        }
+
+        private async _callFetchHanders<T>(key: RequestMapKey, request: Request, response: { body?: any; response?: Response; }) {
+            const handlers = this._requestHandlerMap.get(key);
+            if (!handlers)
+                return;
+
+            for (let i = 0; i < handlers.length; i++) {
+                const responseBody = await handlers[i].fetch(request.clone().json(), this._createFetcher(request, response));
+                if (!responseBody)
+                    continue;
+
+                response.body = responseBody;
+            }
+        }
+
+        protected onGetClientData(clientData: Service.IClientData): Promise<Service.IClientData> {
+            return Promise.resolve(clientData);
+        }
+
+        protected createRequest(data: any, request: Request): Request {
+            if (typeof data === "object")
+                data = JSON.stringify(data);
+
+            return new Request(request.url, {
+                headers: request.headers,
+                body: data,
+                cache: request.cache,
+                credentials: request.credentials,
+                integrity: request.integrity,
+                keepalive: request.keepalive,
+                method: request.method,
+                mode: request.mode,
+                referrer: request.referrer,
+                referrerPolicy: request.referrerPolicy
+            });
+        }
+
+        protected createResponse(data: any, response?: Response): Response {
             if (typeof data === "object")
                 data = JSON.stringify(data);
 
@@ -241,9 +289,71 @@
                 statusText: response.statusText
             } : null);
         }
+    }
 
-        onGetClientData(clientData: Service.IClientData): Service.IClientData {
-            return clientData;
+    export type Fetcher<TRequestPayload, TResponseBody> = (payload: TRequestPayload) => Promise<TResponseBody>;
+    export type IGetApplicationRequest = Service.IGetApplicationRequest;
+    export type IApplication = Service.IApplication;
+    export type IGetQueryRequest = Service.IGetQueryRequest;
+    export type IQuery = Service.IQuery;
+
+    export abstract class ServiceWorkerRequestHandler {
+        protected save(store: Store, entry: any) {
+            const tx = this.db.transaction(store, "readwrite");
+            const requests = tx.objectStore(store);
+
+            requests.put(entry);
+        }
+
+        protected async load(store: Store, key: any) {
+            const tx = this.db.transaction(store, "readwrite");
+            const requests = tx.objectStore(store);
+
+            return await new Promise<any>((resolve, reject) => {
+                const getData = requests.get(key);
+                getData.onsuccess = () => resolve(getData.result);
+                getData.onerror = () => resolve(null);
+            });
+        }
+
+        protected async _fetch(request: Request): Promise<Response> {
+            try {
+                return await fetch(request);
+            }
+            catch (e) {
+                return null;
+            }
+        }
+
+        get db(): IDBDatabase {
+            return this["_db"];
+        }
+
+        async fetch(payload: any, fetcher: Fetcher<Service.IRequest, any>): Promise<any> {
+            return await fetcher(payload);
+        }
+    }
+
+    export class ServiceWorkerGetApplicationRequestHandler extends ServiceWorkerRequestHandler {
+        async fetch(payload: IGetApplicationRequest, fetcher: Fetcher<IGetApplicationRequest, IApplication>): Promise<IApplication> {
+            const application = await fetcher(payload);
+            if (!application) {
+                const cachedApplication = await this.load("Requests", "GetApplication");
+                return cachedApplication ? JSON.parse(cachedApplication.response) : null;
+            }
+
+            this.save("Requests", {
+                id: "GetApplication",
+                response: JSON.stringify(application)
+            });
+
+            return application;
+        }
+    }
+
+    export class ServiceWorkerGetQueryRequestHandler extends ServiceWorkerRequestHandler {
+        async fetch(payload: IGetQueryRequest, fetcher: Fetcher<IGetQueryRequest, IQuery>): Promise<IQuery> {
+            return fetcher(payload);
         }
     }
 }

@@ -4,6 +4,19 @@ declare namespace Vidyano.Service {
     };
     type KeyValueString = KeyValue<string>;
     type NotificationType = "" | "OK" | "Notice" | "Warning" | "Error";
+    interface IRequest {
+        userName?: string;
+        authToken?: string;
+        clientVersion?: string;
+        environment: "Web";
+        environmentVersion: "2";
+    }
+    interface IGetApplicationRequest extends IRequest {
+        password?: string;
+    }
+    interface IGetQueryRequest extends IRequest {
+        id: string;
+    }
     interface IProviderParameters {
         label: string;
         description: string;
@@ -242,22 +255,42 @@ declare namespace Vidyano.Service {
     }
 }
 declare namespace Vidyano {
-    type Store = "Requests";
+    type Store = "Requests" | "GetQueries";
     class ServiceWorker {
         private _offline;
         private _verbose;
         private _initializeDB;
         private _db;
         private _rootPath;
+        private _requestHandlerMap;
         constructor(_offline?: boolean, _verbose?: boolean);
         private _log(message);
         private _onInstall(e);
         private _onActivate(e);
+        protected onRegisterRequestHandlers(register: (handler: ServiceWorkerRequestHandler) => void): Promise<void>;
         private _onFetch(e);
-        protected _createResponse(data: any, response?: Response): Response;
+        private _createFetcher(originalRequest, response);
+        private _callFetchHanders<T>(key, request, response);
+        protected onGetClientData(clientData: Service.IClientData): Promise<Service.IClientData>;
+        protected createRequest(data: any, request: Request): Request;
+        protected createResponse(data: any, response?: Response): Response;
+    }
+    type Fetcher<TRequestPayload, TResponseBody> = (payload: TRequestPayload) => Promise<TResponseBody>;
+    type IGetApplicationRequest = Service.IGetApplicationRequest;
+    type IApplication = Service.IApplication;
+    type IGetQueryRequest = Service.IGetQueryRequest;
+    type IQuery = Service.IQuery;
+    abstract class ServiceWorkerRequestHandler {
         protected save(store: Store, entry: any): void;
         protected load(store: Store, key: any): Promise<any>;
-        onGetClientData(clientData: Service.IClientData): Promise<Service.IClientData>;
-        onGetApplication(application: Service.IApplication): Promise<Service.IApplication>;
+        protected _fetch(request: Request): Promise<Response>;
+        readonly db: IDBDatabase;
+        fetch(payload: any, fetcher: Fetcher<Service.IRequest, any>): Promise<any>;
+    }
+    class ServiceWorkerGetApplicationRequestHandler extends ServiceWorkerRequestHandler {
+        fetch(payload: IGetApplicationRequest, fetcher: Fetcher<IGetApplicationRequest, IApplication>): Promise<IApplication>;
+    }
+    class ServiceWorkerGetQueryRequestHandler extends ServiceWorkerRequestHandler {
+        fetch(payload: IGetQueryRequest, fetcher: Fetcher<IGetQueryRequest, IQuery>): Promise<IQuery>;
     }
 }

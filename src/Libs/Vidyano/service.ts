@@ -149,7 +149,17 @@ namespace Vidyano {
 
                     this._postJSONProcess(data, result, requestMethod, createdRequest, requestStart, result.profiler ? r.getResponseHeader("X-ElapsedMilliseconds") : undefined);
                 };
-                r.onerror = () => { reject(r.status !== 0 ? r.statusText : NoInternetMessage.messages.get(navigator.language.split("-")[0].toLowerCase()) || NoInternetMessage.messages.get("en")); };
+                r.onerror = () => {
+                    if (r.status === 0) {
+                        const noInternet = NoInternetMessage.messages.get(navigator.language.split("-")[0].toLowerCase()) || NoInternetMessage.messages.get("en");
+                        if (url.endsWith("GetClientData?v=2"))
+                            reject(noInternet);
+                        else
+                            reject(noInternet.message);
+                    }
+                    else
+                        reject(r.statusText);
+                };
 
                 r.send(JSON.stringify(data));
             });

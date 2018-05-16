@@ -9,6 +9,19 @@ declare namespace Vidyano.Service {
     };
     type KeyValueString = KeyValue<string>;
     type NotificationType = "" | "OK" | "Notice" | "Warning" | "Error";
+    interface IRequest {
+        userName?: string;
+        authToken?: string;
+        clientVersion?: string;
+        environment: "Web";
+        environmentVersion: "2";
+    }
+    interface IGetApplicationRequest extends IRequest {
+        password?: string;
+    }
+    interface IGetQueryRequest extends IRequest {
+        id: string;
+    }
     interface IProviderParameters {
         label: string;
         description: string;

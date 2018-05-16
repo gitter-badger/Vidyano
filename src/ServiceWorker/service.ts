@@ -5,6 +5,22 @@ namespace Vidyano.Service {
     export type KeyValueString = KeyValue<string>;
     export type NotificationType = "" | "OK" | "Notice" | "Warning" | "Error";
 
+    export interface IRequest {
+        userName?: string;
+        authToken?: string;
+        clientVersion?: string;
+        environment: "Web";
+        environmentVersion: "2";
+    }
+
+    export interface IGetApplicationRequest extends IRequest {
+        password?: string;
+    }
+
+    export interface IGetQueryRequest extends IRequest {
+        id: string;
+    }
+
     export interface IProviderParameters {
         label: string;
         description: string;
