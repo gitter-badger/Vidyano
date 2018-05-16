@@ -295,7 +295,7 @@
             catch (error) {
                 this._setNotification({
                     text: error,
-                    type: NotificationType.Error
+                    type: "Error"
                 });
             }
         }
@@ -316,7 +316,7 @@
             catch (error) {
                 this._setNotification({
                     text: error,
-                    type: NotificationType.Error
+                    type: "Error"
                 });
             }
             finally {
@@ -458,7 +458,7 @@
         private _error(error: string) {
             this._setNotification(error ? {
                 text: error,
-                type: Vidyano.NotificationType.Error
+                type: "Error"
             } : null);
         }
 

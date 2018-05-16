@@ -108,7 +108,7 @@ namespace Vidyano {
         private _isFiltering: boolean;
         private _columnObservers: Common.ISubjectDisposer[];
         private _hasMore: boolean = null;
-        private _groupingInfo: Service.IQueryGroupingInfo;
+        private _groupingInfo: IQueryGroupingInfo;
 
         persistentObject: PersistentObject;
         columns: QueryColumn[];
@@ -272,11 +272,11 @@ namespace Vidyano {
                 this.currentChart = this.charts.firstOrDefault(c => c.name === this._defaultChartName);
         }
 
-        get groupingInfo(): Service.IQueryGroupingInfo {
+        get groupingInfo(): IQueryGroupingInfo {
             return this._groupingInfo;
         }
 
-        private _setGroupingInfo(groupingInfo: Service.IQueryGroupingInfo) {
+        private _setGroupingInfo(groupingInfo: IQueryGroupingInfo) {
             const oldValue = this._groupingInfo;
             if (oldValue === groupingInfo)
                 return;
@@ -809,22 +809,26 @@ namespace Vidyano {
             this._setCanFilter(this.actions.some(a => a.name === "Filter") && this.columns.some(c => c.canFilter));
         }
 
-        private _updateGroupingInfo(groupingInfo: IQueryGroupingInfo) {
+        private _updateGroupingInfo(groupingInfo: Service.IQueryGroupingInfo) {
             if (!groupingInfo) {
                 this._setGroupingInfo(null);
                 return;
             }
 
-            const currentGroupingInfo = this.groupingInfo;
-            this._setGroupingInfo(groupingInfo || null);
-            if (this.groupingInfo) {
+            const oldGroupingInfo = this.groupingInfo;
+            if (groupingInfo) {
                 let start = 0;
-                this.groupingInfo.groups = this.groupingInfo.groups.map(g => new QueryResultItemGroup(this, g, start, (start = start + g.count) - 1));
+                this._setGroupingInfo({
+                    groupedBy: groupingInfo.groupedBy,
+                    groups: groupingInfo.groups.map(g => new QueryResultItemGroup(this, g, start, (start = start + g.count) - 1))
+                });
             }
+            else
+                this._setGroupingInfo(null);
 
-            if (currentGroupingInfo) {
-                currentGroupingInfo.groups.forEach(oldGroup => {
-                    const newGroup = Enumerable.from(this.groupingInfo.groups).firstOrDefault(g => g.name === oldGroup.name);
+            if (oldGroupingInfo) {
+                oldGroupingInfo.groups.forEach(oldGroup => {
+                    const newGroup = this.groupingInfo.groups.find(g => g.name === oldGroup.name);
                     if (newGroup)
                         newGroup.isCollapsed = oldGroup.isCollapsed;
                 });
@@ -880,25 +884,6 @@ namespace Vidyano {
                 else if (selectedItems.length === this.totalItems)
                     this.selectAll.allSelected = true;
             }
-        }
-
-        static FromJsonData(service: Service, data: IJsonQueryData): Query {
-            const query = {
-                actions: [],
-                allowTextSearch: false,
-                autoQuery: true,
-                canRead: false,
-                columns: data.columns,
-                disableBulkEdit: true,
-                filters: {},
-                id: data.id || Unique.get(),
-                label: data.label,
-                name: data.name || data.label,
-                persistentObject: { label: data.singularLabel },
-                result: data
-            };
-
-            return new Query(service, query);
         }
     }
 

@@ -1,6 +1,10 @@
 ﻿namespace Vidyano {
     "use strict";
 
+    export interface IQueryGroupingInfo extends Service.IQueryGroupingInfo {
+        groups?: QueryResultItemGroup[];
+    }
+
     export class QueryResultItemGroup implements Service.IQueryResultItemGroup {
         private _name: string;
         private _count: number;
