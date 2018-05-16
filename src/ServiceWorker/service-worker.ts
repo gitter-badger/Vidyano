@@ -6,23 +6,25 @@
         response: string;
     }
 
+    export type Store = "Requests";
+
     export class ServiceWorker {
         private _initializeDB: Promise<void>;
         private _db: IDBDatabase;
         private _rootPath: string;
 
-        constructor(private _verbose?: boolean) {
+        constructor(private _offline?: boolean, private _verbose?: boolean) {
             this._initializeDB = new Promise<void>(resolve => {
                 const dboOpen = indexedDB.open("vidyano.offline", 1);
-                dboOpen.onupgradeneeded = function () {
-                    var db = dboOpen.result;
-                    var store = db.createObjectStore("Requests", { keyPath: "id" });
+                dboOpen.onupgradeneeded = () => {
+                    var db = <IDBDatabase>dboOpen.result;
+                    db.createObjectStore("Requests", { keyPath: "id" });
                 };
 
                 dboOpen.onsuccess = () => {
-                    this._db = dboOpen.result;
+                    this._db = <IDBDatabase>dboOpen.result;
                     resolve();
-                }
+                };
             });
 
             self.addEventListener("install", (e: ExtendableEvent) => e.waitUntil(this._onInstall(e)));

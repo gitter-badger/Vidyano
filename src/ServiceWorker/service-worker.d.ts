@@ -242,17 +242,22 @@ declare namespace Vidyano.Service {
     }
 }
 declare namespace Vidyano {
+    type Store = "Requests";
     class ServiceWorker {
+        private _offline;
         private _verbose;
         private _initializeDB;
         private _db;
         private _rootPath;
-        constructor(_verbose?: boolean);
+        constructor(_offline?: boolean, _verbose?: boolean);
         private _log(message);
         private _onInstall(e);
         private _onActivate(e);
         private _onFetch(e);
         protected _createResponse(data: any, response?: Response): Response;
-        onGetClientData(clientData: Service.IClientData): Service.IClientData;
+        protected save(store: Store, entry: any): void;
+        protected load(store: Store, key: any): Promise<any>;
+        onGetClientData(clientData: Service.IClientData): Promise<Service.IClientData>;
+        onGetApplication(application: Service.IApplication): Promise<Service.IApplication>;
     }
 }
