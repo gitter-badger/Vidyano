@@ -17,7 +17,7 @@
                     var db = <IDBDatabase>dboOpen.result;
                     db.createObjectStore("Requests", { keyPath: "id" });
                     db.createObjectStore("GetQueries", { keyPath: "id" });
-                    db.createObjectStore("GetPersistentObjects", { keyPath: "typeId" });
+                    db.createObjectStore("GetPersistentObjects", { keyPath: "id" });
                 };
 
                 dboOpen.onsuccess = () => {
@@ -136,8 +136,6 @@
 
             const cache = await caches.open(CACHE_NAME);
             await cache.addAll(urls);
-
-            await Promise.all(urls.map(url => fetch(url)));
         }
 
         private async _onActivate(e: ExtendableEvent) {
@@ -169,12 +167,15 @@
             this.onRegisterRequestHandlers(registerRequestHandler);
 
             // Install default handlers
-            if (!this._requestHandlerMap.has("GetApplication") && (this._requestHandlerMap.size > 0 || this._offline))
-                registerRequestHandler(new ServiceWorkerGetApplicationRequestHandler());
-            if (!this._requestHandlerMap.has("GetQuery") && this._offline)
-                registerRequestHandler(new ServiceWorkerGetQueryRequestHandler());
-            if (!this._requestHandlerMap.has("GetPersistentObject") && this._offline)
-                registerRequestHandler(new ServiceWorkerGetPersistentObjectRequestHandler());
+            if (!this._requestHandlerMap.has("GetApplication")) {
+                const getApplicationHandler = new ServiceWorkerGetApplicationRequestHandler();
+                getApplicationHandler["_db"] = this._db;
+
+                this._requestHandlerMap.set("GetApplication", [getApplicationHandler]);
+            }
+
+            registerRequestHandler(new ServiceWorkerGetQueryRequestHandler());
+            registerRequestHandler(new ServiceWorkerGetPersistentObjectRequestHandler());
 
             // NOTE: MISSING JS FILES DURING DEVELOPMENT, SO RELOAD IS STILL REQUIRED
             e.waitUntil((self as ServiceWorkerGlobalScope).clients.claim());
@@ -189,17 +190,20 @@
 
             try {
                 if (e.request.method === "POST" && e.request.url.startsWith(this._rootPath)) {
-                    const fetchResponse: { body?: any; response?: Response; } = {};
-                    
-                    if (e.request.url.endsWith("GetApplication") && this._requestHandlerMap.has("GetApplication"))
-                        fetchResponse.body = await this._requestHandlerMap.get("GetApplication")[0].fetch(await e.request.clone().json(), this._createFetcher(e.request, fetchResponse));
-                    else if (e.request.url.endsWith("GetQuery") && this._requestHandlerMap.has("GetQuery"))
-                        await this._callFetchHanders("GetQuery", e.request, fetchResponse);
-                    else if (e.request.url.endsWith("GetPersistentObject") && this._requestHandlerMap.has("GetPersistentObject"))
-                        await this._callFetchHanders("GetPersistentObject", e.request, fetchResponse);
+                    const fetchResponse: { response?: Response; } = {};
+                    let body: any;
 
-                    if (fetchResponse.body)
-                        return this.createResponse(fetchResponse.body, fetchResponse.response);
+                    if (e.request.url.endsWith("GetApplication")) {
+                        const application = <IApplication>(body = await this._requestHandlerMap.get("GetApplication")[0].fetch(await e.request.clone().json(), this._createFetcher(e.request, fetchResponse)));
+                        if (application && (!fetchResponse.response || fetchResponse.response.status === 200))
+                            this.onFetchOffline(new Service(this._rootPath, application));
+                    }
+                    else if (e.request.url.endsWith("GetQuery"))
+                        body = await this._callFetchHandlers("GetQuery", e.request, fetchResponse);
+                    else if (e.request.url.endsWith("GetPersistentObject"))
+                        body = await this._callFetchHandlers("GetPersistentObject", e.request, fetchResponse);
+
+                    return this.createResponse(body, fetchResponse.response);
                 }
 
                 let response: Response;
@@ -254,22 +258,23 @@
             };
         }
 
-        private async _callFetchHanders<T>(key: RequestMapKey, request: Request, response: { body?: any; response?: Response; }) {
+        private async _callFetchHandlers<T>(key: RequestMapKey, request: Request, response: { response?: Response; }): Promise<any> {
             const handlers = this._requestHandlerMap.get(key);
             if (!handlers)
                 return;
 
             for (let i = 0; i < handlers.length; i++) {
                 const responseBody = await handlers[i].fetch(await request.clone().json(), this._createFetcher(request, response));
-                if (!responseBody)
-                    continue;
-
-                response.body = responseBody;
+                if (responseBody)
+                    return responseBody;
             }
         }
 
         protected onGetClientData(clientData: Service.IClientData): Promise<Service.IClientData> {
             return Promise.resolve(clientData);
+        }
+
+        protected async onFetchOffline(serice: IService) {
         }
 
         protected createRequest(data: any, request: Request): Request {
@@ -302,6 +307,75 @@
         }
     }
 
+    /// IService and Service implementation
+    export interface IService {
+        getPersistentObject(parent: Service.IPersistentObject, id: string, objectId?: string, isNew?: boolean): Promise<Service.IPersistentObject>;
+        getQuery(id: string): Promise<Service.IQuery>;
+    }
+
+    class Service implements IService {
+        constructor(readonly serviceUri: string, private _application: Service.IApplication) {
+        }
+
+        private _createPayload(): any {
+            const payload: Service.IRequest = {
+                authToken: this._application.authToken,
+                userName: this._application.userName,
+                environment: "ServiceWorker",
+                environmentVersion: "1",
+                clientVersion: ""
+            };
+
+            return payload;
+        }
+
+        private _createUri(method: string) {
+            let uri = this.serviceUri;
+            if (!uri.endsWith("/"))
+                uri += "/";
+
+            return uri + method;
+        }
+
+        private async _fetch(method: string, payload: any): Promise<any> {
+            let uri = this.serviceUri;
+            if (!uri.endsWith("/"))
+                uri += "/";
+
+            return await fetch(new Request(this._createUri(method), {
+                body: JSON.stringify(payload),
+                cache: "no-cache",
+                headers: {
+                    "content-type": "application/json",
+                    "user-agent": navigator.userAgent
+                },
+                method: "POST",
+                referrer: self.location.toString()
+            }));
+        }
+
+        async getPersistentObject(parent: Service.IPersistentObject, id: string, objectId?: string, isNew?: boolean): Promise<Service.IPersistentObject> {
+            const payload = <IGetPersistentObjectRequest>this._createPayload();
+            payload.parent = parent;
+            payload.persistentObjectTypeId = id;
+
+            if (objectId)
+                payload.objectId = objectId;
+            if (isNew)
+                payload.isNew = isNew;
+
+            return await this._fetch("GetPersistentObject", payload);
+        }
+
+        async getQuery(id: string): Promise<Service.IQuery> {
+            const payload = <IGetQueryRequest>this._createPayload();
+            payload.id = id;
+
+            return await this._fetch("GetQuery", payload);
+        }
+    }
+
+    // ServiceWorker Request Handlers
     export type Fetcher<TRequestPayload, TResponseBody> = (payload: TRequestPayload) => Promise<TResponseBody>;
     export type IGetApplicationRequest = Service.IGetApplicationRequest;
     export type IApplication = Service.IApplication;
@@ -327,15 +401,6 @@
                 getData.onsuccess = () => resolve(getData.result);
                 getData.onerror = () => resolve(null);
             });
-        }
-
-        protected async _fetch(request: Request): Promise<Response> {
-            try {
-                return await fetch(request);
-            }
-            catch (e) {
-                return null;
-            }
         }
 
         get db(): IDBDatabase {
@@ -384,6 +449,14 @@
     export class ServiceWorkerGetPersistentObjectRequestHandler extends ServiceWorkerRequestHandler {
         async fetch(payload: IGetPersistentObjectRequest, fetcher: Fetcher<IGetPersistentObjectRequest, IPersistentObject>): Promise<IPersistentObject> {
             const po = await fetcher(payload);
+            const id: any = {
+                typeId: payload.persistentObjectTypeId,
+                isNew: !!payload.isNew
+            };
+
+            if (payload.objectId)
+                id.objectId = payload.objectId;
+
             if (!po) {
                 const cachedPO = await this.load("GetPersistentObjects", payload.persistentObjectTypeId);
                 return cachedPO ? JSON.parse(cachedPO.response) : null;

@@ -13,8 +13,8 @@ declare namespace Vidyano.Service {
         userName?: string;
         authToken?: string;
         clientVersion?: string;
-        environment: "Web";
-        environmentVersion: "2";
+        environment: "Web" | "ServiceWorker";
+        environmentVersion: string;
     }
     interface IGetApplicationRequest extends IRequest {
         password?: string;

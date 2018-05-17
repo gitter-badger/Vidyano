@@ -8,8 +8,8 @@ declare namespace Vidyano.Service {
         userName?: string;
         authToken?: string;
         clientVersion?: string;
-        environment: "Web";
-        environmentVersion: "2";
+        environment: "Web" | "ServiceWorker";
+        environmentVersion: string;
     }
     interface IGetApplicationRequest extends IRequest {
         password?: string;
@@ -276,10 +276,15 @@ declare namespace Vidyano {
         protected onRegisterRequestHandlers(register: (handler: ServiceWorkerRequestHandler) => void): Promise<void>;
         private _onFetch(e);
         private _createFetcher(originalRequest, response);
-        private _callFetchHanders<T>(key, request, response);
+        private _callFetchHandlers<T>(key, request, response);
         protected onGetClientData(clientData: Service.IClientData): Promise<Service.IClientData>;
+        protected onFetchOffline(serice: IService): Promise<void>;
         protected createRequest(data: any, request: Request): Request;
         protected createResponse(data: any, response?: Response): Response;
+    }
+    interface IService {
+        getPersistentObject(parent: Service.IPersistentObject, id: string, objectId?: string, isNew?: boolean): Promise<Service.IPersistentObject>;
+        getQuery(id: string): Promise<Service.IQuery>;
     }
     type Fetcher<TRequestPayload, TResponseBody> = (payload: TRequestPayload) => Promise<TResponseBody>;
     type IGetApplicationRequest = Service.IGetApplicationRequest;
@@ -291,7 +296,6 @@ declare namespace Vidyano {
     abstract class ServiceWorkerRequestHandler {
         protected save(store: Store, entry: any): void;
         protected load(store: Store, key: any): Promise<any>;
-        protected _fetch(request: Request): Promise<Response>;
         readonly db: IDBDatabase;
         fetch(payload: any, fetcher: Fetcher<Service.IRequest, any>): Promise<any>;
     }

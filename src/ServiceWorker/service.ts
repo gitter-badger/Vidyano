@@ -9,8 +9,8 @@ namespace Vidyano.Service {
         userName?: string;
         authToken?: string;
         clientVersion?: string;
-        environment: "Web";
-        environmentVersion: "2";
+        environment: "Web" | "ServiceWorker";
+        environmentVersion: string;
     }
 
     export interface IGetApplicationRequest extends IRequest {
