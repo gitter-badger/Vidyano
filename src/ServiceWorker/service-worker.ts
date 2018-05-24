@@ -55,6 +55,7 @@
     export class ServiceWorker extends IndexedDB {
         //private _requestHandlerMap = new Map<RequestMapKey, ServiceWorkerRequestHandler[]>();
         private _rootPath: string;
+        private _authToken: string;
         private _service: IService;
 
         constructor(private _verbose?: boolean) {
@@ -204,7 +205,7 @@
 
                 if (ServiceWorker.prototype.onCache !== this.onCache && e.request.method === "POST" && e.request.url.startsWith(this._rootPath)) {
                     if (e.request.url.endsWith("GetApplication")) {
-                        const fetcher = await this._createFetcher(e.request);
+                        const fetcher = await this._createFetcher<IGetApplicationRequest, IApplication>(e.request);
                         let application = await this.onGetApplication(fetcher.payload, fetcher.fetch);
                         if (application) {
                             this.save({
@@ -213,7 +214,7 @@
                             }, "Requests");
 
                             if (fetcher.response)
-                                this.onCache(this._service = new Service(this, this._rootPath, application.userName, application.authToken));
+                                this.onCache(this._service = new Service(this, this._rootPath, application.userName, this._authToken = application.authToken));
                         }
                         else {
                             const cachedApplication = await this.load("GetApplication", "Requests");
@@ -222,6 +223,24 @@
                         }
 
                         return this.createResponse(application);
+                    }
+                    else if (e.request.url.endsWith("GetQuery")) {
+                        const fetcher = await this._createFetcher<IGetQueryRequest, IGetQueryResponse>(e.request);
+                        let query = await this.onGetQuery(fetcher.payload, fetcher.fetch);
+                        if (!query) {
+                            const cachedQuery = await this.load(fetcher.payload.id, "Queries");
+                            if (cachedQuery) {
+                                query = { authToken: this._authToken, query: JSON.parse(cachedQuery.response) };
+
+                                const actionsClass = ServiceWorkerActions.get(query.query.persistentObject.type, this.db);
+                                if (actionsClass)
+                                    query.query = await actionsClass.onGetQuery(query.query);
+                            }
+                        }
+                        else
+                            this._authToken = query.authToken;
+
+                        return this.createResponse(query);
                     }
                 }
 
@@ -246,11 +265,12 @@
                 return response;
             }
             catch (ee) {
+                console.log(ee);
                 return this.createResponse(null);
             }
         }
 
-        private async _createFetcher(originalRequest: Request): Promise<IFetcher<any, any>> {
+        private async _createFetcher<TPayload, TResult>(originalRequest: Request): Promise<IFetcher<TPayload, TResult>> {
             const fetcher: IFetcher<any, any> = {
                 payload: originalRequest.headers.get("Content-type") === "application/json" ? await originalRequest.clone().json() : await originalRequest.text(),
                 fetch: null
@@ -275,7 +295,11 @@
             return await fetch();
         }
 
-        protected async onGetApplication(payload: IGetApplicationRequest, fetch: Fetcher<any, IApplication>): Promise<IApplication> {
+        protected async onGetApplication(payload: IGetApplicationRequest, fetch: Fetcher<IGetApplicationRequest, IApplication>): Promise<IApplication> {
+            return await fetch(payload);
+        }
+
+        protected async onGetQuery(payload: IGetQueryRequest, fetch: Fetcher<IGetQueryRequest, IGetQueryResponse>): Promise<IGetQueryResponse> {
             return await fetch(payload);
         }
 
@@ -336,8 +360,8 @@
             const payload: Service.IRequest = {
                 authToken: this._authToken,
                 userName: this._userName,
-                environment: "ServiceWorker",
-                environmentVersion: "1",
+                environment: "Web,ServiceWorker",
+                environmentVersion: "2",
                 clientVersion: ""
             };
 
@@ -430,13 +454,13 @@
     export type IGetApplicationRequest = Service.IGetApplicationRequest;
     export type IApplication = Service.IApplication;
     export type IGetQueryRequest = Service.IGetQueryRequest;
+    export type IGetQueryResponse = Service.IGetQueryResponse;
     export type IQuery = Service.IQuery;
     export type IGetPersistentObjectRequest = Service.IGetPersistentObjectRequest;
+    export type IGetPersistentObjectResponse = Service.IGetPersistentObjectResponse;
     export type IPersistentObject = Service.IPersistentObject;
 
     export class ServiceWorkerActions {
-        private _db: IDBDatabase;
-
         private static _types = new Map<string, any>();
         static get<T>(name: string, db: IDBDatabase): ServiceWorkerActions {
             let actionsClass = ServiceWorkerActions._types.get(name);
@@ -458,6 +482,8 @@
 
             return instance;
         }
+
+        private _db: IDBDatabase;
 
         get db(): IDBDatabase {
             return this._db;
@@ -498,6 +524,10 @@
                 id: query.id,
                 response: JSON.stringify(query)
             }, "Queries");
+        }
+
+        async onGetQuery(query: IQuery): Promise<IQuery> {
+            return query;
         }
 
         async fetch(payload: any, fetcher: Fetcher<Service.IRequest, any>): Promise<any> {

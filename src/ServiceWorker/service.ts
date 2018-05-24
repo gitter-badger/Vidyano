@@ -9,7 +9,7 @@ namespace Vidyano.Service {
         userName?: string;
         authToken?: string;
         clientVersion?: string;
-        environment: "Web" | "ServiceWorker";
+        environment: "Web" | "Web,ServiceWorker";
         environmentVersion: string;
     }
 
@@ -21,11 +21,21 @@ namespace Vidyano.Service {
         id: string;
     }
 
+    export interface IGetQueryResponse {
+        authToken: string;
+        query: IQuery;
+    }
+
     export interface IGetPersistentObjectRequest extends IRequest {
         persistentObjectTypeId: string;
         objectId?: string;
         isNew?: boolean;
         parent?: IPersistentObject;
+    }
+
+    export interface IGetPersistentObjectResponse {
+        authToken: string;
+        persistentObject: IPersistentObject;
     }
 
     export interface IProviderParameters {

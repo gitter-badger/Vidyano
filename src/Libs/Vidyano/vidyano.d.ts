@@ -13,7 +13,7 @@ declare namespace Vidyano.Service {
         userName?: string;
         authToken?: string;
         clientVersion?: string;
-        environment: "Web" | "ServiceWorker";
+        environment: "Web" | "Web,ServiceWorker";
         environmentVersion: string;
     }
     interface IGetApplicationRequest extends IRequest {
@@ -22,11 +22,19 @@ declare namespace Vidyano.Service {
     interface IGetQueryRequest extends IRequest {
         id: string;
     }
+    interface IGetQueryResponse {
+        authToken: string;
+        query: IQuery;
+    }
     interface IGetPersistentObjectRequest extends IRequest {
         persistentObjectTypeId: string;
         objectId?: string;
         isNew?: boolean;
         parent?: IPersistentObject;
+    }
+    interface IGetPersistentObjectResponse {
+        authToken: string;
+        persistentObject: IPersistentObject;
     }
     interface IProviderParameters {
         label: string;

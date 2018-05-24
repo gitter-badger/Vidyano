@@ -8,7 +8,7 @@ declare namespace Vidyano.Service {
         userName?: string;
         authToken?: string;
         clientVersion?: string;
-        environment: "Web" | "ServiceWorker";
+        environment: "Web" | "Web,ServiceWorker";
         environmentVersion: string;
     }
     interface IGetApplicationRequest extends IRequest {
@@ -17,11 +17,19 @@ declare namespace Vidyano.Service {
     interface IGetQueryRequest extends IRequest {
         id: string;
     }
+    interface IGetQueryResponse {
+        authToken: string;
+        query: IQuery;
+    }
     interface IGetPersistentObjectRequest extends IRequest {
         persistentObjectTypeId: string;
         objectId?: string;
         isNew?: boolean;
         parent?: IPersistentObject;
+    }
+    interface IGetPersistentObjectResponse {
+        authToken: string;
+        persistentObject: IPersistentObject;
     }
     interface IProviderParameters {
         label: string;
@@ -276,15 +284,17 @@ declare namespace Vidyano {
     class ServiceWorker extends IndexedDB {
         private _verbose;
         private _rootPath;
+        private _authToken;
         private _service;
         constructor(_verbose?: boolean);
         private _log(message);
         private _onInstall(e);
         private _onActivate(e);
         private _onFetch(e);
-        private _createFetcher(originalRequest);
+        private _createFetcher<TPayload, TResult>(originalRequest);
         protected onGetClientData(fetch: Fetcher<any, IClientData>): Promise<IClientData>;
-        protected onGetApplication(payload: IGetApplicationRequest, fetch: Fetcher<any, IApplication>): Promise<IApplication>;
+        protected onGetApplication(payload: IGetApplicationRequest, fetch: Fetcher<IGetApplicationRequest, IApplication>): Promise<IApplication>;
+        protected onGetQuery(payload: IGetQueryRequest, fetch: Fetcher<IGetQueryRequest, IGetQueryResponse>): Promise<IGetQueryResponse>;
         protected onCache(service: IService): Promise<void>;
         protected createRequest(data: any, request: Request): Request;
         protected createResponse(data: any, response?: Response): Response;
@@ -298,13 +308,15 @@ declare namespace Vidyano {
     type IGetApplicationRequest = Service.IGetApplicationRequest;
     type IApplication = Service.IApplication;
     type IGetQueryRequest = Service.IGetQueryRequest;
+    type IGetQueryResponse = Service.IGetQueryResponse;
     type IQuery = Service.IQuery;
     type IGetPersistentObjectRequest = Service.IGetPersistentObjectRequest;
+    type IGetPersistentObjectResponse = Service.IGetPersistentObjectResponse;
     type IPersistentObject = Service.IPersistentObject;
     class ServiceWorkerActions {
-        private _db;
         private static _types;
         static get<T>(name: string, db: IDBDatabase): ServiceWorkerActions;
+        private _db;
         readonly db: IDBDatabase;
         protected save(entry: any, store: Store): void;
         private _isPersistentObject(arg);
@@ -312,6 +324,7 @@ declare namespace Vidyano {
         onCache<T extends IPersistentObject | IQuery>(persistentObjectOrQuery: T): Promise<void>;
         onCachePersistentObject(persistentObject: IPersistentObject): Promise<void>;
         onCacheQuery(query: IQuery): Promise<void>;
+        onGetQuery(query: IQuery): Promise<IQuery>;
         fetch(payload: any, fetcher: Fetcher<Service.IRequest, any>): Promise<any>;
     }
 }
