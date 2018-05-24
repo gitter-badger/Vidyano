@@ -65,6 +65,7 @@ declare namespace Vidyano.Service {
         isBreadcrumbSensitive?: boolean;
         fullTypeName: string;
         id: string;
+        objectId: string;
         isSystem: boolean;
         label: string;
         newOptions: string;
@@ -261,51 +262,56 @@ declare namespace Vidyano.Service {
     }
 }
 declare namespace Vidyano {
-    type Store = "Requests" | "GetQueries" | "GetPersistentObjects";
-    class ServiceWorker {
-        private _offline;
-        private _verbose;
-        private _initializeDB;
+    type Store = "Requests" | "Queries" | "PersistentObjects";
+    abstract class IndexedDB {
+        private _store;
+        private _initializing;
         private _db;
+        constructor(_store?: Store);
+        readonly initializing: Promise<void>;
+        readonly db: IDBDatabase;
+        protected save(entry: any, store?: Store): void;
+        protected load(key: any, store?: Store): Promise<any>;
+    }
+    class ServiceWorker extends IndexedDB {
+        private _verbose;
         private _rootPath;
-        private _requestHandlerMap;
-        constructor(_offline?: boolean, _verbose?: boolean);
+        private _service;
+        constructor(_verbose?: boolean);
         private _log(message);
         private _onInstall(e);
         private _onActivate(e);
-        protected onRegisterRequestHandlers(register: (handler: ServiceWorkerRequestHandler) => void): Promise<void>;
         private _onFetch(e);
-        private _createFetcher(originalRequest, response);
-        private _callFetchHandlers<T>(key, request, response);
-        protected onGetClientData(clientData: Service.IClientData): Promise<Service.IClientData>;
-        protected onFetchOffline(serice: IService): Promise<void>;
+        private _createFetcher(originalRequest);
+        protected onGetClientData(fetch: Fetcher<any, IClientData>): Promise<IClientData>;
+        protected onGetApplication(payload: IGetApplicationRequest, fetch: Fetcher<any, IApplication>): Promise<IApplication>;
+        protected onCache(service: IService): Promise<void>;
         protected createRequest(data: any, request: Request): Request;
         protected createResponse(data: any, response?: Response): Response;
     }
     interface IService {
-        getPersistentObject(parent: Service.IPersistentObject, id: string, objectId?: string, isNew?: boolean): Promise<Service.IPersistentObject>;
-        getQuery(id: string): Promise<Service.IQuery>;
+        cachePersistentObject(parent: Service.IPersistentObject, id: string, objectId?: string, isNew?: boolean): Promise<void>;
+        cacheQuery(id: string): Promise<void>;
     }
-    type Fetcher<TRequestPayload, TResponseBody> = (payload: TRequestPayload) => Promise<TResponseBody>;
+    type Fetcher<TPayload, TResult> = (payload?: TPayload) => Promise<TResult>;
+    type IClientData = Service.IClientData;
     type IGetApplicationRequest = Service.IGetApplicationRequest;
     type IApplication = Service.IApplication;
     type IGetQueryRequest = Service.IGetQueryRequest;
     type IQuery = Service.IQuery;
     type IGetPersistentObjectRequest = Service.IGetPersistentObjectRequest;
     type IPersistentObject = Service.IPersistentObject;
-    abstract class ServiceWorkerRequestHandler {
-        protected save(store: Store, entry: any): void;
-        protected load(store: Store, key: any): Promise<any>;
+    class ServiceWorkerActions {
+        private _db;
+        private static _types;
+        static get<T>(name: string, db: IDBDatabase): ServiceWorkerActions;
         readonly db: IDBDatabase;
+        protected save(entry: any, store: Store): void;
+        private _isPersistentObject(arg);
+        private _isQuery(arg);
+        onCache<T extends IPersistentObject | IQuery>(persistentObjectOrQuery: T): Promise<void>;
+        onCachePersistentObject(persistentObject: IPersistentObject): Promise<void>;
+        onCacheQuery(query: IQuery): Promise<void>;
         fetch(payload: any, fetcher: Fetcher<Service.IRequest, any>): Promise<any>;
-    }
-    class ServiceWorkerGetApplicationRequestHandler extends ServiceWorkerRequestHandler {
-        fetch(payload: IGetApplicationRequest, fetcher: Fetcher<IGetApplicationRequest, IApplication>): Promise<IApplication>;
-    }
-    class ServiceWorkerGetQueryRequestHandler extends ServiceWorkerRequestHandler {
-        fetch(payload: IGetQueryRequest, fetcher: Fetcher<IGetQueryRequest, IQuery>): Promise<IQuery>;
-    }
-    class ServiceWorkerGetPersistentObjectRequestHandler extends ServiceWorkerRequestHandler {
-        fetch(payload: IGetPersistentObjectRequest, fetcher: Fetcher<IGetPersistentObjectRequest, IPersistentObject>): Promise<IPersistentObject>;
     }
 }

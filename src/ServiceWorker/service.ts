@@ -63,6 +63,7 @@ namespace Vidyano.Service {
         isBreadcrumbSensitive?: boolean;
         fullTypeName: string;
         id: string;
+        objectId: string;
         isSystem: boolean;
         label: string;
         newOptions: string;
