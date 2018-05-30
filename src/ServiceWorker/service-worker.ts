@@ -186,7 +186,7 @@
                 if (e.request.method === "GET" && e.request.url.endsWith("GetClientData?v=2")) {
                     this._rootPath = e.request.url.split("/GetClientData?v=2")[0];
 
-                    const fetcher = await this._createFetcher(e.request);
+                    const fetcher = await this._createFetcher<any, IClientData>(e.request);
                     let clientData = await this.onGetClientData(fetcher.fetch);
                     if (clientData) {
                         this.save({
