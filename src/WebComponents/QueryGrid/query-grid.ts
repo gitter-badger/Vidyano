@@ -986,6 +986,11 @@ namespace Vidyano.WebComponents {
                 reflectToAttribute: true,
                 computed: "query.isBusy"
             },
+            configureOnly: {
+                type: Boolean,
+                reflectToAttribute: true,
+                computed: "_computeConfigureOnly(query, _columns, isBusy, initializing)"
+            },
             query: {
                 type: Object,
                 observer: "_queryChanged"
@@ -1351,6 +1356,13 @@ namespace Vidyano.WebComponents {
             columns.forEach(c => c.reset());
 
             return columns;
+        }
+
+        private _computeConfigureOnly(query: Vidyano.Query, _columns: QueryGridColumn[], isBusy: boolean, initializing: boolean): boolean {
+            if (query && _columns && _columns.length === 0 && !isBusy && !initializing)
+                return true;
+
+            return false;
         }
 
         private _updateOutOfViewColumns(columns: QueryGridColumn[], viewportSize: ISize, horizontalScrollOffset: number, columnWidthsCalculated: boolean) {

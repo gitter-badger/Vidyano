@@ -430,7 +430,7 @@
             payload.id = id;
 
             const query = <IQuery>await this._fetch("GetQuery", payload);
-            if (!query)
+            if (!query || !query.persistentObject)
                 return;
 
             const actionsClass = ServiceWorkerActions.get(query.persistentObject.type, this._serviceWorker.db);
@@ -463,19 +463,24 @@
     export class ServiceWorkerActions {
         private static _types = new Map<string, any>();
         static get<T>(name: string, db: IDBDatabase): ServiceWorkerActions {
-            let actionsClass = ServiceWorkerActions._types.get(name);
+            if (!(/^\w+$/.test(name)))
+                return null;
 
+            let actionsClass = ServiceWorkerActions._types.get(name);
             if (actionsClass === undefined) {
                 try {
                     actionsClass = eval.call(null, `ServiceWorker${name}Actions`);
                 }
                 catch (e) {
-                    return actionsClass = null;
+                    actionsClass = null;
                 }
                 finally {
                     ServiceWorkerActions._types.set(name, actionsClass);
                 }
             }
+
+            if (!actionsClass)
+                return null;
 
             const instance = new actionsClass();
             instance._db = db;
@@ -515,6 +520,7 @@
             this.save({
                 typeId: persistentObject.id,
                 objectId: persistentObject.objectId,
+
                 response: JSON.stringify(persistentObject)
             }, "PersistentObjects");
         }
@@ -524,6 +530,10 @@
                 id: query.id,
                 response: JSON.stringify(query)
             }, "Queries");
+
+            if (query.canRead || (query.actions && query.actions.some(a => a === "New"))) {
+                query.persistentObject
+            }
         }
 
         async onGetQuery(query: IQuery): Promise<IQuery> {
