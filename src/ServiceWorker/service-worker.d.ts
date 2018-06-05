@@ -272,7 +272,7 @@ declare namespace Vidyano.Service {
 declare namespace Vidyano {
     type Store = "Requests" | "Queries" | "PersistentObjects";
     abstract class IndexedDB {
-        private _store;
+        private _store?;
         private _initializing;
         private _db;
         constructor(_store?: Store);
@@ -282,16 +282,16 @@ declare namespace Vidyano {
         protected load(key: any, store?: Store): Promise<any>;
     }
     class ServiceWorker extends IndexedDB {
-        private _verbose;
+        private _verbose?;
         private _rootPath;
         private _authToken;
         private _service;
         constructor(_verbose?: boolean);
-        private _log(message);
-        private _onInstall(e);
-        private _onActivate(e);
-        private _onFetch(e);
-        private _createFetcher<TPayload, TResult>(originalRequest);
+        private _log;
+        private _onInstall;
+        private _onActivate;
+        private _onFetch;
+        private _createFetcher;
         protected onGetClientData(fetch: Fetcher<any, IClientData>): Promise<IClientData>;
         protected onGetApplication(payload: IGetApplicationRequest, fetch: Fetcher<IGetApplicationRequest, IApplication>): Promise<IApplication>;
         protected onGetQuery(payload: IGetQueryRequest, fetch: Fetcher<IGetQueryRequest, IGetQueryResponse>): Promise<IGetQueryResponse>;
@@ -319,12 +319,15 @@ declare namespace Vidyano {
         private _db;
         readonly db: IDBDatabase;
         protected save(entry: any, store: Store): void;
-        private _isPersistentObject(arg);
-        private _isQuery(arg);
+        private _isPersistentObject;
+        private _isQuery;
         onCache<T extends IPersistentObject | IQuery>(persistentObjectOrQuery: T): Promise<void>;
         onCachePersistentObject(persistentObject: IPersistentObject): Promise<void>;
         onCacheQuery(query: IQuery): Promise<void>;
         onGetQuery(query: IQuery): Promise<IQuery>;
         fetch(payload: any, fetcher: Fetcher<Service.IRequest, any>): Promise<any>;
     }
+}
+declare namespace Vidyano {
+    const vidyanoFiles: string[];
 }
