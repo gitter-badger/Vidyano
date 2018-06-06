@@ -73,7 +73,7 @@
             console.log("SW: " + message);
         }
 
-        private async _onInstall(e: ExtendableEvent): Promise<void> {
+        private async _onInstall(e: ExtendableEvent) {
             this._log("Installed ServiceWorker");
 
             const base = location.href.substr(location.origin.length).split("service-worker.js")[0];
@@ -82,15 +82,33 @@
             ].concat(vidyanoFiles.map(f => `${base}web2/${f}`));
 
             const cache = await caches.open(CACHE_NAME);
-            await cache.addAll(urls);
+            await Promise.all(urls.map(async url => {
+                const request = new Request(url);
+                const response = await fetch(request);
+
+                if (request.url !== response.url) {
+                    const redirect = new Response(null, {
+                        status: 302,
+                        headers: new Headers({
+                            "location": response.url
+                        })
+                    });
+
+                    cache.put(request, redirect);
+                    cache.put(new Request(response.url), response);
+                }
+                else
+                    cache.put(request, response);
+            }));
         }
 
         private async _onActivate(e: ExtendableEvent) {
             this._log("Activated ServiceWorker");
-            await this.initializing;
 
-            // NOTE: MISSING JS FILES DURING DEVELOPMENT, SO RELOAD IS STILL REQUIRED
-            e.waitUntil((self as ServiceWorkerGlobalScope).clients.claim());
+            await Promise.all([
+                await this.initializing,
+                await (self as ServiceWorkerGlobalScope).clients.claim()
+            ]);
         }
 
         private async _onFetch(e: FetchEventInit) {
@@ -168,7 +186,19 @@
                 if (e.request.method === "GET") {
                     if (response) {
                         const cache = await caches.open(CACHE_NAME);
-                        cache.put(e.request, response.clone());
+                        if (response.status !== 0 && e.request.url !== response.url) {
+                            cache.put(new Request(response.url), response);
+                            response = new Response(null, {
+                                status: 302,
+                                headers: new Headers({
+                                    "location": response.url
+                                })
+                            });
+
+                            cache.put(e.request, response);
+                        }
+                        else
+                            cache.put(e.request, response.clone());
                     }
                     else
                         response = await caches.match(e.request);
