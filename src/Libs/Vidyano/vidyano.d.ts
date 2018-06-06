@@ -716,7 +716,7 @@ declare namespace Vidyano {
         queriesToRefresh: Array<string>;
         attributes: PersistentObjectAttribute[];
         queries: Query[];
-        constructor(service: Service, po: IServicePersistentObject);
+        constructor(service: Service, po: Service.IPersistentObject);
         private _createPersistentObjectAttribute;
         readonly id: string;
         readonly isSystem: boolean;
@@ -771,7 +771,7 @@ declare namespace Vidyano {
         private _queryRe;
         readonly programUnits: ProgramUnit[];
         readonly hasSensitive: boolean;
-        constructor(service: Service, { application, hasSensitive }: IServiceApplication);
+        constructor(service: Service, { application, hasSensitive }: Service.IApplication);
         readonly userId: string;
         readonly friendlyUserName: string;
         readonly feedbackId: string;
@@ -1219,7 +1219,7 @@ declare namespace Vidyano {
         readonly registerUserName: string;
         authToken: string;
         profile: boolean;
-        readonly profiledRequests: IServiceRequest[];
+        readonly profiledRequests: Service.IProfilerRequest[];
         private _setProfiledRequests;
         getTranslatedMessage(key: string, ...params: string[]): string;
         initialize(skipDefaultCredentialLogin?: boolean): Promise<Application>;
@@ -1430,6 +1430,11 @@ declare namespace Vidyano {
         class viSearch extends Action {
             constructor(service: Service, definition: ActionDefinition, owner: ServiceObjectWithActions);
         }
+    }
+}
+declare namespace Vidyano {
+    namespace ClientOperations {
+        function refreshForUpdate(hooks: ServiceHooks, path: string, replaceCurrent?: boolean): void;
     }
 }
 declare namespace Vidyano {
