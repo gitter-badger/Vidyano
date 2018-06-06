@@ -23,11 +23,15 @@ const files = getFiles("../..").map(f => f.substr(6)).filter(f => {
     if (f === "websites.html")
         return false;
 
-    if (f.endsWith(".js") || f.indexOf(".html") > 0)
+    if (f.endsWith(".js") || f.indexOf(".html") > 0) {
+        console.log(f);
         return true;
+    }
 
-    if (f.endsWith(".css"))
-        return !f.startsWith("WebComponents");
+    if (f.endsWith(".css") && !f.startsWith("WebComponents")) {
+        console.log(f);
+        return true;
+    }
 
     return false;
 }).map(f => `"${f}"`);

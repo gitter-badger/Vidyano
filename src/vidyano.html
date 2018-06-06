@@ -30,6 +30,15 @@
 <link rel="import" href="WebComponents/App/app.html" />
 
 <script type="text/javascript">
-    if ("serviceWorker" in navigator)
-        navigator.serviceWorker.register("service-worker.js");
+    if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("service-worker.js").then(reg => {
+            console.log(reg.active.state);
+            reg.onupdatefound = function () {
+                const installer = reg.installing;
+                installer.onstatechange = function () {
+                    console.info(installer.state);
+                }
+            }
+        });
+    }
 </script>

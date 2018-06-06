@@ -282,11 +282,11 @@ declare namespace Vidyano {
         protected load(key: any, store?: Store): Promise<any>;
     }
     class ServiceWorker extends IndexedDB {
+        private serviceUri?;
         private _verbose?;
-        private _rootPath;
         private _authToken;
         private _service;
-        constructor(_verbose?: boolean);
+        constructor(serviceUri?: string, _verbose?: boolean);
         private _log;
         private _onInstall;
         private _onActivate;

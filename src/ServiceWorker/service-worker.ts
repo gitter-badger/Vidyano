@@ -54,12 +54,14 @@
 
     export class ServiceWorker extends IndexedDB {
         //private _requestHandlerMap = new Map<RequestMapKey, ServiceWorkerRequestHandler[]>();
-        private _rootPath: string;
         private _authToken: string;
         private _service: IService;
 
-        constructor(private _verbose?: boolean) {
+        constructor(private serviceUri?: string, private _verbose?: boolean) {
             super();
+
+            if (!serviceUri)
+                this.serviceUri = location.href.split("service-worker.js")[0];
 
             self.addEventListener("install", (e: ExtendableEvent) => e.waitUntil(this._onInstall(e)));
             self.addEventListener("activate", (e: ExtendableEvent) => e.waitUntil(this._onActivate(e)));
@@ -100,6 +102,8 @@
                 else
                     cache.put(request, response);
             }));
+
+            await (self as ServiceWorkerGlobalScope).skipWaiting();
         }
 
         private async _onActivate(e: ExtendableEvent) {
@@ -117,8 +121,6 @@
 
             try {
                 if (e.request.method === "GET" && e.request.url.endsWith("GetClientData?v=2")) {
-                    this._rootPath = e.request.url.split("/GetClientData?v=2")[0];
-
                     const fetcher = await this._createFetcher<any, IClientData>(e.request);
                     let clientData = await this.onGetClientData(fetcher.fetch);
                     if (clientData) {
@@ -136,7 +138,7 @@
                     return this.createResponse(clientData);
                 }
 
-                if (ServiceWorker.prototype.onCache !== this.onCache && e.request.method === "POST" && e.request.url.startsWith(this._rootPath)) {
+                if (ServiceWorker.prototype.onCache !== this.onCache && e.request.method === "POST" && e.request.url.startsWith(this.serviceUri)) {
                     if (e.request.url.endsWith("GetApplication")) {
                         const fetcher = await this._createFetcher<IGetApplicationRequest, IApplication>(e.request);
                         let application = await this.onGetApplication(fetcher.payload, fetcher.fetch);
@@ -147,7 +149,7 @@
                             }, "Requests");
 
                             if (fetcher.response)
-                                this.onCache(this._service = new Service(this, this._rootPath, application.userName, this._authToken = application.authToken));
+                                this.onCache(this._service = new Service(this, this.serviceUri, application.userName, this._authToken = application.authToken));
                         }
                         else {
                             const cachedApplication = await this.load("GetApplication", "Requests");
@@ -204,8 +206,8 @@
                         response = await caches.match(e.request);
                 }
 
-                if (!response && e.request.url.startsWith(this._rootPath) && e.request.method === "GET")
-                    return await caches.match(this._rootPath); // Fallback to root document when a deeplink is loaded directly
+                if (!response && e.request.url.startsWith(this.serviceUri) && e.request.method === "GET")
+                    return await caches.match(this.serviceUri); // Fallback to root document when a deeplink is loaded directly
 
                 return response;
             }
