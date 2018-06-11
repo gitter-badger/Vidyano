@@ -13,6 +13,7 @@ function getFiles(dir: string, outFiles: string[] = []) {
     return outFiles;
 }
 
+const dist = process.argv.indexOf("-dist") >= 0;
 const files = getFiles("../..").map(f => f.substr(6)).filter(f => {
     if (f.startsWith("ServiceWorker"))
         return false;
@@ -23,7 +24,12 @@ const files = getFiles("../..").map(f => f.substr(6)).filter(f => {
     if (f === "websites.html")
         return false;
 
-    if (f.endsWith(".js") || f.indexOf(".html") > 0) {
+    if (f.indexOf(".html") > 0) {
+        console.log(f);
+        return true;
+    }
+
+    if (f.endsWith(".js") && (!dist || !f.startsWith("WebComponents"))) {
         console.log(f);
         return true;
     }

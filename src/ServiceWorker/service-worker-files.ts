@@ -41,7 +41,7 @@ namespace Vidyano {
         "Libs/polymer/polymer-mini.html",
         "Libs/polymer/polymer.html",
         "Libs/PromiseQueue/promise-queue.js",
-        "Libs/Shims/RequestIdleCallback.js",
+        "Libs/Shims/requestIdleCallback.js",
         "Libs/sortable/sortable.min.js",
         "Libs/tslib/tslib.js",
         "Libs/Typings/PromiseQueue/promise-queue.js",

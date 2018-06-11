@@ -1,4 +1,6 @@
-﻿<script>
+﻿<link rel="import" href="vidyano-lite.html" />
+
+<script>
     window.addEventListener("storage", event => {
         if (!event)
             event = window.event;
@@ -23,22 +25,7 @@
     };
 </script>
 
-<script> Polymer = { lazyRegister: "max", useNativeCSSProperties: true, suppressTemplateNotifications: true, suppressBindingNotifications: true }; </script>
+<script>Polymer = { lazyRegister: "max", useNativeCSSProperties: true, suppressTemplateNotifications: true, suppressBindingNotifications: true };</script>
 <link rel="import" href="Libs/polymer/polymer.html" />
 <link rel="import" href="Libs/layout/layout.html" />
-<link rel="import" href="vidyano-lite.html" />
 <link rel="import" href="WebComponents/App/app.html" />
-
-<script type="text/javascript">
-    if ("serviceWorker" in navigator) {
-        navigator.serviceWorker.register("service-worker.js").then(reg => {
-            console.log(reg.active.state);
-            reg.onupdatefound = function () {
-                const installer = reg.installing;
-                installer.onstatechange = function () {
-                    console.info(installer.state);
-                }
-            }
-        });
-    }
-</script>

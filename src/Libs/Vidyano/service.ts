@@ -541,6 +541,9 @@ namespace Vidyano {
         }
 
         async initialize(skipDefaultCredentialLogin: boolean = false): Promise<Application> {
+            if (ServiceWorker.Monitor.available)
+                await ServiceWorker.Monitor.activation;
+
             let url = "GetClientData?v=2";
             if (this.requestedLanguage)
                 url = `${url}&lang=${this.requestedLanguage}`;

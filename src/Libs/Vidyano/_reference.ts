@@ -30,6 +30,7 @@
 /// <reference path="query-result-item.ts" />
 /// <reference path="query.ts" />
 /// <reference path="service-hooks.ts" />
+/// <reference path="service-worker.ts" />
 /// <reference path="service.ts" />
 /// <reference path="ClientOperations/i-client-operation.ts" />
 /// <reference path="ClientOperations/i-execute-method-operation.ts" />

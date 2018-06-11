@@ -1159,6 +1159,15 @@ declare namespace Vidyano {
     }
 }
 declare namespace Vidyano {
+    interface IServiceWorkerMonitor {
+        readonly available: boolean;
+        readonly activation: Promise<void>;
+    }
+    class ServiceWorker {
+        static readonly Monitor: IServiceWorkerMonitor;
+    }
+}
+declare namespace Vidyano {
     let version: string;
     class Service extends Vidyano.Common.Observable<Service> {
         serviceUri: string;

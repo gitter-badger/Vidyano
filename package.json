@@ -12,6 +12,7 @@
     "grunt-contrib-uglify": "^1.0.1",
     "grunt-git-revision": "^0.0.1",
     "grunt-sass": "^2.1.0",
+    "grunt-run": "^0.8.1",
     "grunt-text-replace": "^0.4.0",
     "grunt-ts": "^6.0.0-beta.20",
     "grunt-tslint": "4.0.1",

@@ -68,7 +68,7 @@
     <None Include="src\ServiceWorker\FilesGenerator\package.json" />
     <None Include="src\ServiceWorker\FilesGenerator\tsconfig.json" />
     <None Include="src\ServiceWorker\tsconfig.json" />
-    <None Include="tsconfig.json" />
+    <None Include="src\WebComponents\tsconfig.json" />
     <None Include="tslint.json" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

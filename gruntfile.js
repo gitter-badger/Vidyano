@@ -28,7 +28,40 @@ module.exports = function (grunt) {
                 }]
             },
         },
+        run: {
+            dev: {
+                options: {
+                    cwd: "src/ServiceWorker/FilesGenerator"
+                },
+                args: [
+                    "files-generator.js"
+                ]
+            },
+            dist: {
+                options: {
+                    cwd: "src/ServiceWorker/FilesGenerator"
+                },
+                args: [
+                    "files-generator.js",
+                    "-dist"
+                ]
+            }
+        },
         ts: {
+            serviceworker_files_generator: {
+                cwd: 'src/ServiceWorker/FilesGenerator/',
+                tsconfig: 'src/ServiceWorker/FilesGenerator/tsconfig.json',
+                options: {
+                    fast: 'never'
+                }
+            },
+            serviceworker: {
+                cwd: 'src/ServiceWorker/',
+                tsconfig: 'src/ServiceWorker/tsconfig.json',
+                options: {
+                    fast: 'never'
+                }
+            },
             vidyano: {
                 cwd: 'src/Libs/Vidyano/',
                 tsconfig: 'src/Libs/Vidyano/tsconfig.json',
@@ -37,14 +70,8 @@ module.exports = function (grunt) {
                 }
             },
             webcomponents: {
-                tsconfig: "tsconfig.json",
-                options: {
-                    fast: 'never'
-                }
-            },
-            serviceworker: {
-                cwd: 'src/ServiceWorker/',
-                tsconfig: 'src/ServiceWorker/tsconfig.json',
+                cwd: 'src/WebComponents/',
+                tsconfig: "src/WebComponents/tsconfig.json",
                 options: {
                     fast: 'never'
                 }
@@ -172,6 +199,7 @@ module.exports = function (grunt) {
         "bower:install",
         "sass",
         "copy:tslib",
+        "run:dev",
         "ts"
     ]);
 
@@ -179,6 +207,7 @@ module.exports = function (grunt) {
         "bower:install",
         "sass",
         "copy:tslib",
+        "run:dist",
         "ts",
         "tslint",
         "clean",
@@ -215,6 +244,7 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks("grunt-contrib-cssmin");
     grunt.loadNpmTasks("grunt-contrib-copy");
     grunt.loadNpmTasks('grunt-contrib-uglify');
+    grunt.loadNpmTasks('grunt-run');
     grunt.loadNpmTasks("grunt-sass");
     grunt.loadNpmTasks("grunt-text-replace");
     grunt.loadNpmTasks("grunt-git-revision");
