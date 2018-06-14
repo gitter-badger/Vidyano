@@ -77,9 +77,8 @@ declare namespace Vidyano.Service {
         };
         windowsAuthentication: boolean;
     }
-    interface IApplication {
+    interface IApplicationResponse extends IResponse {
         application: IPersistentObject;
-        authToken: string;
         userCultureInfo: string;
         userLanguage: string;
         userName: string;
@@ -89,6 +88,7 @@ declare namespace Vidyano.Service {
         actions?: string[];
         attributes?: IPersistentObjectAttribute[];
         breadcrumb?: string;
+        newBreadcrumb?: string;
         isBreadcrumbSensitive?: boolean;
         fullTypeName: string;
         id: string;
@@ -293,7 +293,7 @@ declare namespace Vidyano {
     type Store = "Requests" | "Queries" | "PersistentObjects" | "ActionClassesById";
     type RequestMapKey = "GetQuery" | "GetPersistentObject";
     class IndexedDB {
-        private _store?;
+        private _store;
         private _initializing;
         private _db;
         constructor(_store?: Store);
@@ -308,22 +308,22 @@ declare namespace Vidyano {
         static get<T>(name: string, db: IndexedDB): Promise<ServiceWorkerActions>;
         private _db;
         readonly db: IndexedDB;
-        private _isPersistentObject;
-        private _isQuery;
+        private _isPersistentObject(arg);
+        private _isQuery(arg);
         onCache<T extends IPersistentObject | IQuery>(persistentObjectOrQuery: T): Promise<void>;
         onCachePersistentObject(persistentObject: IPersistentObject): Promise<void>;
         onCacheQuery(query: IQuery): Promise<void>;
+        onGetPersistentObject(parent: IPersistentObject, id: string, objectId?: string, isNew?: boolean): Promise<IPersistentObject>;
         onGetQuery(id: string): Promise<IQuery>;
         onExecuteQueryAction(action: string, query: IQuery, selectedItems: IQueryResultItem[], parameters: Service.ExecuteActionParameters): Promise<IPersistentObject>;
         onExecutePersistentObjectAction(action: string, persistentObject: IPersistentObject, parameters: Service.ExecuteActionParameters): Promise<IPersistentObject>;
-        fetch(payload: any, fetcher: Fetcher<Service.IRequest, any>): Promise<any>;
     }
 }
 declare namespace Vidyano {
     type Fetcher<TPayload, TResult> = (payload?: TPayload) => Promise<TResult>;
     type IClientData = Service.IClientData;
     type IGetApplicationRequest = Service.IGetApplicationRequest;
-    type IApplication = Service.IApplication;
+    type IApplicationResponse = Service.IApplicationResponse;
     type IGetQueryRequest = Service.IGetQueryRequest;
     type IGetQueryResponse = Service.IGetQueryResponse;
     type IQuery = Service.IQuery;
@@ -336,21 +336,18 @@ declare namespace Vidyano {
     type IExecutePersistentObjectActionRequest = Service.IExecutePersistentObjectActionRequest;
     type IExecuteActionResponse = Service.IExecuteActionResponse;
     class ServiceWorker {
-        private serviceUri?;
-        private _verbose?;
+        private serviceUri;
+        private _verbose;
         private readonly _db;
-        private _authToken;
         private _service;
         constructor(serviceUri?: string, _verbose?: boolean);
         readonly db: IndexedDB;
-        private _log;
-        private _onInstall;
-        private _onActivate;
-        private _onFetch;
-        private _createFetcher;
-        protected onGetClientData(fetch: Fetcher<any, IClientData>): Promise<IClientData>;
-        protected onGetApplication(payload: IGetApplicationRequest, fetch: Fetcher<IGetApplicationRequest, IApplication>): Promise<IApplication>;
-        protected onGetQuery(payload: IGetQueryRequest, fetch: Fetcher<IGetQueryRequest, IGetQueryResponse>): Promise<IGetQueryResponse>;
+        private authToken;
+        private _log(message);
+        private _onInstall(e);
+        private _onActivate(e);
+        private _onFetch(e);
+        private _createFetcher<TPayload, TResult>(originalRequest);
         protected onCache(service: IService): Promise<void>;
         protected createRequest(data: any, request: Request): Request;
         protected createResponse(data: any, response?: Response): Response;

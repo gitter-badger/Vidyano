@@ -11,7 +11,7 @@
 
     export type IClientData = Service.IClientData;
     export type IGetApplicationRequest = Service.IGetApplicationRequest;
-    export type IApplication = Service.IApplication;
+    export type IApplicationResponse = Service.IApplicationResponse;
     export type IGetQueryRequest = Service.IGetQueryRequest;
     export type IGetQueryResponse = Service.IGetQueryResponse;
     export type IQuery = Service.IQuery;
@@ -26,7 +26,6 @@
 
     export class ServiceWorker {
         private readonly _db: IndexedDB;
-        private _authToken: string;
         private _service: IService;
 
         constructor(private serviceUri?: string, private _verbose?: boolean) {
@@ -42,6 +41,14 @@
 
         get db(): IndexedDB {
             return this._db;
+        }
+
+        private get authToken(): string {
+            return this["_authToken"];
+        }
+
+        private set authToken(authToken: string) {
+            this["_authToken"] = authToken;
         }
 
         private _log(message: string) {
@@ -94,61 +101,58 @@
             try {
                 if (e.request.method === "GET" && e.request.url.endsWith("GetClientData?v=2")) {
                     const fetcher = await this._createFetcher<any, IClientData>(e.request);
-                    let clientData = await this.onGetClientData(fetcher.fetch);
-                    if (clientData) {
+                    let response = await fetcher.fetch();
+                    if (response) {
                         await this.db.save({
                             id: "GetClientData",
-                            response: JSON.stringify(clientData)
+                            response: JSON.stringify(response)
                         }, "Requests");
                     }
                     else {
                         const cachedClientData = await this.db.load("GetClientData", "Requests");
                         if (cachedClientData)
-                            clientData = cachedClientData.response;
+                            response = cachedClientData.response;
                     }
 
-                    return this.createResponse(clientData);
+                    return this.createResponse(response);
                 }
 
                 if (ServiceWorker.prototype.onCache !== this.onCache && e.request.method === "POST" && e.request.url.startsWith(this.serviceUri)) {
                     if (e.request.url.endsWith("GetApplication")) {
-                        const fetcher = await this._createFetcher<IGetApplicationRequest, IApplication>(e.request);
-                        let application = await this.onGetApplication(fetcher.payload, fetcher.fetch);
-                        if (application) {
+                        const fetcher = await this._createFetcher<IGetApplicationRequest, IApplicationResponse>(e.request);
+                        let response = await fetcher.fetch(fetcher.payload);
+                        if (!response) {
+                            const cachedApplication = await this.db.load("GetApplication", "Requests");
+                            if (cachedApplication)
+                                response = cachedApplication.response;
+                        }
+                        else {
                             await this.db.save({
                                 id: "GetApplication",
-                                response: JSON.stringify(application)
+                                response: JSON.stringify(response)
                             }, "Requests");
 
                             if (fetcher.response)
-                                this.onCache(this._service = new Service(this, this.serviceUri, application.userName, this._authToken = application.authToken));
-                        }
-                        else {
-                            const cachedApplication = await this.db.load("GetApplication", "Requests");
-                            if (cachedApplication)
-                                application = cachedApplication.response;
+                                this.onCache(this._service = new Service(this, this.serviceUri, response.userName, this.authToken = response.authToken));
                         }
 
-                        return this.createResponse(application);
+                        return this.createResponse(response);
                     }
                     else if (e.request.url.endsWith("GetQuery")) {
                         const fetcher = await this._createFetcher<IGetQueryRequest, IGetQueryResponse>(e.request);
-                        let query = await this.onGetQuery(fetcher.payload, fetcher.fetch);
-                        if (!query) {
+                        const response = await fetcher.fetch(fetcher.payload) || { authToken: this.authToken, query: undefined };
+                        if (!response) {
                             const actionsClass = await ServiceWorkerActions.get(fetcher.payload.id, this.db);
-                            query = {
-                                authToken: this._authToken,
-                                query: await actionsClass.onGetQuery(fetcher.payload.id)
-                            };
+                            response.query = await actionsClass.onGetQuery(fetcher.payload.id)
                         }
                         else
-                            this._authToken = query.authToken;
+                            this.authToken = response.authToken;
 
-                        return this.createResponse(query);
+                        return this.createResponse(response);
                     }
                     else if (e.request.url.endsWith("ExecuteAction")) {
                         const fetcher = await this._createFetcher<IExecuteActionRequest, IExecuteActionResponse>(e.request);
-                        const response: IExecuteActionResponse = await fetcher.fetch(fetcher.payload) || { authToken: this._authToken, result: undefined };
+                        const response = await fetcher.fetch(fetcher.payload) || { authToken: this.authToken, result: undefined };
                         if (!response.result) {
                             const action = fetcher.payload.action.split(".");
                             if (action[0] === "Query") {
@@ -162,6 +166,8 @@
                                 response.result = await actionsClass.onExecutePersistentObjectAction(action[1], persistentObjectAction.parent, persistentObjectAction.parameters);
                             }
                         }
+                        else
+                            this.authToken = response.authToken;
 
                         return this.createResponse(response);
                     }
@@ -224,18 +230,6 @@
             };
 
             return fetcher;
-        }
-
-        protected async onGetClientData(fetch: Fetcher<any, IClientData>): Promise<IClientData> {
-            return await fetch();
-        }
-
-        protected async onGetApplication(payload: IGetApplicationRequest, fetch: Fetcher<IGetApplicationRequest, IApplication>): Promise<IApplication> {
-            return await fetch(payload);
-        }
-
-        protected async onGetQuery(payload: IGetQueryRequest, fetch: Fetcher<IGetQueryRequest, IGetQueryResponse>): Promise<IGetQueryResponse> {
-            return await fetch(payload);
         }
 
         protected async onCache(service: IService) {

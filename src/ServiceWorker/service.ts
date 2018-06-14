@@ -80,9 +80,8 @@ namespace Vidyano.Service {
         windowsAuthentication: boolean;
     }
 
-    export interface IApplication {
-        application: IPersistentObject ;
-        authToken: string;
+    export interface IApplicationResponse extends IResponse {
+        application: IPersistentObject;
         userCultureInfo: string;
         userLanguage: string;
         userName: string;
@@ -93,6 +92,7 @@ namespace Vidyano.Service {
         actions?: string[];
         attributes?: IPersistentObjectAttribute [];
         breadcrumb?: string;
+        newBreadcrumb?: string;
         isBreadcrumbSensitive?: boolean;
         fullTypeName: string;
         id: string;

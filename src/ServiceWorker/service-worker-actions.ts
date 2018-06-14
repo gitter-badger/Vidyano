@@ -33,10 +33,7 @@
                 }
             }
 
-            if (!actionsClass)
-                actionsClass = ServiceWorkerActions;
-
-            const instance = new actionsClass();
+            const instance = new (actionsClass || ServiceWorkerActions)();
             instance._db = db;
 
             return instance;
@@ -82,10 +79,17 @@
                 response: JSON.stringify(query)
             }, "Queries");
 
+            // TODO: Cache PersistentObject
+
             await this.db.save({
                 id: query.id,
                 name: query.persistentObject.type
             }, "ActionClassesById");
+        }
+
+        async onGetPersistentObject(parent: IPersistentObject, id: string, objectId?: string, isNew?: boolean): Promise<IPersistentObject> {
+            const record = await this.db.load(id, "PersistentObjects");
+            return record ? JSON.parse(record.response) : null;
         }
 
         async onGetQuery(id: string): Promise<IQuery> {
@@ -104,6 +108,7 @@
                     const newPo = cachedQuery.persistentObject;
                     newPo.actions = ["Edit"];
                     newPo.isNew = true;
+                    newPo.breadcrumb = newPo.newBreadcrumb || `New ${newPo.label}`;
                     return newPo;
                 }
             }
@@ -112,11 +117,18 @@
         }
 
         async onExecutePersistentObjectAction(action: string, persistentObject: IPersistentObject, parameters: Service.ExecuteActionParameters): Promise<IPersistentObject> {
-            return null;
-        }
+            if (action === "Save") {
+                if (persistentObject.isNew) {
+                    // TODO
+                    debugger;
+                }
+                else {
+                    // TODO
+                    debugger;
+                }
+            }
 
-        async fetch(payload: any, fetcher: Fetcher<Service.IRequest, any>): Promise<any> {
-            return await fetcher(payload);
+            return null;
         }
     }
 }
