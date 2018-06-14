@@ -16,14 +16,16 @@ declare namespace Vidyano.Service {
         environment: "Web" | "Web,ServiceWorker";
         environmentVersion: string;
     }
+    interface IResponse {
+        authToken: string;
+    }
     interface IGetApplicationRequest extends IRequest {
         password?: string;
     }
     interface IGetQueryRequest extends IRequest {
         id: string;
     }
-    interface IGetQueryResponse {
-        authToken: string;
+    interface IGetQueryResponse extends IResponse {
         query: IQuery;
     }
     interface IGetPersistentObjectRequest extends IRequest {
@@ -32,9 +34,25 @@ declare namespace Vidyano.Service {
         isNew?: boolean;
         parent?: IPersistentObject;
     }
-    interface IGetPersistentObjectResponse {
-        authToken: string;
+    interface IGetPersistentObjectResponse extends IResponse {
         persistentObject: IPersistentObject;
+    }
+    type ExecuteActionParameters = {
+        [key: string]: string;
+    };
+    interface IExecuteActionRequest extends IRequest {
+        action: string;
+        parameters: ExecuteActionParameters;
+    }
+    interface IExecuteQueryActionRequest extends IExecuteActionRequest {
+        query: IQuery;
+        selectedItems: IQueryResultItem[];
+    }
+    interface IExecutePersistentObjectActionRequest extends IExecuteActionRequest {
+        parent: IPersistentObject;
+    }
+    interface IExecuteActionResponse extends IResponse {
+        result: IPersistentObject;
     }
     interface IProviderParameters {
         label: string;
@@ -73,6 +91,7 @@ declare namespace Vidyano.Service {
         hasSensitive: boolean;
     }
     interface IPersistentObject {
+        actions?: string[];
         attributes?: IPersistentObjectAttribute[];
         breadcrumb?: string;
         isBreadcrumbSensitive?: boolean;
@@ -80,6 +99,7 @@ declare namespace Vidyano.Service {
         id: string;
         objectId: string;
         isSystem: boolean;
+        isNew?: boolean;
         label: string;
         newOptions: string;
         notification: string;

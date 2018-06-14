@@ -199,16 +199,22 @@ module.exports = function (grunt) {
         "bower:install",
         "sass",
         "copy:tslib",
+        "ts:vidyano",
+        "ts:webcomponents",
+        "ts:serviceworker_files_generator",
         "run:dev",
-        "ts"
+        "ts:serviceworker"
     ]);
 
     grunt.registerTask("nuget", [
         "bower:install",
         "sass",
         "copy:tslib",
+        "ts:vidyano",
+        "ts:webcomponents",
+        "ts:serviceworker_files_generator",
         "run:dist",
-        "ts",
+        "ts:serviceworker",
         "tslint",
         "clean",
         "copy:dist",

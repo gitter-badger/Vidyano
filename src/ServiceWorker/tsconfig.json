@@ -13,6 +13,8 @@
   },
   "include": [
     "service.ts",
+    "indexed-db.ts",
+    "service-worker-actions.ts",
     "service-worker.ts",
     "service-worker-files.ts"
   ]

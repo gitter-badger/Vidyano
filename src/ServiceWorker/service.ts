@@ -13,6 +13,10 @@ namespace Vidyano.Service {
         environmentVersion: string;
     }
 
+    export interface IResponse {
+        authToken: string;
+    }
+
     export interface IGetApplicationRequest extends IRequest {
         password?: string;
     }
@@ -21,8 +25,7 @@ namespace Vidyano.Service {
         id: string;
     }
 
-    export interface IGetQueryResponse {
-        authToken: string;
+    export interface IGetQueryResponse extends IResponse {
         query: IQuery;
     }
 
@@ -33,9 +36,28 @@ namespace Vidyano.Service {
         parent?: IPersistentObject;
     }
 
-    export interface IGetPersistentObjectResponse {
-        authToken: string;
+    export interface IGetPersistentObjectResponse extends IResponse {
         persistentObject: IPersistentObject;
+    }
+
+    export type ExecuteActionParameters = { [key: string]: string; }
+
+    export interface IExecuteActionRequest extends IRequest {
+        action: string;
+        parameters: ExecuteActionParameters;
+    }
+
+    export interface IExecuteQueryActionRequest extends IExecuteActionRequest {
+        query: IQuery;
+        selectedItems: IQueryResultItem[];
+    }
+
+    export interface IExecutePersistentObjectActionRequest extends IExecuteActionRequest {
+        parent: IPersistentObject;
+    }
+
+    export interface IExecuteActionResponse extends IResponse {
+        result: IPersistentObject;
     }
 
     export interface IProviderParameters {
@@ -68,6 +90,7 @@ namespace Vidyano.Service {
     }
 
     export interface IPersistentObject {
+        actions?: string[];
         attributes?: IPersistentObjectAttribute [];
         breadcrumb?: string;
         isBreadcrumbSensitive?: boolean;
@@ -75,6 +98,7 @@ namespace Vidyano.Service {
         id: string;
         objectId: string;
         isSystem: boolean;
+        isNew?: boolean;
         label: string;
         newOptions: string;
         notification: string;
