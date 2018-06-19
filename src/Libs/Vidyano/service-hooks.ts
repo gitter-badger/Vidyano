@@ -40,7 +40,7 @@
             // Noop
         }
 
-        onConstructApplication(application: Service.IApplication): Application {
+        onConstructApplication(application: Service.IApplicationResponse): Application {
             return new Application(this.service, application);
         }
 

@@ -18,7 +18,7 @@
         readonly programUnits: ProgramUnit[];
         readonly hasSensitive: boolean;
 
-        constructor(service: Service, { application, hasSensitive }: Service.IApplication) {
+        constructor(service: Service, { application, hasSensitive }: Service.IApplicationResponse) {
             super(service, application);
 
             this._userId = this.getAttributeValue("UserId");

@@ -369,7 +369,7 @@ declare namespace Vidyano {
             private _observers;
             constructor(notifier: ISubjectNotifier<TSource, TDetail>);
             attach(observer: ISubjectObserver<TSource, TDetail>): ISubjectDisposer;
-            private _detach(observerId);
+            private _detach;
         }
         interface ISubjectObserver<TSource, TDetail> {
             (sender: TSource, detail: TDetail): void;
@@ -407,7 +407,7 @@ declare namespace Vidyano {
 declare namespace Vidyano {
     class ServiceObjectWithActions extends ServiceObject {
         private _actionNames;
-        private _actionLabels;
+        private _actionLabels?;
         private _queue;
         private _isBusy;
         private _notification;
@@ -418,7 +418,7 @@ declare namespace Vidyano {
             [key: string]: string;
         });
         readonly isBusy: boolean;
-        private _setIsBusy(val);
+        private _setIsBusy;
         readonly notification: string;
         readonly notificationType: NotificationType;
         readonly notificationDuration: number;
@@ -426,7 +426,7 @@ declare namespace Vidyano {
         setNotification(notification?: string, type?: NotificationType, duration?: number, skipShowNotification?: boolean): void;
         queueWork<T>(work: () => Promise<T>, blockActions?: boolean): Promise<T>;
         protected _initializeActions(): void;
-        private _blockActions(block);
+        private _blockActions;
     }
 }
 declare namespace Vidyano {
@@ -503,14 +503,14 @@ declare namespace Vidyano {
         isVisible: boolean;
         readonly isPinned: boolean;
         readonly options: string[];
-        private _setOptions(options);
+        private _setOptions;
         subscribe(handler: ActionExecutionHandler): ActionExecutionHandlerDispose;
         execute(options?: IActionExecuteOptions): Promise<PersistentObject>;
         protected _onExecute(options: IActionExecuteOptions): Promise<PersistentObject>;
         _getParameters(parameters: any, option: any): any;
         _onParentIsEditingChanged(isEditing: boolean): void;
         _onParentIsDirtyChanged(isDirty: boolean): void;
-        private _setNotification(notification?, notificationType?, notificationDuration?);
+        private _setNotification;
         static get(service: Service, name: string, owner: ServiceObjectWithActions): Action;
         static addActions(service: Service, owner: ServiceObjectWithActions, actions: Action[], actionNames: string[]): void;
     }
@@ -600,11 +600,11 @@ declare namespace Vidyano {
         readonly isVisible: boolean;
         validationError: string;
         readonly rules: string;
-        private _setRules(rules);
+        private _setRules;
         readonly isRequired: boolean;
-        private _setIsRequired(isRequired);
+        private _setIsRequired;
         readonly isReadOnly: boolean;
-        private _setIsReadOnly(isReadOnly);
+        private _setIsReadOnly;
         readonly displayValue: string;
         readonly shouldRefresh: boolean;
         value: any;
@@ -629,7 +629,7 @@ declare namespace Vidyano {
         lookupAttribute: string;
         constructor(service: Service, attr: any, parent: PersistentObject);
         readonly objects: Vidyano.PersistentObject[];
-        private _setObjects(objects);
+        private _setObjects;
         newObject(): Promise<PersistentObject>;
         _refreshFromResult(resultAttr: PersistentObjectAttribute, resultWins: boolean): boolean;
         _toServiceObject(): any;
@@ -669,7 +669,7 @@ declare namespace Vidyano {
         name: string;
         label: string;
         target: ServiceObjectWithActions;
-        parent: PersistentObject;
+        parent?: PersistentObject;
         private _isVisible;
         tabGroupIndex: number;
         constructor(service: Service, name: string, label: string, target: ServiceObjectWithActions, parent?: PersistentObject, _isVisible?: boolean);
@@ -684,11 +684,11 @@ declare namespace Vidyano {
         private _attributes;
         constructor(service: Service, _groups: PersistentObjectAttributeGroup[], key: string, id: string, name: string, _layout: any, po: PersistentObject, columnCount: number, isVisible: boolean);
         readonly layout: any;
-        private _setLayout(layout);
+        private _setLayout;
         readonly attributes: PersistentObjectAttribute[];
         groups: PersistentObjectAttributeGroup[];
         saveLayout(layout: any): Promise<any>;
-        private _updateAttributes();
+        private _updateAttributes;
     }
     class PersistentObjectQueryTab extends PersistentObjectTab {
         query: Query;
@@ -698,7 +698,7 @@ declare namespace Vidyano {
 declare namespace Vidyano {
     enum PersistentObjectLayoutMode {
         FullPage = 0,
-        MasterDetail = 1,
+        MasterDetail = 1
     }
     class PersistentObject extends ServiceObjectWithActions {
         private _isSystem;
@@ -737,18 +737,18 @@ declare namespace Vidyano {
         attributes: PersistentObjectAttribute[];
         queries: Query[];
         constructor(service: Service, po: Service.IPersistentObject);
-        private _createPersistentObjectAttribute(attr);
+        private _createPersistentObjectAttribute;
         readonly id: string;
         readonly isSystem: boolean;
         readonly type: string;
         readonly isBulkEdit: boolean;
         tabs: PersistentObjectTab[];
         readonly isEditing: boolean;
-        private setIsEditing(value);
+        private setIsEditing;
         readonly breadcrumb: string;
-        private _setBreadcrumb(breadcrumb);
+        private _setBreadcrumb;
         readonly isDirty: boolean;
-        private _setIsDirty(value, force?);
+        private _setIsDirty;
         isDeleted: boolean;
         readonly isFrozen: boolean;
         freeze(): void;
@@ -757,7 +757,7 @@ declare namespace Vidyano {
         getAttributeValue(name: string): any;
         setAttributeValue(name: string, value: any, allowRefresh?: boolean): Promise<any>;
         readonly lastUpdated: Date;
-        private _setLastUpdated(lastUpdated);
+        private _setLastUpdated;
         getQuery(name: string): Query;
         beginEdit(): void;
         cancelEdit(): void;
@@ -791,7 +791,7 @@ declare namespace Vidyano {
         private _queryRe;
         readonly programUnits: ProgramUnit[];
         readonly hasSensitive: boolean;
-        constructor(service: Service, {application, hasSensitive}: Service.IApplication);
+        constructor(service: Service, { application, hasSensitive }: Service.IApplicationResponse);
         readonly userId: string;
         readonly friendlyUserName: string;
         readonly feedbackId: string;
@@ -822,7 +822,7 @@ declare namespace Vidyano {
 }
 declare namespace Vidyano {
     class ProgramUnitItem extends ServiceObject {
-        path: string;
+        path?: string;
         id: string;
         title: string;
         name: string;
@@ -835,13 +835,13 @@ declare namespace Vidyano {
     class ProgramUnitItemQuery extends ProgramUnitItem {
         queryId: string;
         constructor(service: Service, routes: IRoutes, unitItem: any, parent: ProgramUnit);
-        private static _getPath(routes, id);
+        private static _getPath;
     }
     class ProgramUnitItemPersistentObject extends ProgramUnitItem {
         persistentObjectId: string;
         persistentObjectObjectId: string;
         constructor(service: Service, routes: IRoutes, unitItem: any, parent: ProgramUnit);
-        private static _getPath(routes, id, objectId);
+        private static _getPath;
     }
     class ProgramUnitItemUrl extends ProgramUnitItem {
         constructor(service: Service, unitItem: any);
@@ -854,7 +854,7 @@ declare namespace Vidyano {
         openFirst: boolean;
         items: ProgramUnitItem[];
         constructor(service: Service, routes: IRoutes, unit: any);
-        private _createItem(routes, itemData);
+        private _createItem;
     }
 }
 declare namespace Vidyano {
@@ -918,13 +918,13 @@ declare namespace Vidyano {
         selectedDistinctsInversed: boolean;
         distincts: IQueryColumnDistincts;
         readonly total: QueryResultItemValue;
-        private _setTotal(total);
-        private _setSortDirection(direction);
+        private _setTotal;
+        private _setSortDirection;
         _toServiceObject(): any;
         getTypeHint(name: string, defaultValue?: string, typeHints?: any, ignoreCasing?: boolean): string;
         refreshDistincts(search?: string): Promise<IQueryColumnDistincts>;
         sort(direction: SortDirection, multiSort?: boolean): Promise<QueryResultItem[]>;
-        private _queryPropertyChanged(sender, args);
+        private _queryPropertyChanged;
     }
 }
 declare namespace Vidyano {
@@ -937,11 +937,11 @@ declare namespace Vidyano {
         private _skipSearch;
         constructor(_query: Query, _filtersPO: Vidyano.PersistentObject);
         readonly filters: QueryFilter[];
-        private _setFilters(filters);
+        private _setFilters;
         readonly detailsAttribute: PersistentObjectAttributeAsDetail;
         currentFilter: QueryFilter;
-        private _computeFilters(setDefaultFilter?);
-        private _computeFilterData();
+        private _computeFilters;
+        private _computeFilterData;
         clone(targetQuery: Query): QueryFilters;
         getFilter(name: string): QueryFilter;
         createNew(): Promise<QueryFilter>;
@@ -1002,7 +1002,7 @@ declare namespace Vidyano {
     enum SortDirection {
         None = 0,
         Ascending = 1,
-        Descending = 2,
+        Descending = 2
     }
     interface ISortOption {
         column: QueryColumn;
@@ -1015,8 +1015,8 @@ declare namespace Vidyano {
         inverse: boolean;
     }
     class Query extends ServiceObjectWithActions {
-        parent: PersistentObject;
-        maxSelectedItems: number;
+        parent?: PersistentObject;
+        maxSelectedItems?: number;
         private _lastResult;
         private _asLookup;
         private _isSelectionModifying;
@@ -1059,21 +1059,21 @@ declare namespace Vidyano {
         readonly isSystem: boolean;
         readonly filters: QueryFilters;
         readonly canFilter: boolean;
-        private _setCanFilter(val);
+        private _setCanFilter;
         readonly hasMore: boolean;
-        private _setHasMore(val);
+        private _setHasMore;
         readonly canRead: boolean;
         readonly canReorder: boolean;
         readonly charts: linqjs.Enumerable<QueryChart>;
-        private _setCharts(charts);
+        private _setCharts;
         currentChart: QueryChart;
         defaultChartName: string;
         readonly groupingInfo: IQueryGroupingInfo;
-        private _setGroupingInfo(groupingInfo);
+        private _setGroupingInfo;
         readonly lastUpdated: Date;
-        private _setLastUpdated(date?);
+        private _setLastUpdated;
         selectedItems: QueryResultItem[];
-        private _selectAllPropertyChanged(selectAll, args);
+        private _selectAllPropertyChanged;
         resetFilters(): Promise<void>;
         selectRange(from: number, to: number): boolean;
         readonly asLookup: boolean;
@@ -1081,14 +1081,14 @@ declare namespace Vidyano {
         readonly labelWithTotalItems: string;
         sortOptions: ISortOption[];
         readonly totalItem: QueryResultItem;
-        private _setTotalItem(item);
+        private _setTotalItem;
         group(column: QueryColumn): Promise<QueryResultItem[]>;
         group(by: string): Promise<QueryResultItem[]>;
         reorder(before: QueryResultItem, item: QueryResultItem, after: QueryResultItem): Promise<QueryResultItem[]>;
-        private _setSortOptionsFromService(options);
-        private _setTotalItems(items);
+        private _setSortOptionsFromService;
+        private _setTotalItems;
         readonly isFiltering: boolean;
-        private _updateIsFiltering();
+        private _updateIsFiltering;
         _toServiceObject(): any;
         _setResult(result: Service.IQueryResult): void;
         getColumn(name: string): QueryColumn;
@@ -1102,12 +1102,12 @@ declare namespace Vidyano {
             keepSelection?: boolean;
         }): Promise<QueryResultItem[]>;
         clone(asLookup?: boolean): Query;
-        private _updateColumns(_columns?);
-        private _updateGroupingInfo(groupingInfo);
-        private _queryColumnPropertyChanged(sender, args);
-        private _updateItems(items, reset?);
+        private _updateColumns;
+        private _updateGroupingInfo;
+        private _queryColumnPropertyChanged;
+        private _updateItems;
         _notifyItemSelectionChanged(item: QueryResultItem): void;
-        private _updateSelectAll(item?, selectedItems?);
+        private _updateSelectAll;
     }
     interface IJsonQueryData {
         id?: string;
@@ -1151,7 +1151,7 @@ declare namespace Vidyano {
         onAction(args: ExecuteActionArgs): Promise<PersistentObject>;
         onOpen(obj: ServiceObject, replaceCurrent?: boolean, fromAction?: boolean): void;
         onClose(obj: ServiceObject): void;
-        onConstructApplication(application: Service.IApplication): Application;
+        onConstructApplication(application: Service.IApplicationResponse): Application;
         onConstructPersistentObject(service: Service, po: any): PersistentObject;
         onConstructPersistentObjectAttributeTab(service: Service, groups: linqjs.Enumerable<PersistentObjectAttributeGroup>, key: string, id: string, name: string, layout: any, parent: PersistentObject, columnCount: number, isVisible: boolean): PersistentObjectAttributeTab;
         onConstructPersistentObjectQueryTab(service: Service, query: Query): PersistentObjectQueryTab;
@@ -1218,38 +1218,38 @@ declare namespace Vidyano {
         environmentVersion: string;
         constructor(serviceUri: string, hooks?: ServiceHooks, isTransient?: boolean);
         static token: string;
-        private _createUri(method);
-        private _createData(method, data?);
-        private _getMs();
+        private _createUri;
+        private _createData;
+        private _getMs;
         postJSON(method: string, data: any): Promise<any>;
-        private _postJSON(url, data);
-        private _postJSONProcess(data, result, requestMethod, createdRequest, requestStart, elapsedMs);
-        private _getJSON(url, headers?);
-        private static _decodeBase64(input);
+        private _postJSON;
+        private _postJSONProcess;
+        private _getJSON;
+        private static _decodeBase64;
         private static _getServiceTimeString;
         _getStream(obj: PersistentObject, action?: string, parent?: PersistentObject, query?: Query, selectedItems?: Array<QueryResultItem>, parameters?: any): void;
         readonly queuedClientOperations: ClientOperations.IClientOperation[];
         readonly application: Application;
-        private _setApplication(application);
+        private _setApplication;
         language: ILanguage;
         requestedLanguage: string;
         readonly isSignedIn: boolean;
-        private _setIsSignedIn(val);
+        private _setIsSignedIn;
         readonly languages: ILanguage[];
         readonly windowsAuthentication: boolean;
         readonly providers: {
             [name: string]: Service.IProviderParameters;
         };
         readonly isUsingDefaultCredentials: boolean;
-        private _setIsUsingDefaultCredentials(val);
+        private _setIsUsingDefaultCredentials;
         readonly userName: string;
-        private _setUserName(val);
+        private _setUserName;
         readonly defaultUserName: string;
         readonly registerUserName: string;
         authToken: string;
         profile: boolean;
         readonly profiledRequests: Service.IProfilerRequest[];
-        private _setProfiledRequests(requests);
+        private _setProfiledRequests;
         getTranslatedMessage(key: string, ...params: string[]): string;
         initialize(skipDefaultCredentialLogin?: boolean): Promise<Application>;
         signInExternal(providerName: string): void;
@@ -1257,12 +1257,12 @@ declare namespace Vidyano {
         signInUsingCredentials(userName: string, password: string, code?: string, staySignedIn?: boolean): Promise<Application>;
         signInUsingDefaultCredentials(): Promise<Application>;
         signOut(skipAcs?: boolean): Promise<boolean>;
-        private _getApplication(data?);
+        private _getApplication;
         getQuery(id: string, asLookup?: boolean): Promise<Query>;
         getPersistentObject(parent: PersistentObject, id: string, objectId?: string, isNew?: boolean): Promise<PersistentObject>;
         executeQuery(parent: PersistentObject, query: Query, asLookup?: boolean, throwExceptions?: boolean): Promise<Service.IQueryResult>;
         executeAction(action: string, parent: PersistentObject, query: Query, selectedItems: Array<QueryResultItem>, parameters?: any, skipHooks?: boolean): Promise<PersistentObject>;
-        getReport(token: string, {filter, orderBy, top, skip, hideIds, hideType}?: IReportOptions): Promise<any[]>;
+        getReport(token: string, { filter, orderBy, top, skip, hideIds, hideType }?: IReportOptions): Promise<any[]>;
         getInstantSearch(search: string): Promise<IInstantSearchResult[]>;
         forgotPassword(userName: string): Promise<IForgotPassword>;
         static getDate: (yearString: string, monthString: string, dayString: string, hourString: string, minuteString: string, secondString: string, msString: string) => Date;
@@ -1361,7 +1361,7 @@ declare namespace Vidyano {
             constructor(service: Service, definition: ActionDefinition, owner: ServiceObjectWithActions);
             _onParentIsEditingChanged(isEditing: boolean): void;
             _onParentIsDirtyChanged(isDirty: boolean): void;
-            protected _onExecute({menuOption, parameters, selectedItems, skipOpen, noConfirmation, throwExceptions}: IActionExecuteOptions): Promise<PersistentObject>;
+            protected _onExecute({ menuOption, parameters, selectedItems, skipOpen, noConfirmation, throwExceptions }: IActionExecuteOptions): Promise<PersistentObject>;
         }
     }
 }
@@ -1369,7 +1369,7 @@ declare namespace Vidyano {
     namespace Actions {
         class CancelSave extends Action {
             constructor(service: Service, definition: ActionDefinition, owner: ServiceObjectWithActions);
-            protected _onExecute({menuOption, parameters, selectedItems, skipOpen, noConfirmation, throwExceptions}: IActionExecuteOptions): Promise<PersistentObject>;
+            protected _onExecute({ menuOption, parameters, selectedItems, skipOpen, noConfirmation, throwExceptions }: IActionExecuteOptions): Promise<PersistentObject>;
         }
     }
 }
@@ -1378,7 +1378,7 @@ declare namespace Vidyano {
         class Edit extends Action {
             constructor(service: Service, definition: ActionDefinition, owner: ServiceObjectWithActions);
             _onParentIsEditingChanged(isEditing: boolean): void;
-            protected _onExecute({menuOption, parameters, selectedItems, skipOpen, noConfirmation, throwExceptions}: IActionExecuteOptions): Promise<PersistentObject>;
+            protected _onExecute({ menuOption, parameters, selectedItems, skipOpen, noConfirmation, throwExceptions }: IActionExecuteOptions): Promise<PersistentObject>;
         }
     }
 }
@@ -1388,7 +1388,7 @@ declare namespace Vidyano {
             constructor(service: Service, definition: ActionDefinition, owner: ServiceObjectWithActions);
             _onParentIsEditingChanged(isEditing: boolean): void;
             _onParentIsDirtyChanged(isDirty: boolean): void;
-            protected _onExecute({menuOption, parameters, selectedItems, skipOpen, noConfirmation, throwExceptions}: IActionExecuteOptions): Promise<PersistentObject>;
+            protected _onExecute({ menuOption, parameters, selectedItems, skipOpen, noConfirmation, throwExceptions }: IActionExecuteOptions): Promise<PersistentObject>;
         }
     }
 }
@@ -1396,7 +1396,7 @@ declare namespace Vidyano {
     namespace Actions {
         class ExportToCsv extends Action {
             constructor(service: Service, definition: ActionDefinition, owner: ServiceObjectWithActions);
-            protected _onExecute({menuOption, parameters, selectedItems, skipOpen, noConfirmation, throwExceptions}: IActionExecuteOptions): Promise<PersistentObject>;
+            protected _onExecute({ menuOption, parameters, selectedItems, skipOpen, noConfirmation, throwExceptions }: IActionExecuteOptions): Promise<PersistentObject>;
         }
     }
 }
@@ -1404,7 +1404,7 @@ declare namespace Vidyano {
     namespace Actions {
         class ExportToExcel extends Action {
             constructor(service: Service, definition: ActionDefinition, owner: ServiceObjectWithActions);
-            protected _onExecute({menuOption, parameters, selectedItems, skipOpen, noConfirmation, throwExceptions}: IActionExecuteOptions): Promise<PersistentObject>;
+            protected _onExecute({ menuOption, parameters, selectedItems, skipOpen, noConfirmation, throwExceptions }: IActionExecuteOptions): Promise<PersistentObject>;
         }
     }
 }
@@ -1419,7 +1419,7 @@ declare namespace Vidyano {
     namespace Actions {
         class RefreshQuery extends Action {
             constructor(service: Service, definition: ActionDefinition, owner: ServiceObjectWithActions);
-            protected _onExecute({menuOption, parameters, selectedItems, skipOpen, noConfirmation, throwExceptions}: IActionExecuteOptions): Promise<any>;
+            protected _onExecute({ menuOption, parameters, selectedItems, skipOpen, noConfirmation, throwExceptions }: IActionExecuteOptions): Promise<any>;
         }
     }
 }
@@ -1427,7 +1427,7 @@ declare namespace Vidyano {
     namespace Actions {
         class Save extends Action {
             constructor(service: Service, definition: ActionDefinition, owner: ServiceObjectWithActions);
-            protected _onExecute({menuOption, parameters, selectedItems, skipOpen, noConfirmation, throwExceptions}: IActionExecuteOptions): Promise<PersistentObject>;
+            protected _onExecute({ menuOption, parameters, selectedItems, skipOpen, noConfirmation, throwExceptions }: IActionExecuteOptions): Promise<PersistentObject>;
         }
     }
 }
@@ -1435,7 +1435,7 @@ declare namespace Vidyano {
     namespace Actions {
         class ShowHelp extends Action {
             constructor(service: Service, definition: ActionDefinition, owner: ServiceObjectWithActions);
-            protected _onExecute({menuOption, parameters, selectedItems, skipOpen, noConfirmation, throwExceptions}: IActionExecuteOptions): Promise<PersistentObject>;
+            protected _onExecute({ menuOption, parameters, selectedItems, skipOpen, noConfirmation, throwExceptions }: IActionExecuteOptions): Promise<PersistentObject>;
         }
     }
 }
@@ -1458,6 +1458,11 @@ declare namespace Vidyano {
         class viSearch extends Action {
             constructor(service: Service, definition: ActionDefinition, owner: ServiceObjectWithActions);
         }
+    }
+}
+declare namespace Vidyano {
+    namespace ClientOperations {
+        function refreshForUpdate(hooks: ServiceHooks, path: string, replaceCurrent?: boolean): void;
     }
 }
 declare namespace Vidyano {

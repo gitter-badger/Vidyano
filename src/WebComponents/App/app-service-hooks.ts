@@ -106,7 +106,7 @@
             return Enumerable.from(queryChartConfigs).firstOrDefault(c => c.type === type);
         }
 
-        onConstructApplication(application: Service.IApplication): Application {
+        onConstructApplication(application: Service.IApplicationResponse): Application {
             const app = super.onConstructApplication(application);
             this.app.sensitive = app.hasSensitive && BooleanEx.parse(Vidyano.cookie("sensitive")) !== false;
 
