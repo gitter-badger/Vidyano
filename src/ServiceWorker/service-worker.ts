@@ -141,7 +141,7 @@
                     else if (e.request.url.endsWith("GetQuery")) {
                         const fetcher = await this._createFetcher<IGetQueryRequest, IGetQueryResponse>(e.request);
                         const response = await fetcher.fetch(fetcher.payload) || { authToken: this.authToken, query: undefined };
-                        if (!response) {
+                        if (!response.query) {
                             const actionsClass = await ServiceWorkerActions.get(fetcher.payload.id, this.db);
                             response.query = await actionsClass.onGetQuery(fetcher.payload.id)
                         }

@@ -293,7 +293,7 @@ declare namespace Vidyano {
     type Store = "Requests" | "Queries" | "PersistentObjects" | "ActionClassesById";
     type RequestMapKey = "GetQuery" | "GetPersistentObject";
     class IndexedDB {
-        private _store?;
+        private _store;
         private _initializing;
         private _db;
         constructor(_store?: Store);
@@ -308,8 +308,8 @@ declare namespace Vidyano {
         static get<T>(name: string, db: IndexedDB): Promise<ServiceWorkerActions>;
         private _db;
         readonly db: IndexedDB;
-        private _isPersistentObject;
-        private _isQuery;
+        private _isPersistentObject(arg);
+        private _isQuery(arg);
         onCache<T extends IPersistentObject | IQuery>(persistentObjectOrQuery: T): Promise<void>;
         onCachePersistentObject(persistentObject: IPersistentObject): Promise<void>;
         onCacheQuery(query: IQuery): Promise<void>;
@@ -336,18 +336,18 @@ declare namespace Vidyano {
     type IExecutePersistentObjectActionRequest = Service.IExecutePersistentObjectActionRequest;
     type IExecuteActionResponse = Service.IExecuteActionResponse;
     class ServiceWorker {
-        private serviceUri?;
-        private _verbose?;
+        private serviceUri;
+        private _verbose;
         private readonly _db;
         private _service;
         constructor(serviceUri?: string, _verbose?: boolean);
         readonly db: IndexedDB;
         private authToken;
-        private _log;
-        private _onInstall;
-        private _onActivate;
-        private _onFetch;
-        private _createFetcher;
+        private _log(message);
+        private _onInstall(e);
+        private _onActivate(e);
+        private _onFetch(e);
+        private _createFetcher<TPayload, TResult>(originalRequest);
         protected onCache(service: IService): Promise<void>;
         protected createRequest(data: any, request: Request): Request;
         protected createResponse(data: any, response?: Response): Response;
