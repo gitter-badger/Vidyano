@@ -62,8 +62,7 @@
 
         async onCachePersistentObject(persistentObject: IPersistentObject): Promise<void> {
             await this.db.save({
-                typeId: persistentObject.id,
-                objectId: persistentObject.objectId,
+                id: persistentObject.id,
                 response: JSON.stringify(persistentObject)
             }, "PersistentObjects");
 
@@ -79,17 +78,69 @@
                 response: JSON.stringify(query)
             }, "Queries");
 
-            // TODO: Cache PersistentObject
-
             await this.db.save({
                 id: query.id,
+                name: query.persistentObject.type
+            }, "ActionClassesById");
+
+            await this.db.save({
+                id: query.persistentObject.id,
+                query: query.id,
+                response: JSON.stringify(query.persistentObject)
+            }, "PersistentObjects");
+
+            await this.db.save({
+                id: query.persistentObject.id,
                 name: query.persistentObject.type
             }, "ActionClassesById");
         }
 
         async onGetPersistentObject(parent: IPersistentObject, id: string, objectId?: string, isNew?: boolean): Promise<IPersistentObject> {
             const record = await this.db.load(id, "PersistentObjects");
-            return record ? JSON.parse(record.response) : null;
+            if (record == null || !record.query)
+                return null;
+
+            const queryRecord = await this.db.load(record.query, "Queries");
+            if (!queryRecord)
+                return null;
+
+            const query: IQuery = JSON.parse(queryRecord.response);
+            if (!query)
+                return null;
+
+            const resultItem = query.result.items.find(i => i.id === objectId);
+            if (!resultItem)
+                return null;
+
+            const po: IPersistentObject = JSON.parse(record.response);
+            po.objectId = objectId;
+            po.isNew = isNew;
+            po.actions = (po.actions || []);
+            if (query.actions.indexOf("BulkEdit") >= 0 && po.actions.indexOf("Edit") < 0)
+                po.actions.push("Edit");
+
+            po.attributes.forEach(attr => {
+                const value = resultItem.values.find(v => v.key === attr.name);
+                if (value == null)
+                    return;
+
+                attr.value = value.value;
+            });
+
+            const breadcrumbRE = /{([^{]+?)}/;
+            do {
+                const m = breadcrumbRE.exec(po.breadcrumb);
+                if (!m)
+                    break;
+
+                const attribute = po.attributes.find(a => a.name === m[1]);
+                if (!attribute)
+                    continue;
+
+                po.breadcrumb = po.breadcrumb.replace(m[0], attribute.value);
+            } while (true);
+
+            return po;
         }
 
         async onGetQuery(id: string): Promise<IQuery> {

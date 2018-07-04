@@ -169,6 +169,18 @@
 
                         return this.createResponse(response);
                     }
+                    else if (e.request.url.endsWith("GetPersistentObject")) {
+                        const fetcher = await this._createFetcher<IGetPersistentObjectRequest, IGetPersistentObjectResponse>(e.request);
+                        const response = /*await fetcher.fetch(fetcher.payload) ||*/ { authToken: this.authToken, result: undefined };
+                        if (!response.result) {
+                            const actionsClass = await ServiceWorkerActions.get(fetcher.payload.persistentObjectTypeId, this.db);
+                            response.result = await actionsClass.onGetPersistentObject(fetcher.payload.parent, fetcher.payload.persistentObjectTypeId, fetcher.payload.objectId, fetcher.payload.isNew);
+                        }
+                        else
+                            this.authToken = response.authToken;
+
+                        return this.createResponse(response);
+                    }
                     else if (e.request.url.endsWith("ExecuteAction")) {
                         const fetcher = await this._createFetcher<IExecuteActionRequest, IExecuteActionResponse>(e.request);
                         const response = await fetcher.fetch(fetcher.payload) || { authToken: this.authToken, result: undefined };
