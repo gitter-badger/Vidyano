@@ -1,5 +1,7 @@
 ﻿namespace Vidyano {
-    const CACHE_NAME = "vidyano.offline";
+    export let version = "latest";
+    const CACHE_NAME = `vidyano.web2.${version}`;
+    const WEB2_BASE = "WEB2_BASE";
 
     export type Fetcher<TPayload, TResult> = (payload?: TPayload) => Promise<TResult>;
     interface IFetcher<TPayload, TResult> {
@@ -15,12 +17,18 @@
     export type IGetQueryRequest = Service.IGetQueryRequest;
     export type IGetQueryResponse = Service.IGetQueryResponse;
     export type IQuery = Service.IQuery;
+    export type IQueryColumn = Service.IQueryColumn;
     export type IQueryResultItem = Service.IQueryResultItem;
+    export type IQueryResultItemValue = Service.IQueryResultItemValue;
     export type IGetPersistentObjectRequest = Service.IGetPersistentObjectRequest;
     export type IGetPersistentObjectResponse = Service.IGetPersistentObjectResponse;
     export type IPersistentObject = Service.IPersistentObject;
     export type IExecuteActionRequest = Service.IExecuteActionRequest;
     export type IExecuteQueryActionRequest = Service.IExecuteQueryActionRequest;
+    export type IExecuteQueryRequest = Service.IExecuteQueryRequest;
+    export type IExecuteQueryResponse = Service.IExecuteQueryResponse;
+    export type IQueryResult = Service.IQueryResult;
+    export type IExecuteQueryFilterActionRequest = Service.IExecuteQueryFilterActionRequest;
     export type IExecutePersistentObjectActionRequest = Service.IExecutePersistentObjectActionRequest;
     export type IExecuteActionResponse = Service.IExecuteActionResponse;
 
@@ -59,15 +67,16 @@
         }
 
         private async _onInstall(e: ExtendableEvent) {
-            this._log("Installed ServiceWorker");
+            this._log("Installed ServiceWorker.");
 
-            const base = location.href.substr(location.origin.length).split("service-worker.js")[0];
-            const urls = [
-                `${base}`,
-            ].concat(vidyanoFiles.map(f => `${base}web2/${f}`));
+            console.log("Installing Vidyano Web2 version " + version);
+
+            vidyanoFiles.splice(0, vidyanoFiles.length, ...[
+                `${WEB2_BASE}`,
+            ].concat(vidyanoFiles.map(f => `${WEB2_BASE}${f}`)));
 
             const cache = await caches.open(CACHE_NAME);
-            await Promise.all(urls.map(async url => {
+            await Promise.all(vidyanoFiles.map(async url => {
                 const request = new Request(url);
                 const response = await fetch(request);
 
@@ -93,6 +102,16 @@
             this._log("Activated ServiceWorker");
 
             await (self as ServiceWorkerGlobalScope).clients.claim();
+
+            const oldCaches = (await caches.keys()).filter(cache => cache.startsWith("vidyano.web2.") && cache !== CACHE_NAME);
+            while (oldCaches.length > 0) {
+                const cacheName = oldCaches.splice(0, 1)[0];
+
+                console.log("Uninstalling Vidyano Web2 version " + cacheName.substr(13));
+                const success = await caches.delete(cacheName);
+                if (!success)
+                    console.error("Failed uninstalling Vidyano Web2 version " + cacheName.substr(13));
+            }
         }
 
         private async _onFetch(e: FetchEventInit) {
@@ -165,15 +184,37 @@
                                 const actionsClass = await ServiceWorkerActions.get(persistentObjectAction.parent.type, this.db);
                                 response.result = await actionsClass.onExecutePersistentObjectAction(action[1], persistentObjectAction.parent, persistentObjectAction.parameters);
                             }
+                            else if (action[0] === "QueryFilter") {
+                                const queryFilterAction = fetcher.payload as IExecuteQueryFilterActionRequest;
+                                const actionsClass = await ServiceWorkerActions.get(queryFilterAction.query.persistentObject.type, this.db);
+                                response.result = await actionsClass.onExecuteQueryFilterAction(action[1], queryFilterAction.query, queryFilterAction.parameters);
+                            }
                         }
                         else
                             this.authToken = response.authToken;
 
                         return this.createResponse(response);
                     }
+                    else if (e.request.url.endsWith("ExecuteQuery")) {
+                        const fetcher = await this._createFetcher<IExecuteQueryRequest, IExecuteQueryResponse>(e.request);
+                        const response = await fetcher.fetch(fetcher.payload) || { authToken: this.authToken, result: undefined };
+                        //if (!response.result) {
+                        const actionsClass = await ServiceWorkerActions.get(fetcher.payload.query.persistentObject.type, this.db);
+                        response.result = await actionsClass.onExecuteQuery(fetcher.payload.query);
+                        //}
+                        //else
+                        //    this.authToken = response.authToken;
+
+                        return this.createResponse(response);
+                    }
                 }
 
                 let response: Response;
+
+                const cache = await caches.open(CACHE_NAME);
+                if (vidyanoFiles.indexOf(e.request.url) > 0 && !!(response = await cache.match(e.request)))
+                    return response;
+
                 try {
                     response = await fetch(e.request);
                 }
@@ -181,7 +222,6 @@
 
                 if (e.request.method === "GET") {
                     if (response) {
-                        const cache = await caches.open(CACHE_NAME);
                         if (response.status !== 0 && e.request.url !== response.url) {
                             cache.put(new Request(response.url), response);
                             response = new Response(null, {

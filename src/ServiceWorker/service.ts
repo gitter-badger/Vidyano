@@ -52,12 +52,24 @@ namespace Vidyano.Service {
         selectedItems: IQueryResultItem[];
     }
 
+    export interface IExecuteQueryFilterActionRequest extends IExecuteActionRequest {
+        query: IQuery;
+    }
+
     export interface IExecutePersistentObjectActionRequest extends IExecuteActionRequest {
         parent: IPersistentObject;
     }
 
     export interface IExecuteActionResponse extends IResponse {
         result: IPersistentObject;
+    }
+
+    export interface IExecuteQueryRequest extends IRequest {
+        query: IQuery;
+    }
+
+    export interface IExecuteQueryResponse extends IResponse {
+        result: IQueryResult;
     }
 
     export interface IProviderParameters {
@@ -150,6 +162,7 @@ namespace Vidyano.Service {
         persistentObject: IPersistentObject;
         result: IQueryResult;
         sortOptions: string;
+        textSearch: string;
     }
 
     export interface IQueryColumn {
@@ -167,19 +180,20 @@ namespace Vidyano.Service {
     }
 
     export interface IQueryResult {
-        pageSize: number;
-        totalItems: number;
+        pageSize?: number;
+        totalItems?: number;
         columns: IQueryColumn[];
         items: IQueryResultItem[];
-        groupingInfo: IQueryGroupingInfo;
-        groupedBy: string;
-        notification: string;
-        notificationType: NotificationType;
-        notificationDuration: number;
+        groupingInfo?: IQueryGroupingInfo;
+        groupedBy?: string;
+        notification?: string;
+        notificationType?: NotificationType;
+        notificationDuration?: number;
         sortOptions: string;
         charts: IQueryChart[];
-        totalItem: IQueryResultItem;
+        totalItem?: IQueryResultItem;
         continuation?: string;
+        textSearch?: string;
     }
 
     export interface IQueryResultItem {

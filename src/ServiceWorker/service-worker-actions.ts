@@ -94,7 +94,129 @@
 
         async onGetQuery(id: string): Promise<IQuery> {
             const record = await this.db.load(id, "Queries");
-            return record ? JSON.parse(record.response) : null;
+            const query: IQuery = record ? JSON.parse(record.response) : null;
+
+            query.columns.forEach(c => c.canFilter = c.canListDistincts = c.canGroupBy = false);
+            query.filters = null;
+
+            if (this.onFilter === ServiceWorkerActions.prototype.onFilter) {
+                const filterIndex = query.actions.indexOf("Filter");
+                if (filterIndex >= 0)
+                    query.actions.splice(filterIndex, 1);
+            }
+
+            return query;
+        }
+
+        async onExecuteQuery(query: IQuery): Promise<IQueryResult> {
+            const cachedQuery = await this.onGetQuery(query.id);
+            const columnMap = new Map(query.columns.map((c): [string, IQueryColumn] => [c.name, c]).concat(query.columns.map((c): [string, IQueryColumn] => [c.label, c])));
+
+            const result: IQueryResult = {
+                columns: query.columns,
+                items: cachedQuery.result.items,
+                sortOptions: query.sortOptions,
+                charts: cachedQuery.result.charts
+            };
+
+            if (query.textSearch) {
+                result.textSearch = query.textSearch;
+                result.items = result.items.filter(i => i.values.some(v => {
+                    return this.isMatch(v, columnMap.get(v.key), query.textSearch);
+                }));
+            }
+
+            return result
+        }
+
+        protected onFilter(query: IQuery): IQueryResultItem[] {
+            return [];
+        }
+
+        protected isMatch(value: IQueryResultItemValue, column: IQueryColumn, textSearch: string): boolean {
+            if (!textSearch)
+                return true;
+
+            const names: string[] = [];
+            //this.query.columns.run(function (c: any) {
+            //    names.push(c.name);
+
+            //    if (c.label != c.name)
+            //        textSearch = textSearch.replace(new RegExp(c.label + ":", "ig"), c.name + ":");
+            //});
+            //var hasPrefix = new RegExp("^(" + names.join("|") + "):", "i");
+
+            //var parts = textSearch.match(/\S+/g);
+            //for (var i = 0; i < parts.length; i++) {
+            //    var text = parts[i];
+            //    var name: string = null;
+
+            //    if (hasPrefix.test(text)) {
+            //        var textParts = text.split(":");
+            //        name = textParts[0].toLowerCase();
+            //        text = textParts[1];
+            //    }
+
+            //    var number = parseInt(text);
+            //    var bool = Boolean(text);
+
+            //    var checkValue = function (v: QueryResultItemValue) {
+            //        var column = v.getColumn();
+            //        if (!column)
+            //            return false;
+
+            //        var typeName = column.type;
+            //        if (typeName == "Image" || typeName == "BinaryFile" || typeName == "Time" || typeName == "NullableTime")
+            //            return false;
+
+            //        var value = ServiceGateway.fromServiceString(v.value, typeName);
+            //        if (ServiceGateway.isNumericType(typeName)) {
+            //            if (isNaN(number)) {
+            //                text = text.replace(/\s/g, "");
+            //                //if (/^(<|<=|>|>=)\d+$/.test(text))
+            //                //    return ExpressionParser.get(text)(value);
+            //                //else if (/^\d+-\d$/.test(text))
+            //                //    return ExpressionParser.get(text.replace("-", "<=x<="))(value);
+
+            //                return false;
+            //            }
+
+            //            return Math.abs(number - value) < 1;
+            //        }
+            //        else if (typeName == "Date" || typeName == "DateTime" || typeName == "NullableDate" || typeName == "NullableDateTime" || typeName == "DateTimeOffset" || typeName == "NullableDateTimeOffset") {
+            //            // TODO: Dates...
+            //            text = text.replace(/\s/g, "");
+
+            //            // TODO: today
+            //            // TODO: lastweek / thisweek / nextweek
+            //            // TODO: lastmonth / thismonth / nextmonth
+            //            // TODO: lastyear / thisyear / nextyear
+            //            // TODO: \d{4}
+            //            // TODO: (<|<=|>|>=)\d{4}
+            //            // TODO: \d{4}-\d{2} (ClientCulture)
+
+            //            return false;
+            //        }
+            //        else if (typeName == "Boolean" || typeName == "YesNo" || typeName == "NullableBoolean")
+            //            return value == bool;
+
+            //        // TODO: KeyValueList
+
+            //        return v.value != null && v.value.toString().toLowerCase().contains(text.toLowerCase()); // Contains?
+            //    };
+
+            //    if (name != null) {
+            //        var val = this.values.firstOrDefault(function (v: QueryResultItemValue) { return v.key.toLowerCase() == name; });
+            //        if (val == null || !checkValue(val))
+            //            return false;
+            //    }
+            //    else if (this.values.firstOrDefault(checkValue) == null)
+            //        return false;
+            //}
+
+            //return true;
+
+            return false;
         }
 
         async onExecuteQueryAction(action: string, query: IQuery, selectedItems: IQueryResultItem[], parameters: Service.ExecuteActionParameters): Promise<IPersistentObject> {
@@ -126,6 +248,15 @@
                     // TODO
                     debugger;
                 }
+            }
+
+            return null;
+        }
+
+        async onExecuteQueryFilterAction(action: string, query: IQuery, parameters: Service.ExecuteActionParameters): Promise<IPersistentObject> {
+            if (action === "RefreshColumn") {
+                // TODO
+                debugger;
             }
 
             return null;

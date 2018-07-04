@@ -297,8 +297,11 @@ namespace Vidyano.WebComponents {
         isTracking: boolean;
         sensitive: boolean;
 
-        attached() {
+        async attached() {
             super.attached();
+
+            if (ServiceWorker.Monitor.available)
+                await ServiceWorker.Monitor.activation;
 
             window.addEventListener("storage", this._onSessionStorage.bind(this), false);
 

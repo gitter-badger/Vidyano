@@ -43,11 +43,20 @@ declare namespace Vidyano.Service {
         query: IQuery;
         selectedItems: IQueryResultItem[];
     }
+    interface IExecuteQueryFilterActionRequest extends IExecuteActionRequest {
+        query: IQuery;
+    }
     interface IExecutePersistentObjectActionRequest extends IExecuteActionRequest {
         parent: IPersistentObject;
     }
     interface IExecuteActionResponse extends IResponse {
         result: IPersistentObject;
+    }
+    interface IExecuteQueryRequest extends IRequest {
+        query: IQuery;
+    }
+    interface IExecuteQueryResponse extends IResponse {
+        result: IQueryResult;
     }
     interface IProviderParameters {
         label: string;
@@ -143,6 +152,7 @@ declare namespace Vidyano.Service {
         persistentObject: IPersistentObject;
         result: IQueryResult;
         sortOptions: string;
+        textSearch: string;
     }
     interface IQueryColumn {
         canFilter: boolean;
@@ -158,19 +168,20 @@ declare namespace Vidyano.Service {
         type: string;
     }
     interface IQueryResult {
-        pageSize: number;
-        totalItems: number;
+        pageSize?: number;
+        totalItems?: number;
         columns: IQueryColumn[];
         items: IQueryResultItem[];
-        groupingInfo: IQueryGroupingInfo;
-        groupedBy: string;
-        notification: string;
-        notificationType: NotificationType;
-        notificationDuration: number;
+        groupingInfo?: IQueryGroupingInfo;
+        groupedBy?: string;
+        notification?: string;
+        notificationType?: NotificationType;
+        notificationDuration?: number;
         sortOptions: string;
         charts: IQueryChart[];
-        totalItem: IQueryResultItem;
+        totalItem?: IQueryResultItem;
         continuation?: string;
+        textSearch?: string;
     }
     interface IQueryResultItem {
         id: string;
@@ -315,11 +326,16 @@ declare namespace Vidyano {
         onCacheQuery(query: IQuery): Promise<void>;
         onGetPersistentObject(parent: IPersistentObject, id: string, objectId?: string, isNew?: boolean): Promise<IPersistentObject>;
         onGetQuery(id: string): Promise<IQuery>;
+        onExecuteQuery(query: IQuery): Promise<IQueryResult>;
+        protected onFilter(query: IQuery): IQueryResultItem[];
+        protected isMatch(value: IQueryResultItemValue, column: IQueryColumn, textSearch: string): boolean;
         onExecuteQueryAction(action: string, query: IQuery, selectedItems: IQueryResultItem[], parameters: Service.ExecuteActionParameters): Promise<IPersistentObject>;
         onExecutePersistentObjectAction(action: string, persistentObject: IPersistentObject, parameters: Service.ExecuteActionParameters): Promise<IPersistentObject>;
+        onExecuteQueryFilterAction(action: string, query: IQuery, parameters: Service.ExecuteActionParameters): Promise<IPersistentObject>;
     }
 }
 declare namespace Vidyano {
+    let version: string;
     type Fetcher<TPayload, TResult> = (payload?: TPayload) => Promise<TResult>;
     type IClientData = Service.IClientData;
     type IGetApplicationRequest = Service.IGetApplicationRequest;
@@ -327,12 +343,18 @@ declare namespace Vidyano {
     type IGetQueryRequest = Service.IGetQueryRequest;
     type IGetQueryResponse = Service.IGetQueryResponse;
     type IQuery = Service.IQuery;
+    type IQueryColumn = Service.IQueryColumn;
     type IQueryResultItem = Service.IQueryResultItem;
+    type IQueryResultItemValue = Service.IQueryResultItemValue;
     type IGetPersistentObjectRequest = Service.IGetPersistentObjectRequest;
     type IGetPersistentObjectResponse = Service.IGetPersistentObjectResponse;
     type IPersistentObject = Service.IPersistentObject;
     type IExecuteActionRequest = Service.IExecuteActionRequest;
     type IExecuteQueryActionRequest = Service.IExecuteQueryActionRequest;
+    type IExecuteQueryRequest = Service.IExecuteQueryRequest;
+    type IExecuteQueryResponse = Service.IExecuteQueryResponse;
+    type IQueryResult = Service.IQueryResult;
+    type IExecuteQueryFilterActionRequest = Service.IExecuteQueryFilterActionRequest;
     type IExecutePersistentObjectActionRequest = Service.IExecutePersistentObjectActionRequest;
     type IExecuteActionResponse = Service.IExecuteActionResponse;
     class ServiceWorker {
