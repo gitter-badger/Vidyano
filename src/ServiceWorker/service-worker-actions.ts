@@ -164,6 +164,7 @@
 
             query.columns.forEach(c => c.canFilter = c.canListDistincts = c.canGroupBy = false);
             query.filters = null;
+            query.disableBulkEdit = true;
 
             if (this.onFilter === ServiceWorkerActions.prototype.onFilter) {
                 const filterIndex = query.actions.indexOf("Filter");
@@ -311,7 +312,7 @@
                     value.value = attribute.value;
 
                 const attributeMetaData = query.persistentObject.attributes.find(a => a.name === attribute.name);
-                if (attributeMetaData && attributeMetaData.lookup) {
+                if (attributeMetaData && attributeMetaData.type === "Reference" && attributeMetaData.lookup) {
                     value.persistentObjectId = attributeMetaData.lookup.persistentObject.id;
                     value.objectId = attribute.objectId;
                 }
