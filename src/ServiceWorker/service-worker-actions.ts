@@ -95,8 +95,11 @@
             }, "ActionClassesById");
         }
 
-        async onGetPersistentObject(parent: IPersistentObject, id: string, objectId?: string, isNew?: boolean): Promise<IPersistentObject> {
-            const record = await this.db.load(id, "PersistentObjects");
+        async getOwnerQuery(objOrId: IPersistentObject | string): Promise<IQuery> {
+            if (typeof objOrId === "object")
+                objOrId = (objOrId as IPersistentObject).id;
+
+            const record = await this.db.load(objOrId, "PersistentObjects");
             if (record == null || !record.query)
                 return null;
 
@@ -107,6 +110,16 @@
             const query: IQuery = JSON.parse(queryRecord.response);
             if (!query)
                 return null;
+
+            return query;
+        }
+
+        async onGetPersistentObject(parent: IPersistentObject, id: string, objectId?: string, isNew?: boolean): Promise<IPersistentObject> {
+            const record = await this.db.load(id, "PersistentObjects");
+            if (record == null || !record.query)
+                return null;
+
+            const query = await this.getOwnerQuery(id);
 
             const resultItem = query.result.items.find(i => i.id === objectId);
             if (!resultItem)
@@ -144,8 +157,10 @@
         }
 
         async onGetQuery(id: string): Promise<IQuery> {
-            const record = await this.db.load(id, "Queries");
-            const query: IQuery = record ? JSON.parse(record.response) : null;
+            const cache = await this.db.load(id, "Queries");
+            const query: IQuery = cache ? JSON.parse(cache.response) : null;
+            if (!query)
+                return null;
 
             query.columns.forEach(c => c.canFilter = c.canListDistincts = c.canGroupBy = false);
             query.filters = null;
@@ -170,147 +185,127 @@
                 charts: cachedQuery.result.charts
             };
 
-            if (query.textSearch) {
-                result.textSearch = query.textSearch;
-                result.items = result.items.filter(i => i.values.some(v => {
-                    return this.isMatch(v, columnMap.get(v.key), query.textSearch);
-                }));
-            }
+            if (this.onFilter !== ServiceWorkerActions.prototype.onFilter)
+                result.items = this.onFilter(query);
 
             return result
         }
 
         protected onFilter(query: IQuery): IQueryResultItem[] {
-            return [];
+            throw "Not implemented";
         }
 
-        protected isMatch(value: IQueryResultItemValue, column: IQueryColumn, textSearch: string): boolean {
-            if (!textSearch)
-                return true;
-
-            const names: string[] = [];
-            //this.query.columns.run(function (c: any) {
-            //    names.push(c.name);
-
-            //    if (c.label != c.name)
-            //        textSearch = textSearch.replace(new RegExp(c.label + ":", "ig"), c.name + ":");
-            //});
-            //var hasPrefix = new RegExp("^(" + names.join("|") + "):", "i");
-
-            //var parts = textSearch.match(/\S+/g);
-            //for (var i = 0; i < parts.length; i++) {
-            //    var text = parts[i];
-            //    var name: string = null;
-
-            //    if (hasPrefix.test(text)) {
-            //        var textParts = text.split(":");
-            //        name = textParts[0].toLowerCase();
-            //        text = textParts[1];
-            //    }
-
-            //    var number = parseInt(text);
-            //    var bool = Boolean(text);
-
-            //    var checkValue = function (v: QueryResultItemValue) {
-            //        var column = v.getColumn();
-            //        if (!column)
-            //            return false;
-
-            //        var typeName = column.type;
-            //        if (typeName == "Image" || typeName == "BinaryFile" || typeName == "Time" || typeName == "NullableTime")
-            //            return false;
-
-            //        var value = ServiceGateway.fromServiceString(v.value, typeName);
-            //        if (ServiceGateway.isNumericType(typeName)) {
-            //            if (isNaN(number)) {
-            //                text = text.replace(/\s/g, "");
-            //                //if (/^(<|<=|>|>=)\d+$/.test(text))
-            //                //    return ExpressionParser.get(text)(value);
-            //                //else if (/^\d+-\d$/.test(text))
-            //                //    return ExpressionParser.get(text.replace("-", "<=x<="))(value);
-
-            //                return false;
-            //            }
-
-            //            return Math.abs(number - value) < 1;
-            //        }
-            //        else if (typeName == "Date" || typeName == "DateTime" || typeName == "NullableDate" || typeName == "NullableDateTime" || typeName == "DateTimeOffset" || typeName == "NullableDateTimeOffset") {
-            //            // TODO: Dates...
-            //            text = text.replace(/\s/g, "");
-
-            //            // TODO: today
-            //            // TODO: lastweek / thisweek / nextweek
-            //            // TODO: lastmonth / thismonth / nextmonth
-            //            // TODO: lastyear / thisyear / nextyear
-            //            // TODO: \d{4}
-            //            // TODO: (<|<=|>|>=)\d{4}
-            //            // TODO: \d{4}-\d{2} (ClientCulture)
-
-            //            return false;
-            //        }
-            //        else if (typeName == "Boolean" || typeName == "YesNo" || typeName == "NullableBoolean")
-            //            return value == bool;
-
-            //        // TODO: KeyValueList
-
-            //        return v.value != null && v.value.toString().toLowerCase().contains(text.toLowerCase()); // Contains?
-            //    };
-
-            //    if (name != null) {
-            //        var val = this.values.firstOrDefault(function (v: QueryResultItemValue) { return v.key.toLowerCase() == name; });
-            //        if (val == null || !checkValue(val))
-            //            return false;
-            //    }
-            //    else if (this.values.firstOrDefault(checkValue) == null)
-            //        return false;
-            //}
-
-            //return true;
-
-            return false;
+        async onExecuteQueryFilterAction(action: string, query: IQuery, parameters: Service.ExecuteActionParameters): Promise<IPersistentObject> {
+            throw "Not implemented";
         }
 
         async onExecuteQueryAction(action: string, query: IQuery, selectedItems: IQueryResultItem[], parameters: Service.ExecuteActionParameters): Promise<IPersistentObject> {
-            const cache = await this.db.load(query.id, "Queries");
-            const cachedQuery = cache ? <IQuery>JSON.parse(cache.response) : null;
-            if (!query)
-                return null;
-
-            if (action === "New") {
-                if (cachedQuery != null) {
-                    const newPo = cachedQuery.persistentObject;
-                    newPo.actions = ["Edit"];
-                    newPo.isNew = true;
-                    newPo.breadcrumb = newPo.newBreadcrumb || `New ${newPo.label}`;
-                    return newPo;
-                }
-            }
+            if (action === "New")
+                return this.onNew(query);
 
             return null;
         }
 
         async onExecutePersistentObjectAction(action: string, persistentObject: IPersistentObject, parameters: Service.ExecuteActionParameters): Promise<IPersistentObject> {
-            if (action === "Save") {
-                if (persistentObject.isNew) {
-                    // TODO
-                    debugger;
-                }
-                else {
-                    // TODO
-                    debugger;
-                }
-            }
+            if (action === "Save")
+                return this.onSave(persistentObject);
 
             return null;
         }
 
-        async onExecuteQueryFilterAction(action: string, query: IQuery, parameters: Service.ExecuteActionParameters): Promise<IPersistentObject> {
-            if (action === "RefreshColumn") {
-                // TODO
-                debugger;
-            }
+        async onNew(query: IQuery): Promise<IPersistentObject> {
+            const cache = await this.db.load(query.id, "Queries");
+            const cachedQuery = cache ? <IQuery>JSON.parse(cache.response) : null;
+            if (!query || !cachedQuery)
+                return null;
 
-            return null;
+            const newPo = cachedQuery.persistentObject;
+            newPo.actions = ["Edit"];
+            newPo.isNew = true;
+            newPo.breadcrumb = newPo.newBreadcrumb || `New ${newPo.label}`;
+            return newPo;
         }
+
+        async onSave(obj: IPersistentObject): Promise<IPersistentObject> {
+            if (obj.isNew)
+                return this.saveNew(obj);
+
+            return this.saveExisting(obj);
+        }
+
+        async saveNew(obj: IPersistentObject): Promise<IPersistentObject> {
+            obj.objectId = `SW-NEW-${Date.now()}`;
+
+            const query = await this.getOwnerQuery(obj);
+            if (!query)
+                throw `No associated query found for Persistent Object with id ${obj.id}`;
+
+            await this.editQueryResultItemValues(query, obj, "New");
+
+            obj.attributes.forEach(attr => attr.isValueChanged = false);
+            obj.isNew = false;
+
+            return obj;
+        }
+
+        async saveExisting(obj: IPersistentObject): Promise<IPersistentObject> {
+            const poCache = await this.db.load(obj.id, "PersistentObjects");
+            const queryCache = await this.db.load(poCache.query, "Queries");
+            const query = JSON.parse(queryCache.response);
+
+            await this.editQueryResultItemValues(query, obj, "Edit");
+
+            queryCache.response = JSON.stringify(query);
+            await this.db.save(queryCache, "Queries");
+
+            obj.attributes.forEach(attr => attr.isValueChanged = false);
+
+            return obj;
+        }
+
+        async editQueryResultItemValues(query: IQuery, persistentObject: IPersistentObject, changeType: ItemChangeType) {
+            for (let attribute of persistentObject.attributes.filter(a => a.isValueChanged)) {
+                let item = query.result.items.find(i => i.id === persistentObject.objectId);
+                if (!item && changeType === "New") {
+                    item = {
+                        id: attribute.objectId,
+                        values: []
+                    };
+
+                    query.result.items.push(item);
+                    query.result.totalItems++;
+                }
+
+                if (!item)
+                    throw "Unable to resolve item.";
+
+                let value = item.values.find(v => v.key === attribute.name);
+                if (!value) {
+                    value = {
+                        key: attribute.name,
+                        value: attribute.value
+                    };
+                }
+                else
+                    value.value = attribute.value;
+
+                const attributeMetaData = query.persistentObject.attributes.find(a => a.name === attribute.name);
+                if (attributeMetaData && attributeMetaData.lookup) {
+                    value.persistentObjectId = attributeMetaData.lookup.persistentObject.id;
+                    value.objectId = attribute.objectId;
+                }
+            }
+        }
+    }
+
+    export type ItemChangeType = "None" | "New" | "Edit" | "Delete";
+
+    export interface IItemChange {
+        objectId: string;
+        key: string;
+        value: string;
+        referenceObjectId?: string;
+        logChange?: boolean;
+        type?: ItemChangeType;
     }
 }

@@ -23,6 +23,7 @@
     export type IGetPersistentObjectRequest = Service.IGetPersistentObjectRequest;
     export type IGetPersistentObjectResponse = Service.IGetPersistentObjectResponse;
     export type IPersistentObject = Service.IPersistentObject;
+    export type IPersistentObjectAttribute = Service.IPersistentObjectAttribute;
     export type IExecuteActionRequest = Service.IExecuteActionRequest;
     export type IExecuteQueryActionRequest = Service.IExecuteQueryActionRequest;
     export type IExecuteQueryRequest = Service.IExecuteQueryRequest;
@@ -35,6 +36,7 @@
     export class ServiceWorker {
         private readonly _db: IndexedDB;
         private _service: IService;
+        private _cacheName: string;
 
         constructor(private serviceUri?: string, private _verbose?: boolean) {
             this._db = new IndexedDB();
@@ -171,7 +173,7 @@
                     }
                     else if (e.request.url.endsWith("GetPersistentObject")) {
                         const fetcher = await this._createFetcher<IGetPersistentObjectRequest, IGetPersistentObjectResponse>(e.request);
-                        const response = /*await fetcher.fetch(fetcher.payload) ||*/ { authToken: this.authToken, result: undefined };
+                        const response = await fetcher.fetch(fetcher.payload) || { authToken: this.authToken, result: undefined };
                         if (!response.result) {
                             const actionsClass = await ServiceWorkerActions.get(fetcher.payload.persistentObjectTypeId, this.db);
                             response.result = await actionsClass.onGetPersistentObject(fetcher.payload.parent, fetcher.payload.persistentObjectTypeId, fetcher.payload.objectId, fetcher.payload.isNew);

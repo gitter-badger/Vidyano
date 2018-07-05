@@ -37,7 +37,7 @@ namespace Vidyano.Service {
     }
 
     export interface IGetPersistentObjectResponse extends IResponse {
-        persistentObject: IPersistentObject;
+        result: IPersistentObject;
     }
 
     export type ExecuteActionParameters = { [key: string]: string; }
@@ -129,9 +129,12 @@ namespace Vidyano.Service {
         type: string;
         label: string;
         value?: string;
+        objectId?: string;
+        lookup?: IQuery;
         isReadOnly?: boolean;
         isRequired?: boolean;
         isSensitive?: boolean;
+        isValueChanged?: boolean;
         rules?: string;
         visibility: string;
     }
@@ -198,14 +201,16 @@ namespace Vidyano.Service {
 
     export interface IQueryResultItem {
         id: string;
-        typeHints: KeyValueString;
         values: IQueryResultItemValue[];
+        typeHints?: KeyValueString;
     }
 
     export interface IQueryResultItemValue {
         key: string;
-        typeHints: KeyValueString;
         value: string;
+        objectId?: string;
+        persistentObjectId?: string;
+        typeHints?: KeyValueString;
     }
 
     export interface IQueryGroupingInfo {

@@ -30,7 +30,7 @@ declare namespace Vidyano.Service {
         parent?: IPersistentObject;
     }
     interface IGetPersistentObjectResponse extends IResponse {
-        persistentObject: IPersistentObject;
+        result: IPersistentObject;
     }
     type ExecuteActionParameters = {
         [key: string]: string;
@@ -121,9 +121,12 @@ declare namespace Vidyano.Service {
         type: string;
         label: string;
         value?: string;
+        objectId?: string;
+        lookup?: IQuery;
         isReadOnly?: boolean;
         isRequired?: boolean;
         isSensitive?: boolean;
+        isValueChanged?: boolean;
         rules?: string;
         visibility: string;
     }
@@ -185,13 +188,15 @@ declare namespace Vidyano.Service {
     }
     interface IQueryResultItem {
         id: string;
-        typeHints: KeyValueString;
         values: IQueryResultItemValue[];
+        typeHints?: KeyValueString;
     }
     interface IQueryResultItemValue {
         key: string;
-        typeHints: KeyValueString;
         value: string;
+        objectId?: string;
+        persistentObjectId?: string;
+        typeHints?: KeyValueString;
     }
     interface IQueryGroupingInfo {
         groupedBy: string;
@@ -324,14 +329,28 @@ declare namespace Vidyano {
         onCache<T extends IPersistentObject | IQuery>(persistentObjectOrQuery: T): Promise<void>;
         onCachePersistentObject(persistentObject: IPersistentObject): Promise<void>;
         onCacheQuery(query: IQuery): Promise<void>;
+        getOwnerQuery(objOrId: IPersistentObject | string): Promise<IQuery>;
         onGetPersistentObject(parent: IPersistentObject, id: string, objectId?: string, isNew?: boolean): Promise<IPersistentObject>;
         onGetQuery(id: string): Promise<IQuery>;
         onExecuteQuery(query: IQuery): Promise<IQueryResult>;
         protected onFilter(query: IQuery): IQueryResultItem[];
-        protected isMatch(value: IQueryResultItemValue, column: IQueryColumn, textSearch: string): boolean;
+        onExecuteQueryFilterAction(action: string, query: IQuery, parameters: Service.ExecuteActionParameters): Promise<IPersistentObject>;
         onExecuteQueryAction(action: string, query: IQuery, selectedItems: IQueryResultItem[], parameters: Service.ExecuteActionParameters): Promise<IPersistentObject>;
         onExecutePersistentObjectAction(action: string, persistentObject: IPersistentObject, parameters: Service.ExecuteActionParameters): Promise<IPersistentObject>;
-        onExecuteQueryFilterAction(action: string, query: IQuery, parameters: Service.ExecuteActionParameters): Promise<IPersistentObject>;
+        onNew(query: IQuery): Promise<IPersistentObject>;
+        onSave(obj: IPersistentObject): Promise<IPersistentObject>;
+        saveNew(obj: IPersistentObject): Promise<IPersistentObject>;
+        saveExisting(obj: IPersistentObject): Promise<IPersistentObject>;
+        editQueryResultItemValues(query: IQuery, persistentObject: IPersistentObject, changeType: ItemChangeType): Promise<void>;
+    }
+    type ItemChangeType = "None" | "New" | "Edit" | "Delete";
+    interface IItemChange {
+        objectId: string;
+        key: string;
+        value: string;
+        referenceObjectId?: string;
+        logChange?: boolean;
+        type?: ItemChangeType;
     }
 }
 declare namespace Vidyano {
@@ -349,6 +368,7 @@ declare namespace Vidyano {
     type IGetPersistentObjectRequest = Service.IGetPersistentObjectRequest;
     type IGetPersistentObjectResponse = Service.IGetPersistentObjectResponse;
     type IPersistentObject = Service.IPersistentObject;
+    type IPersistentObjectAttribute = Service.IPersistentObjectAttribute;
     type IExecuteActionRequest = Service.IExecuteActionRequest;
     type IExecuteQueryActionRequest = Service.IExecuteQueryActionRequest;
     type IExecuteQueryRequest = Service.IExecuteQueryRequest;
@@ -362,6 +382,7 @@ declare namespace Vidyano {
         private _verbose;
         private readonly _db;
         private _service;
+        private _cacheName;
         constructor(serviceUri?: string, _verbose?: boolean);
         readonly db: IndexedDB;
         private authToken;
