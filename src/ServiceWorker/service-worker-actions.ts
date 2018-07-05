@@ -236,11 +236,14 @@
         async saveNew(obj: IPersistentObject): Promise<IPersistentObject> {
             obj.objectId = `SW-NEW-${Date.now()}`;
 
-            const query = await this.getOwnerQuery(obj);
-            if (!query)
-                throw `No associated query found for Persistent Object with id ${obj.id}`;
+            const poCache = await this.db.load(obj.id, "PersistentObjects");
+            const queryCache = await this.db.load(poCache.query, "Queries");
+            const query = JSON.parse(queryCache.response);
 
             await this.editQueryResultItemValues(query, obj, "New");
+
+            queryCache.response = JSON.stringify(query);
+            await this.db.save(queryCache, "Queries");
 
             obj.attributes.forEach(attr => attr.isValueChanged = false);
             obj.isNew = false;
@@ -264,8 +267,8 @@
         }
 
         async editQueryResultItemValues(query: IQuery, persistentObject: IPersistentObject, changeType: ItemChangeType) {
+            let item = query.result.items.find(i => i.id === persistentObject.objectId);
             for (let attribute of persistentObject.attributes.filter(a => a.isValueChanged)) {
-                let item = query.result.items.find(i => i.id === persistentObject.objectId);
                 if (!item && changeType === "New") {
                     item = {
                         id: attribute.objectId,
@@ -285,6 +288,8 @@
                         key: attribute.name,
                         value: attribute.value
                     };
+
+                    item.values.push(value);
                 }
                 else
                     value.value = attribute.value;
