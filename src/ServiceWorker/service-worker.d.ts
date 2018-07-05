@@ -338,6 +338,7 @@ declare namespace Vidyano {
         onExecuteQueryAction(action: string, query: IQuery, selectedItems: IQueryResultItem[], parameters: Service.ExecuteActionParameters): Promise<IPersistentObject>;
         onExecutePersistentObjectAction(action: string, persistentObject: IPersistentObject, parameters: Service.ExecuteActionParameters): Promise<IPersistentObject>;
         onNew(query: IQuery): Promise<IPersistentObject>;
+        onDelete(query: IQuery, selectedItems: IQueryResultItem[]): Promise<void>;
         onSave(obj: IPersistentObject): Promise<IPersistentObject>;
         saveNew(obj: IPersistentObject): Promise<IPersistentObject>;
         saveExisting(obj: IPersistentObject): Promise<IPersistentObject>;

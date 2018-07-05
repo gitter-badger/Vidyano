@@ -202,6 +202,8 @@
         async onExecuteQueryAction(action: string, query: IQuery, selectedItems: IQueryResultItem[], parameters: Service.ExecuteActionParameters): Promise<IPersistentObject> {
             if (action === "New")
                 return this.onNew(query);
+            else if (action === "Delete")
+                await this.onDelete(query, selectedItems);
 
             return null;
         }
@@ -224,6 +226,20 @@
             newPo.isNew = true;
             newPo.breadcrumb = newPo.newBreadcrumb || `New ${newPo.label}`;
             return newPo;
+        }
+
+        async onDelete(query: IQuery, selectedItems: IQueryResultItem[]) {
+            const queryCache = await this.db.load(query.id, "Queries");
+            query = JSON.parse(queryCache.response);
+
+            selectedItems.forEach(item => {
+                const i = query.result.items.findIndex(i => i.id === item.id);
+                if (i >= 0)
+                    query.result.items.splice(i, 1);
+            });
+
+            queryCache.response = JSON.stringify(query);
+            await this.db.save(queryCache, "Queries");
         }
 
         async onSave(obj: IPersistentObject): Promise<IPersistentObject> {
