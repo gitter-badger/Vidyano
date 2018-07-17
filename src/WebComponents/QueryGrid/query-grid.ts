@@ -671,7 +671,7 @@ namespace Vidyano.WebComponents {
             if (this._column !== column) {
                 this.host.setAttribute("name", (this._column = column) ? Vidyano.WebComponents.QueryGridTableColumn.columnSafeName(this._column.name) : "");
                 this.host.setAttribute("type", (this._column = column) ? this._column.type : "");
-                if (this._column && Vidyano.Service.isNumericType(this._column.type))
+                if (this._column && Vidyano.DataType.isNumericType(this._column.type))
                     this.host.setAttribute("numeric", "");
                 else
                     this.host.removeAttribute("numeric");

@@ -1271,50 +1271,6 @@ namespace Vidyano {
 
             return typeof (value) === "string" || value == null ? value : String(value);
         }
-
-        static numericTypes = [
-            "NullableDecimal",
-            "Decimal",
-            "NullableSingle",
-            "Single",
-            "NullableDouble",
-            "Double",
-            "NullableInt64",
-            "Int64",
-            "NullableUInt64",
-            "UInt64",
-            "NullableInt32",
-            "Int32",
-            "NullableUInt32",
-            "UInt32",
-            "NullableInt16",
-            "Int16",
-            "NullableUInt16",
-            "UInt16",
-            "NullableByte",
-            "Byte",
-            "NullableSByte",
-            "SByte"
-        ];
-
-        static isNumericType(type: string): boolean {
-            return Service.numericTypes.indexOf(type) >= 0;
-        }
-
-        static dateTimeTypes = [
-            "NullableDate",
-            "Date",
-            "NullableTime",
-            "Time",
-            "NullableDateTime",
-            "DateTime",
-            "NullableDateTimeOffset",
-            "DateTimeOffset"
-        ];
-
-        static isDateTimeType(type: string): boolean {
-            return Service.dateTimeTypes.indexOf(type) >= 0;
-        }
     }
 
     export type NotificationType = Service.NotificationType;

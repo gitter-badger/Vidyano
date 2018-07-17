@@ -1,11 +1,7 @@
 namespace Vidyano {
     "use strict";
 
-    export enum SortDirection {
-        None,
-        Ascending,
-        Descending
-    }
+    export type SortDirection = Service.SortDirection;
 
     export interface ISortOption {
         column: QueryColumn;
@@ -443,7 +439,7 @@ namespace Vidyano {
                         newSortOptions.push({
                             column: col,
                             name: optionParts[0],
-                            direction: optionParts.length < 2 || optionParts[1].toUpperCase() === "ASC" ? SortDirection.Ascending : SortDirection.Descending
+                            direction: optionParts.length < 2 ? "ASC" : <SortDirection>optionParts[1]
                         });
                     });
                 }
@@ -487,7 +483,7 @@ namespace Vidyano {
                     result["allSelectedInversed"] = true;
             }
 
-            result["sortOptions"] = this.sortOptions ? this.sortOptions.filter(option => option.direction !== SortDirection.None).map(option => option.name + (option.direction === SortDirection.Ascending ? " ASC" : " DESC")).join("; ") : "";
+            result["sortOptions"] = this.sortOptions ? this.sortOptions.filter(option => option.direction !== "").map(option => option.name + " " + option.direction).join("; ") : "";
             if (this.groupingInfo && this.groupingInfo.groupedBy)
                 result["groupedBy"] = this.groupingInfo.groupedBy;
 

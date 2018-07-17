@@ -4,6 +4,7 @@ namespace Vidyano.Service {
     export type KeyValue<T> = { [key: string]: T; };
     export type KeyValueString = KeyValue<string>;
     export type NotificationType = "" | "OK" | "Notice" | "Warning" | "Error";
+    export type SortDirection = "" | "ASC" | "DESC";
 
     export interface IRequest {
         userName?: string;
@@ -102,7 +103,7 @@ namespace Vidyano.Service {
 
     export interface IPersistentObject {
         actions?: string[];
-        attributes?: IPersistentObjectAttribute [];
+        attributes?: IPersistentObjectAttribute[];
         breadcrumb?: string;
         newBreadcrumb?: string;
         isBreadcrumbSensitive?: boolean;

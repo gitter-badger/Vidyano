@@ -9,6 +9,7 @@ declare namespace Vidyano.Service {
     };
     type KeyValueString = KeyValue<string>;
     type NotificationType = "" | "OK" | "Notice" | "Warning" | "Error";
+    type SortDirection = "" | "ASC" | "DESC";
     interface IRequest {
         userName?: string;
         authToken?: string;
@@ -199,6 +200,8 @@ declare namespace Vidyano.Service {
     interface IQueryResultItemValue {
         key: string;
         value: string;
+        objectId?: string;
+        persistentObjectId?: string;
         typeHints?: KeyValueString;
     }
     interface IQueryGroupingInfo {
@@ -1013,11 +1016,7 @@ declare namespace Vidyano {
     }
 }
 declare namespace Vidyano {
-    enum SortDirection {
-        None = 0,
-        Ascending = 1,
-        Descending = 2,
-    }
+    type SortDirection = Service.SortDirection;
     interface ISortOption {
         column: QueryColumn;
         name: string;
@@ -1282,10 +1281,6 @@ declare namespace Vidyano {
         static getDate: (yearString: string, monthString: string, dayString: string, hourString: string, minuteString: string, secondString: string, msString: string) => Date;
         static fromServiceString(value: string, typeName: string): any;
         static toServiceString(value: any, typeName: string): string;
-        static numericTypes: string[];
-        static isNumericType(type: string): boolean;
-        static dateTimeTypes: string[];
-        static isDateTimeType(type: string): boolean;
     }
     type NotificationType = Service.NotificationType;
     interface IForgotPassword {
@@ -1510,5 +1505,15 @@ declare namespace Vidyano {
 declare namespace Vidyano {
     namespace ClientOperations {
         function refreshForUpdate(hooks: ServiceHooks, path: string, replaceCurrent?: boolean): void;
+    }
+}
+declare namespace Vidyano {
+    abstract class DataType {
+        static isDateTimeType(type: string): boolean;
+        static isNumericType(type: string): boolean;
+        private static _getDate;
+        private static _getServiceTimeString;
+        static fromServiceString(value: string, type: string): any;
+        static toServiceString(value: any, type: string): string;
     }
 }

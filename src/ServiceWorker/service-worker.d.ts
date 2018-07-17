@@ -1,9 +1,20 @@
+declare namespace Vidyano {
+    abstract class DataType {
+        static isDateTimeType(type: string): boolean;
+        static isNumericType(type: string): boolean;
+        private static _getDate;
+        private static _getServiceTimeString;
+        static fromServiceString(value: string, type: string): any;
+        static toServiceString(value: any, type: string): string;
+    }
+}
 declare namespace Vidyano.Service {
     type KeyValue<T> = {
         [key: string]: T;
     };
     type KeyValueString = KeyValue<string>;
     type NotificationType = "" | "OK" | "Notice" | "Warning" | "Error";
+    type SortDirection = "" | "ASC" | "DESC";
     interface IRequest {
         userName?: string;
         authToken?: string;
@@ -333,6 +344,8 @@ declare namespace Vidyano {
         onGetPersistentObject(parent: IPersistentObject, id: string, objectId?: string, isNew?: boolean): Promise<IPersistentObject>;
         onGetQuery(id: string): Promise<IQuery>;
         onExecuteQuery(query: IQuery): Promise<IQueryResult>;
+        onSortQueryResult(result: IQueryResult): IQueryResult;
+        onDataTypeCompare(value1: any, value2?: any, datatype?: string): number;
         protected onFilter(query: IQuery): IQueryResultItem[];
         onExecuteQueryFilterAction(action: string, query: IQuery, parameters: Service.ExecuteActionParameters): Promise<IPersistentObject>;
         onExecuteQueryAction(action: string, query: IQuery, selectedItems: IQueryResultItem[], parameters: Service.ExecuteActionParameters): Promise<IPersistentObject>;
