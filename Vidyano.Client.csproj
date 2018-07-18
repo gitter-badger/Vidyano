@@ -47,6 +47,7 @@
   <ItemGroup>
     <Content Include="gruntfile.js" />
     <Content Include="src\Libs\**\*.ts" />
+    <Content Include="src\Libs\Vidyano\vidyano.common.js" />
     <Content Include="src\ServiceWorker\*.ts" />
     <Content Include="src\ServiceWorker\FilesGenerator\*.ts" />
     <Content Include="src\WebComponents\**\*.ts" />
