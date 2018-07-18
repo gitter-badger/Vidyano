@@ -188,18 +188,18 @@
             if (this.onFilter !== ServiceWorkerActions.prototype.onFilter)
                 result.items = this.onFilter(query);
 
-            return this.onSortQueryResult(result);
+            return query.sortOptions !== cachedQuery.sortOptions ? this.onSortQueryResult(result) : result;
         }
 
         onSortQueryResult(result: IQueryResult): IQueryResult {
             const sortOptions: [Service.IQueryColumn, number][] = result.sortOptions.split(";").map(option => option.trim()).map(option => {
                 const optionParts = option.split(" ");
-                const sort: Service.SortDirection = optionParts.length === 1 ? "ASC" : <Service.SortDirection>optionParts[1];
                 const column = result.columns.find(c => c.name.toUpperCase() === optionParts[0].toUpperCase());
                 if (!column)
                     return null;
 
-                return <[Service.IQueryColumn, number]>[column, sort === "ASC" ? 1 : -1];
+                const sort = optionParts.length === 1 ? 1 : (<Service.SortDirection>optionParts[1] === "ASC" ? 1 : -1);
+                return <[Service.IQueryColumn, number]>[column, sort];
             }).filter(so => so != null);
 
             result.items = result.items.sort((i1, i2) => {
