@@ -97,6 +97,10 @@
                     cache.put(request, response);
             }));
 
+            self.importScripts(
+                `${WEB2_BASE}Libs/bignumber.js/bignumber.min.js`,
+                `${WEB2_BASE}Libs/Vidyano/vidyano.common.js`);
+
             await (self as ServiceWorkerGlobalScope).skipWaiting();
         }
 

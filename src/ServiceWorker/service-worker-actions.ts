@@ -192,29 +192,29 @@
         }
 
         onSortQueryResult(result: IQueryResult): IQueryResult {
-            const sortOptions: [Service.IQueryColumn, Service.SortDirection][] = result.sortOptions.split(";").map(option => option.trim()).map(option => {
+            const sortOptions: [Service.IQueryColumn, number][] = result.sortOptions.split(";").map(option => option.trim()).map(option => {
                 const optionParts = option.split(" ");
                 const sort: Service.SortDirection = optionParts.length === 1 ? "ASC" : <Service.SortDirection>optionParts[1];
                 const column = result.columns.find(c => c.name.toUpperCase() === optionParts[0].toUpperCase());
                 if (!column)
                     return null;
 
-                return <[Service.IQueryColumn, Service.SortDirection]>[column, sort];
+                return <[Service.IQueryColumn, number]>[column, sort === "ASC" ? 1 : -1];
             }).filter(so => so != null);
 
             result.items = result.items.sort((i1, i2) => {
                 for (let i = 0; i < sortOptions.length; i++) {
                     const s = sortOptions[i];
 
-                        const value1Index = i1.values.findIndex(v => v.key === s[0].name);
-                        const value1 = value1Index < 0 ? "" : (i1.values[value1Index].value || "");
+                    const value1Index = i1.values.findIndex(v => v.key === s[0].name);
+                    const value1 = value1Index < 0 ? "" : (i1.values[value1Index].value || "");
 
-                        const value2Index = i2.values.findIndex(v => v.key === s[0].name);
-                        const value2 = value2Index < 0 ? "" : (i2.values[value2Index].value || "");
+                    const value2Index = i2.values.findIndex(v => v.key === s[0].name);
+                    const value2 = value2Index < 0 ? "" : (i2.values[value2Index].value || "");
 
                     const result = this.onDataTypeCompare(value1, value2, s[0].type);
                     if (result)
-                        return result;
+                        return result * s[1];
                 }
 
                 return 0;
@@ -225,7 +225,7 @@
 
         onDataTypeCompare(value1: any, value2: any = "", datatype: string = ""): number {
             if (DataType.isDateTimeType(datatype) || DataType.isNumericType(datatype))
-                return DataType.fromServiceString(value2, datatype) - DataType.fromServiceString(value1, datatype);
+                return DataType.fromServiceString(value1, datatype) - DataType.fromServiceString(value2, datatype);
 
             return value1.localeCompare(value2);
         }

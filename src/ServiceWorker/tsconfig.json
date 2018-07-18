@@ -12,7 +12,6 @@
     "declaration": true
   },
   "include": [
-    "../Libs/Vidyano/vidyano.common.js",
     "../Libs/Typings/Vidyano.Common/vidyano.common.d.ts",
     "../Libs/Typings/bignumber.js/bignumber.d.ts",
     "data-type.ts",
