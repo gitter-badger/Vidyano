@@ -127,17 +127,10 @@
                 if (e.request.method === "GET" && e.request.url.endsWith("GetClientData?v=2")) {
                     const fetcher = await this._createFetcher<any, IClientData>(e.request);
                     let response = await fetcher.fetch();
-                    if (response) {
-                        await this.db.save({
-                            id: "GetClientData",
-                            response: JSON.stringify(response)
-                        }, "Requests");
-                    }
-                    else {
-                        const cachedClientData = await this.db.load("GetClientData", "Requests");
-                        if (cachedClientData)
-                            response = cachedClientData.response;
-                    }
+                    if (!response)
+                        response = await this.onGetClientData();
+                    else
+                        await this.onCacheClientData(JSON.parse(JSON.stringify(response)));
 
                     return this.createResponse(response);
                 }
@@ -146,20 +139,10 @@
                     if (e.request.url.endsWith("GetApplication")) {
                         const fetcher = await this._createFetcher<IGetApplicationRequest, IApplicationResponse>(e.request);
                         let response = await fetcher.fetch(fetcher.payload);
-                        if (!response) {
-                            const cachedApplication = await this.db.load("GetApplication", "Requests");
-                            if (cachedApplication)
-                                response = cachedApplication.response;
-                        }
-                        else {
-                            await this.db.save({
-                                id: "GetApplication",
-                                response: JSON.stringify(response)
-                            }, "Requests");
-
-                            if (fetcher.response)
-                                this.onCache(this._service = new Service(this, this.serviceUri, response.userName, this.authToken = response.authToken));
-                        }
+                        if (!response)
+                            response = await this.onGetApplication();
+                        else
+                            await this.onCacheApplication(JSON.parse(JSON.stringify(response)));
 
                         return this.createResponse(response);
                     }
@@ -216,12 +199,12 @@
                     else if (e.request.url.endsWith("ExecuteQuery")) {
                         const fetcher = await this._createFetcher<IExecuteQueryRequest, IExecuteQueryResponse>(e.request);
                         const response = await fetcher.fetch(fetcher.payload) || { authToken: this.authToken, result: undefined };
-                        //if (!response.result) {
-                        const actionsClass = await ServiceWorkerActions.get(fetcher.payload.query.persistentObject.type, this.db);
-                        response.result = await actionsClass.onExecuteQuery(fetcher.payload.query);
-                        //}
-                        //else
-                        //    this.authToken = response.authToken;
+                        if (!response.result) {
+                            const actionsClass = await ServiceWorkerActions.get(fetcher.payload.query.persistentObject.type, this.db);
+                            response.result = await actionsClass.onExecuteQuery(fetcher.payload.query);
+                        }
+                        else
+                            this.authToken = response.authToken;
 
                         return this.createResponse(response);
                     }
@@ -288,6 +271,34 @@
             };
 
             return fetcher;
+        }
+
+        protected async onGetClientData(): Promise<Service.IClientData> {
+            return (await this.db.loadRequest("GetClientData")).response;
+        }
+
+        protected async onCacheClientData(clientData: Service.IClientData) {
+            await this.db.saveRequest({
+                id: "GetClientData",
+                response: clientData
+            });
+        }
+
+        protected async onCacheApplication(application: Service.IApplicationResponse) {
+            application.application.attributes.filter(a => a.name === "FeedbackId" || a.name === "GlobalSearchId" || a.name === "UserSettingsId").forEach(a => a.value = "00000000-0000-0000-0000-000000000000");
+            application.application.attributes.filter(a => a.name === "AnalyticsKey" || a.name === "InstantSearchDelay").forEach(a => a.value = undefined);
+            application.application.attributes.filter(a => a.name === "CanProfile").forEach(a => a.value = "False");
+
+            await this.db.saveRequest({
+                id: "GetApplication",
+                response: application
+            });
+
+            this.onCache(this._service = new Service(this, this.serviceUri, application.userName, this.authToken = application.authToken));
+        }
+
+        protected async onGetApplication(): Promise<Service.IApplicationResponse> {
+            return (await this.db.loadRequest("GetApplication")).response;
         }
 
         protected async onCache(service: IService) {

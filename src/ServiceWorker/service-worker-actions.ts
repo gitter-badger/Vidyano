@@ -63,7 +63,7 @@
         async onCachePersistentObject(persistentObject: IPersistentObject): Promise<void> {
             await this.db.save({
                 id: persistentObject.id,
-                response: JSON.stringify(persistentObject)
+                persistentObject: persistentObject
             }, "PersistentObjects");
 
             await this.db.save({
@@ -75,7 +75,7 @@
         async onCacheQuery(query: IQuery): Promise<void> {
             await this.db.save({
                 id: query.id,
-                response: JSON.stringify(query)
+                query: query
             }, "Queries");
 
             await this.db.save({
@@ -86,7 +86,7 @@
             await this.db.save({
                 id: query.persistentObject.id,
                 query: query.id,
-                response: JSON.stringify(query.persistentObject)
+                persistentObject: query.persistentObject
             }, "PersistentObjects");
 
             await this.db.save({
@@ -107,7 +107,7 @@
             if (!queryRecord)
                 return null;
 
-            const query: IQuery = JSON.parse(queryRecord.response);
+            const query = queryRecord.query;
             if (!query)
                 return null;
 
@@ -125,7 +125,7 @@
             if (!resultItem)
                 return null;
 
-            const po: IPersistentObject = JSON.parse(record.response);
+            const po = record.persistentObject;
             po.objectId = objectId;
             po.isNew = isNew;
             po.actions = (po.actions || []);
@@ -158,7 +158,7 @@
 
         async onGetQuery(id: string): Promise<IQuery> {
             const cache = await this.db.load(id, "Queries");
-            const query: IQuery = cache ? JSON.parse(cache.response) : null;
+            const query = cache ? cache.query : null;
             if (!query)
                 return null;
 
@@ -256,7 +256,7 @@
 
         async onNew(query: IQuery): Promise<IPersistentObject> {
             const cache = await this.db.load(query.id, "Queries");
-            const cachedQuery = cache ? <IQuery>JSON.parse(cache.response) : null;
+            const cachedQuery = cache ? cache.query : null;
             if (!query || !cachedQuery)
                 return null;
 
@@ -269,7 +269,7 @@
 
         async onDelete(query: IQuery, selectedItems: IQueryResultItem[]) {
             const queryCache = await this.db.load(query.id, "Queries");
-            query = JSON.parse(queryCache.response);
+            query = queryCache.query;
 
             selectedItems.forEach(item => {
                 const i = query.result.items.findIndex(i => i.id === item.id);
@@ -277,7 +277,7 @@
                     query.result.items.splice(i, 1);
             });
 
-            queryCache.response = JSON.stringify(query);
+            queryCache.query = query;
             await this.db.save(queryCache, "Queries");
         }
 
@@ -293,11 +293,12 @@
 
             const poCache = await this.db.load(obj.id, "PersistentObjects");
             const queryCache = await this.db.load(poCache.query, "Queries");
-            const query = JSON.parse(queryCache.response);
+            const query = queryCache.query;
 
             await this.editQueryResultItemValues(query, obj, "New");
+            this.onSortQueryResult(query.result);
 
-            queryCache.response = JSON.stringify(query);
+            queryCache.query = query;
             await this.db.save(queryCache, "Queries");
 
             obj.attributes.forEach(attr => attr.isValueChanged = false);
@@ -309,11 +310,12 @@
         async saveExisting(obj: IPersistentObject): Promise<IPersistentObject> {
             const poCache = await this.db.load(obj.id, "PersistentObjects");
             const queryCache = await this.db.load(poCache.query, "Queries");
-            const query = JSON.parse(queryCache.response);
+            const query = queryCache.query;
 
             await this.editQueryResultItemValues(query, obj, "Edit");
+            this.onSortQueryResult(query.result);
 
-            queryCache.response = JSON.stringify(query);
+            queryCache.query = query;
             await this.db.save(queryCache, "Queries");
 
             obj.attributes.forEach(attr => attr.isValueChanged = false);
