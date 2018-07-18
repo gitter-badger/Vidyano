@@ -483,7 +483,7 @@ namespace Vidyano {
                     result["allSelectedInversed"] = true;
             }
 
-            result["sortOptions"] = this.sortOptions ? this.sortOptions.filter(option => option.direction !== "").map(option => option.name + " " + option.direction).join("; ") : "";
+            result["sortOptions"] = this.sortOptions ? this.sortOptions.filter(option => option.direction !== "").map(option => `${option.name}${option.direction === "DESC" ? option.direction : ""}`).join("; ") : "";
             if (this.groupingInfo && this.groupingInfo.groupedBy)
                 result["groupedBy"] = this.groupingInfo.groupedBy;
 
