@@ -99,15 +99,15 @@
             if (typeof objOrId === "object")
                 objOrId = (objOrId as IPersistentObject).id;
 
-            const record = await this.db.load(objOrId, "PersistentObjects");
-            if (record == null || !record.query)
+            const storeObj = await this.db.load(objOrId, "PersistentObjects");
+            if (storeObj == null || !storeObj.query)
                 return null;
 
-            const queryRecord = await this.db.load(record.query, "Queries");
-            if (!queryRecord)
+            const storeQuery = await this.db.load(storeObj.query, "Queries");
+            if (!storeQuery)
                 return null;
 
-            const query = queryRecord.query;
+            const query = storeQuery.query;
             if (!query)
                 return null;
 
@@ -115,8 +115,8 @@
         }
 
         async onGetPersistentObject(parent: IPersistentObject, id: string, objectId?: string, isNew?: boolean): Promise<IPersistentObject> {
-            const record = await this.db.load(id, "PersistentObjects");
-            if (record == null || !record.query)
+            const storeObj = await this.db.load(id, "PersistentObjects");
+            if (storeObj == null || !storeObj.query)
                 return null;
 
             const query = await this.getOwnerQuery(id);
@@ -125,7 +125,7 @@
             if (!resultItem)
                 return null;
 
-            const po = record.persistentObject;
+            const po = storeObj.persistentObject;
             po.objectId = objectId;
             po.isNew = isNew;
             po.actions = (po.actions || []);
@@ -157,8 +157,8 @@
         }
 
         async onGetQuery(id: string): Promise<IQuery> {
-            const cache = await this.db.load(id, "Queries");
-            const query = cache ? cache.query : null;
+            const storeQuery = await this.db.load(id, "Queries");
+            const query = storeQuery ? storeQuery.query : null;
             if (!query)
                 return null;
 
@@ -255,12 +255,12 @@
         }
 
         async onNew(query: IQuery): Promise<IPersistentObject> {
-            const cache = await this.db.load(query.id, "Queries");
-            const cachedQuery = cache ? cache.query : null;
-            if (!query || !cachedQuery)
+            const storeQuery = await this.db.load(query.id, "Queries");
+            const storeQueryQ = storeQuery ? storeQuery.query : null;
+            if (!query || !storeQueryQ)
                 return null;
 
-            const newPo = cachedQuery.persistentObject;
+            const newPo = storeQueryQ.persistentObject;
             newPo.actions = ["Edit"];
             newPo.isNew = true;
             newPo.breadcrumb = newPo.newBreadcrumb || `New ${newPo.label}`;
@@ -268,8 +268,8 @@
         }
 
         async onDelete(query: IQuery, selectedItems: IQueryResultItem[]) {
-            const queryCache = await this.db.load(query.id, "Queries");
-            query = queryCache.query;
+            const storeQuery = await this.db.load(query.id, "Queries");
+            query = storeQuery.query;
 
             selectedItems.forEach(item => {
                 const i = query.result.items.findIndex(i => i.id === item.id);
@@ -277,8 +277,8 @@
                     query.result.items.splice(i, 1);
             });
 
-            queryCache.query = query;
-            await this.db.save(queryCache, "Queries");
+            storeQuery.query = query;
+            await this.db.save(storeQuery, "Queries");
         }
 
         async onSave(obj: IPersistentObject): Promise<IPersistentObject> {
@@ -291,15 +291,15 @@
         async saveNew(obj: IPersistentObject): Promise<IPersistentObject> {
             obj.objectId = `SW-NEW-${Date.now()}`;
 
-            const poCache = await this.db.load(obj.id, "PersistentObjects");
-            const queryCache = await this.db.load(poCache.query, "Queries");
-            const query = queryCache.query;
+            const storeObj = await this.db.load(obj.id, "PersistentObjects");
+            const storeQuery = await this.db.load(storeObj.query, "Queries");
+            const query = storeQuery.query;
 
             await this.editQueryResultItemValues(query, obj, "New");
             this.onSortQueryResult(query.result);
 
-            queryCache.query = query;
-            await this.db.save(queryCache, "Queries");
+            storeQuery.query = query;
+            await this.db.save(storeQuery, "Queries");
 
             obj.attributes.forEach(attr => attr.isValueChanged = false);
             obj.isNew = false;
@@ -308,15 +308,15 @@
         }
 
         async saveExisting(obj: IPersistentObject): Promise<IPersistentObject> {
-            const poCache = await this.db.load(obj.id, "PersistentObjects");
-            const queryCache = await this.db.load(poCache.query, "Queries");
-            const query = queryCache.query;
+            const storeObj = await this.db.load(obj.id, "PersistentObjects");
+            const storeQuery = await this.db.load(storeObj.query, "Queries");
+            const query = storeQuery.query;
 
             await this.editQueryResultItemValues(query, obj, "Edit");
             this.onSortQueryResult(query.result);
 
-            queryCache.query = query;
-            await this.db.save(queryCache, "Queries");
+            storeQuery.query = query;
+            await this.db.save(storeQuery, "Queries");
 
             obj.attributes.forEach(attr => attr.isValueChanged = false);
 
