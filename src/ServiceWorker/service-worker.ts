@@ -274,14 +274,14 @@
         }
 
         protected async onGetClientData(): Promise<Service.IClientData> {
-            return (await this.db.loadRequest("GetClientData")).response;
+            return (await this.db.load("GetClientData", "Requests")).response;
         }
 
         protected async onCacheClientData(clientData: Service.IClientData) {
-            await this.db.saveRequest({
+            await this.db.save({
                 id: "GetClientData",
                 response: clientData
-            });
+            }, "Requests");
         }
 
         protected async onCacheApplication(application: Service.IApplicationResponse) {
@@ -289,16 +289,16 @@
             application.application.attributes.filter(a => a.name === "AnalyticsKey" || a.name === "InstantSearchDelay").forEach(a => a.value = undefined);
             application.application.attributes.filter(a => a.name === "CanProfile").forEach(a => a.value = "False");
 
-            await this.db.saveRequest({
+            await this.db.save({
                 id: "GetApplication",
                 response: application
-            });
+            }, "Requests");
 
             this.onCache(this._service = new Service(this, this.serviceUri, application.userName, this.authToken = application.authToken));
         }
 
         protected async onGetApplication(): Promise<Service.IApplicationResponse> {
-            return (await this.db.loadRequest("GetApplication")).response;
+            return (await this.db.load("GetApplication", "Requests")).response;
         }
 
         protected async onCache(service: IService) {

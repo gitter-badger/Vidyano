@@ -320,11 +320,11 @@ declare namespace Vidyano {
     type Store = "Requests" | "Queries" | "PersistentObjects" | "ActionClassesById";
     type RequestMapKey = "GetQuery" | "GetPersistentObject";
     interface IStoreGetClientDataRequest {
-        id: string;
+        id: "GetClientData";
         response: IClientData;
     }
     interface IStoreGetApplicationRequest {
-        id: string;
+        id: "GetApplication";
         response: IApplicationResponse;
     }
     interface IStoreQuery {
@@ -355,9 +355,9 @@ declare namespace Vidyano {
         private _db;
         constructor();
         readonly db: IDBDatabase;
-        saveRequest<K extends keyof RequestsStoreNameMap>(entry: RequestsStoreNameMap[K]): Promise<void>;
+        save<K extends keyof StoreNameMap, I extends keyof RequestsStoreNameMap>(entry: RequestsStoreNameMap[I], store: "Requests"): Promise<void>;
         save<K extends keyof StoreNameMap>(entry: StoreNameMap[K], store: K): Promise<void>;
-        loadRequest<K extends keyof RequestsStoreNameMap>(key: K): Promise<RequestsStoreNameMap[K]>;
+        load<K extends keyof StoreNameMap, I extends keyof RequestsStoreNameMap>(key: I, store: "Requests"): Promise<RequestsStoreNameMap[I]>;
         load<K extends keyof StoreNameMap>(key: string, store: K): Promise<StoreNameMap[K]>;
     }
 }

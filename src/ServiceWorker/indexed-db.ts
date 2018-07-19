@@ -3,12 +3,12 @@
     export type RequestMapKey = "GetQuery" | "GetPersistentObject"
 
     export interface IStoreGetClientDataRequest {
-        id: string;
+        id: "GetClientData";
         response: IClientData;
     }
 
     export interface IStoreGetApplicationRequest {
-        id: string;
+        id: "GetApplication";
         response: IApplicationResponse;
     }
 
@@ -66,10 +66,8 @@
             return this._db;
         }
 
-        async saveRequest<K extends keyof RequestsStoreNameMap>(entry: RequestsStoreNameMap[K]): Promise<void> {
-            return this.save(entry, "Requests");
-        }
-
+        async save<K extends keyof StoreNameMap, I extends keyof RequestsStoreNameMap>(entry: RequestsStoreNameMap[I], store: "Requests"): Promise<void>;
+        async save<K extends keyof StoreNameMap>(entry: StoreNameMap[K], store: K): Promise<void>;
         async save<K extends keyof StoreNameMap>(entry: StoreNameMap[K], store: K): Promise<void> {
             await this._initializing;
 
@@ -91,10 +89,8 @@
             requests.put(entry);
         }
 
-        async loadRequest<K extends keyof RequestsStoreNameMap>(key: K): Promise<RequestsStoreNameMap[K]> {
-            return this.load(key, "Requests");
-        }
-
+        async load<K extends keyof StoreNameMap, I extends keyof RequestsStoreNameMap>(key: I, store: "Requests"): Promise<RequestsStoreNameMap[I]>;
+        async load<K extends keyof StoreNameMap>(key: string, store: K): Promise<StoreNameMap[K]>;
         async load<K extends keyof StoreNameMap>(key: string, store: K): Promise<StoreNameMap[K]> {
             await this._initializing;
 
