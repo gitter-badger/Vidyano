@@ -88,9 +88,19 @@ namespace Vidyano.Service {
     export interface IClientData {
         defaultUser: string;
         exception: string;
-        languages: { [code: string]: { name: string; isDefault: boolean; messages: KeyValueString } };
+        languages: ILanguages;
         providers: { [name: string]: { parameters: IProviderParameters } };
         windowsAuthentication: boolean;
+    }
+
+    export interface ILanguages {
+        [code: string]: ILanguage;
+    }
+
+    export interface ILanguage {
+        name: string;
+        isDefault: boolean;
+        messages: KeyValueString;
     }
 
     export interface IApplicationResponse extends IResponse {

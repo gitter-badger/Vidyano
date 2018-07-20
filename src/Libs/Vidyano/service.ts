@@ -10,8 +10,8 @@ namespace Vidyano {
         private _lastAuthTokenUpdate: Date = new Date();
         private _isUsingDefaultCredentials: boolean;
         private _clientData: Service.IClientData;
-        private _language: ServiceLanguage;
-        private _languages: ILanguage[];
+        private _language: Language;
+        private _languages: Language[];
         private _windowsAuthentication: boolean;
         private _providers: { [name: string]: Service.IProviderParameters };
         private _isSignedIn: boolean;
@@ -402,16 +402,16 @@ namespace Vidyano {
                 this.profile = false;
         }
 
-        get language(): ILanguage {
+        get language(): Language {
             return this._language;
         }
 
-        set language(l: ILanguage) {
+        set language(l: Language) {
             if (this._language === l)
                 return;
 
             const oldLanguage = this._language;
-            this.notifyPropertyChanged("language", this._language = new ServiceLanguage(l), oldLanguage);
+            this.notifyPropertyChanged("language", this._language = l, oldLanguage);
         }
 
         get requestedLanguage(): string {
@@ -439,7 +439,7 @@ namespace Vidyano {
                 this.notifyPropertyChanged("isSignedIn", this._isSignedIn, oldIsSignedIn);
         }
 
-        get languages(): ILanguage[] {
+        get languages(): Language[] {
             return this._languages;
         }
 
@@ -553,14 +553,11 @@ namespace Vidyano {
             if (this._clientData.exception)
                 throw this._clientData.exception;
 
-            const languages: ILanguage[] = [];
-            for (const name in this._clientData.languages) {
-                languages.push({ culture: name, name: this._clientData.languages[name].name, isDefault: this._clientData.languages[name].isDefault, messages: this._clientData.languages[name].messages });
-            }
-            this._languages = languages;
-            this.language = Enumerable.from(this._languages).firstOrDefault(l => l.isDefault) || this._languages[0];
+            const languages = Object.keys(this._clientData.languages).map(culture => new Language(this._clientData.languages[culture], culture));
+            this.hooks.setDefaultTranslations(languages);
 
-            this.hooks.setDefaultTranslations(this.languages);
+            this._languages = languages;
+            this.language = this._languages.find(l => l.isDefault) || this.languages[0];
 
             this._providers = {};
             for (const provider in this._clientData.providers) {
@@ -1281,14 +1278,8 @@ namespace Vidyano {
         notificationDuration: number;
     }
 
-    export interface ILanguage {
-        culture: string;
-        name: string;
-        isDefault: boolean;
-        messages: {
-            [key: string]: string;
-        };
-    }
+    export type ILanguages = Service.ILanguages;
+    export type ILanguage = Service.ILanguage;
 
     export interface IReportOptions {
         filter?: string;

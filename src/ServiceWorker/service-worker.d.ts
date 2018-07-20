@@ -83,19 +83,21 @@ declare namespace Vidyano.Service {
     interface IClientData {
         defaultUser: string;
         exception: string;
-        languages: {
-            [code: string]: {
-                name: string;
-                isDefault: boolean;
-                messages: KeyValueString;
-            };
-        };
+        languages: ILanguages;
         providers: {
             [name: string]: {
                 parameters: IProviderParameters;
             };
         };
         windowsAuthentication: boolean;
+    }
+    interface ILanguages {
+        [code: string]: ILanguage;
+    }
+    interface ILanguage {
+        name: string;
+        isDefault: boolean;
+        messages: KeyValueString;
     }
     interface IApplicationResponse extends IResponse {
         application: IPersistentObject;

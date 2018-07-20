@@ -158,7 +158,7 @@
             return undefined;
         }
 
-        setDefaultTranslations(languages: ILanguage[]) {
+        setDefaultTranslations(languages: Language[]) {
             const messages = {
                 "ForgotPassword": "Forgot password?",
                 "Or": "Or",
