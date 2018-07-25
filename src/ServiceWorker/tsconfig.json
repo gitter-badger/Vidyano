@@ -9,16 +9,19 @@
       "webworker"
     ],
     "outFile": "service-worker.js",
-    "declaration": true
+    "declaration": true,
+    "experimentalDecorators": true
   },
   "include": [
     "../Libs/Typings/Vidyano.Common/vidyano.common.d.ts",
     "../Libs/Typings/bignumber.js/bignumber.d.ts",
+    "../Libs/Vidyano/cultures.ts",
     "data-type.ts",
     "service.ts",
     "indexed-db.ts",
-    "service-worker-actions.ts",
     "service-worker.ts",
-    "service-worker-files.ts"
+    "service-worker-actions.ts",
+    "service-worker-files.ts",
+    "Model/*.ts"
   ]
 }

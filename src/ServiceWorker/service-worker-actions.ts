@@ -1,9 +1,9 @@
 ﻿namespace Vidyano {
     export class ServiceWorkerActions {
         private static _types = new Map<string, any>();
-        static async get<T>(name: string, db: IndexedDB): Promise<ServiceWorkerActions> {
+        static async get<T>(name: string, serviceWorker: ServiceWorker): Promise<ServiceWorkerActions> {
             if (!(/^\w+$/.test(name))) {
-                const classNameRecord = await db.load(name, "ActionClassesById");
+                const classNameRecord = await serviceWorker.db.load(name, "ActionClassesById");
                 if (!classNameRecord)
                     return null;
 
@@ -16,7 +16,7 @@
                     actionsClass = eval.call(null, `ServiceWorker${name}Actions`);
                 }
                 catch (e) {
-                    const className = await db.load(name, "ActionClassesById");
+                    const className = await serviceWorker.db.load(name, "ActionClassesById");
                     if (className) {
                         try {
                             actionsClass = eval.call(null, `ServiceWorker${className}Actions`);
@@ -34,15 +34,19 @@
             }
 
             const instance = new (actionsClass || ServiceWorkerActions)();
-            instance._db = db;
+            instance._serviceWorker = serviceWorker;
 
             return instance;
         }
 
-        private _db: IndexedDB;
+        private _serviceWorker: ServiceWorker;
 
         get db(): IndexedDB {
-            return this._db;
+            return this.serviceWorker.db;
+        }
+
+        protected get serviceWorker(): ServiceWorker {
+            return this._serviceWorker;
         }
 
         private _isPersistentObject(arg: any): arg is IPersistentObject {
@@ -176,6 +180,7 @@
         }
 
         async onExecuteQuery(query: IQuery): Promise<IQueryResult> {
+            console.log(this._serviceWorker.application.getTranslatedMessage("ApplicationOutdated"));
             const cachedQuery = await this.onGetQuery(query.id);
 
             const result: IQueryResult = {
@@ -250,6 +255,8 @@
         async onExecutePersistentObjectAction(action: string, persistentObject: IPersistentObject, parameters: Service.ExecuteActionParameters): Promise<IPersistentObject> {
             if (action === "Save")
                 return this.onSave(persistentObject);
+            else if (action === "Refresh")
+                return this.onRefresh(persistentObject, parameters as Service.IExecuteActionRefreshParameters);
 
             return null;
         }
@@ -265,6 +272,10 @@
             newPo.isNew = true;
             newPo.breadcrumb = newPo.newBreadcrumb || `New ${newPo.label}`;
             return newPo;
+        }
+
+        async onRefresh(persistentObject: IPersistentObject, parameters: Service.IExecuteActionRefreshParameters): Promise<IPersistentObject> {
+            return persistentObject;
         }
 
         async onDelete(query: IQuery, selectedItems: IQueryResultItem[]) {

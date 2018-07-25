@@ -711,7 +711,7 @@ namespace Vidyano {
 
             this.actionDefinitions.toEnumerable().forEach(kvp => this.language.messages[`Action_${kvp.key}`] = kvp.value.displayName);
 
-            CultureInfo.currentCulture = CultureInfo.cultures.get(result.userCultureInfo) || CultureInfo.cultures.get(result.userLanguage) || CultureInfo.invariantCulture;
+            CultureInfo.currentCulture = CultureInfo.cultures[result.userCultureInfo] || CultureInfo.cultures[result.userLanguage] || CultureInfo.invariantCulture;
 
             if (result.initial != null)
                 this._initial = this.hooks.onConstructPersistentObject(this, result.initial);

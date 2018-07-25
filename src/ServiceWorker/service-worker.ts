@@ -24,6 +24,7 @@
     export type IGetPersistentObjectResponse = Service.IGetPersistentObjectResponse;
     export type IPersistentObject = Service.IPersistentObject;
     export type IPersistentObjectAttribute = Service.IPersistentObjectAttribute;
+    export type IPersistentObjectAttributeWithReference = Service.IPersistentObjectAttributeWithReference;
     export type IExecuteActionRequest = Service.IExecuteActionRequest;
     export type IExecuteQueryActionRequest = Service.IExecuteQueryActionRequest;
     export type IExecuteQueryRequest = Service.IExecuteQueryRequest;
@@ -35,8 +36,10 @@
 
     export class ServiceWorker {
         private readonly _db: IndexedDB;
-        private _service: IService;
         private _cacheName: string;
+        private _service: IService;
+        private _clientData: IClientData;
+        private _application: Application;
 
         constructor(private serviceUri?: string, private _verbose?: boolean) {
             this._db = new IndexedDB();
@@ -51,6 +54,14 @@
 
         get db(): IndexedDB {
             return this._db;
+        }
+
+        get clientData(): IClientData {
+            return this._clientData;
+        }
+
+        get application(): Application {
+            return this._application;
         }
 
         private get authToken(): string {
@@ -69,8 +80,6 @@
         }
 
         private async _onInstall(e: ExtendableEvent) {
-            this._log("Installed ServiceWorker.");
-
             console.log("Installing Vidyano Web2 version " + version);
 
             vidyanoFiles.splice(0, vidyanoFiles.length, ...[
@@ -102,11 +111,11 @@
                 `${WEB2_BASE}Libs/Vidyano/vidyano.common.js`);
 
             await (self as ServiceWorkerGlobalScope).skipWaiting();
+
+            this._log("Installed ServiceWorker.");
         }
 
         private async _onActivate(e: ExtendableEvent) {
-            this._log("Activated ServiceWorker");
-
             await (self as ServiceWorkerGlobalScope).clients.claim();
 
             const oldCaches = (await caches.keys()).filter(cache => cache.startsWith("vidyano.web2.") && cache !== CACHE_NAME);
@@ -118,6 +127,8 @@
                 if (!success)
                     console.error("Failed uninstalling Vidyano Web2 version " + cacheName.substr(13));
             }
+
+            this._log("Activated ServiceWorker");
         }
 
         private async _onFetch(e: FetchEventInit) {
@@ -130,7 +141,7 @@
                     if (!response)
                         response = await this.onGetClientData();
                     else
-                        await this.onCacheClientData(JSON.parse(JSON.stringify(response)));
+                        await this.onCacheClientData(response);
 
                     return this.createResponse(response);
                 }
@@ -142,71 +153,79 @@
                         if (!response)
                             response = await this.onGetApplication();
                         else
-                            await this.onCacheApplication(JSON.parse(JSON.stringify(response)));
+                            await this.onCacheApplication(response);
 
                         return this.createResponse(response);
                     }
-                    else if (e.request.url.endsWith("GetQuery")) {
-                        const fetcher = await this._createFetcher<IGetQueryRequest, IGetQueryResponse>(e.request);
-                        const response = await fetcher.fetch(fetcher.payload) || { authToken: this.authToken, query: undefined };
-                        if (!response.query) {
-                            const actionsClass = await ServiceWorkerActions.get(fetcher.payload.id, this.db);
-                            response.query = await actionsClass.onGetQuery(fetcher.payload.id)
-                        }
-                        else
-                            this.authToken = response.authToken;
+                    else {
+                        if (!this._clientData)
+                            this._clientData = (await this.db.load("GetClientData", "Requests")).response;
 
-                        return this.createResponse(response);
-                    }
-                    else if (e.request.url.endsWith("GetPersistentObject")) {
-                        const fetcher = await this._createFetcher<IGetPersistentObjectRequest, IGetPersistentObjectResponse>(e.request);
-                        const response = await fetcher.fetch(fetcher.payload) || { authToken: this.authToken, result: undefined };
-                        if (!response.result) {
-                            const actionsClass = await ServiceWorkerActions.get(fetcher.payload.persistentObjectTypeId, this.db);
-                            response.result = await actionsClass.onGetPersistentObject(fetcher.payload.parent, fetcher.payload.persistentObjectTypeId, fetcher.payload.objectId, fetcher.payload.isNew);
-                        }
-                        else
-                            this.authToken = response.authToken;
+                        if (!this._application)
+                            this._application = new Application(this, (await this.db.load("GetApplication", "Requests")).response);
 
-                        return this.createResponse(response);
-                    }
-                    else if (e.request.url.endsWith("ExecuteAction")) {
-                        const fetcher = await this._createFetcher<IExecuteActionRequest, IExecuteActionResponse>(e.request);
-                        const response = await fetcher.fetch(fetcher.payload) || { authToken: this.authToken, result: undefined };
-                        if (!response.result) {
-                            const action = fetcher.payload.action.split(".");
-                            if (action[0] === "Query") {
-                                const queryAction = fetcher.payload as IExecuteQueryActionRequest;
-                                const actionsClass = await ServiceWorkerActions.get(queryAction.query.persistentObject.type, this.db);
-                                response.result = await actionsClass.onExecuteQueryAction(action[1], queryAction.query, queryAction.selectedItems, queryAction.parameters);
+                        if (e.request.url.endsWith("GetQuery")) {
+                            const fetcher = await this._createFetcher<IGetQueryRequest, IGetQueryResponse>(e.request);
+                            const response = await fetcher.fetch(fetcher.payload) || { authToken: this.authToken, query: undefined };
+                            if (!response.query) {
+                                const actionsClass = await ServiceWorkerActions.get(fetcher.payload.id, this);
+                                response.query = await actionsClass.onGetQuery(fetcher.payload.id)
                             }
-                            else if (action[0] === "PersistentObject") {
-                                const persistentObjectAction = fetcher.payload as IExecutePersistentObjectActionRequest;
-                                const actionsClass = await ServiceWorkerActions.get(persistentObjectAction.parent.type, this.db);
-                                response.result = await actionsClass.onExecutePersistentObjectAction(action[1], persistentObjectAction.parent, persistentObjectAction.parameters);
-                            }
-                            else if (action[0] === "QueryFilter") {
-                                const queryFilterAction = fetcher.payload as IExecuteQueryFilterActionRequest;
-                                const actionsClass = await ServiceWorkerActions.get(queryFilterAction.query.persistentObject.type, this.db);
-                                response.result = await actionsClass.onExecuteQueryFilterAction(action[1], queryFilterAction.query, queryFilterAction.parameters);
-                            }
-                        }
-                        else
-                            this.authToken = response.authToken;
+                            else
+                                this.authToken = response.authToken;
 
-                        return this.createResponse(response);
-                    }
-                    else if (e.request.url.endsWith("ExecuteQuery")) {
-                        const fetcher = await this._createFetcher<IExecuteQueryRequest, IExecuteQueryResponse>(e.request);
-                        const response = await fetcher.fetch(fetcher.payload) || { authToken: this.authToken, result: undefined };
-                        if (!response.result) {
-                            const actionsClass = await ServiceWorkerActions.get(fetcher.payload.query.persistentObject.type, this.db);
-                            response.result = await actionsClass.onExecuteQuery(fetcher.payload.query);
+                            return this.createResponse(response);
                         }
-                        else
-                            this.authToken = response.authToken;
+                        else if (e.request.url.endsWith("GetPersistentObject")) {
+                            const fetcher = await this._createFetcher<IGetPersistentObjectRequest, IGetPersistentObjectResponse>(e.request);
+                            const response = await fetcher.fetch(fetcher.payload) || { authToken: this.authToken, result: undefined };
+                            if (!response.result) {
+                                const actionsClass = await ServiceWorkerActions.get(fetcher.payload.persistentObjectTypeId, this);
+                                response.result = await actionsClass.onGetPersistentObject(fetcher.payload.parent, fetcher.payload.persistentObjectTypeId, fetcher.payload.objectId, fetcher.payload.isNew);
+                            }
+                            else
+                                this.authToken = response.authToken;
 
-                        return this.createResponse(response);
+                            return this.createResponse(response);
+                        }
+                        else if (e.request.url.endsWith("ExecuteAction")) {
+                            const fetcher = await this._createFetcher<IExecuteActionRequest, IExecuteActionResponse>(e.request);
+                            const response = await fetcher.fetch(fetcher.payload) || { authToken: this.authToken, result: undefined };
+                            if (!response.result) {
+                                const action = fetcher.payload.action.split(".");
+                                if (action[0] === "Query") {
+                                    const queryAction = fetcher.payload as IExecuteQueryActionRequest;
+                                    const actionsClass = await ServiceWorkerActions.get(queryAction.query.persistentObject.type, this);
+                                    response.result = await actionsClass.onExecuteQueryAction(action[1], queryAction.query, queryAction.selectedItems, queryAction.parameters);
+                                }
+                                else if (action[0] === "PersistentObject") {
+                                    const persistentObjectAction = fetcher.payload as IExecutePersistentObjectActionRequest;
+                                    const actionsClass = await ServiceWorkerActions.get(persistentObjectAction.parent.type, this);
+                                    response.result = await actionsClass.onExecutePersistentObjectAction(action[1], persistentObjectAction.parent, persistentObjectAction.parameters);
+                                }
+                                else if (action[0] === "QueryFilter") {
+                                    const queryFilterAction = fetcher.payload as IExecuteQueryFilterActionRequest;
+                                    const actionsClass = await ServiceWorkerActions.get(queryFilterAction.query.persistentObject.type, this);
+                                    response.result = await actionsClass.onExecuteQueryFilterAction(action[1], queryFilterAction.query, queryFilterAction.parameters);
+                                }
+                            }
+                            else
+                                this.authToken = response.authToken;
+
+                            return this.createResponse(response);
+                        }
+                        else if (e.request.url.endsWith("ExecuteQuery")) {
+                            const fetcher = await this._createFetcher<IExecuteQueryRequest, IExecuteQueryResponse>(e.request);
+                            const response = await fetcher.fetch(fetcher.payload) || { authToken: this.authToken, result: undefined };
+                            if (!response.result) {
+                                const actionsClass = await ServiceWorkerActions.get(fetcher.payload.query.persistentObject.type, this);
+                                response.result = await actionsClass.onExecuteQuery(fetcher.payload.query);
+                            }
+                            else
+                                this.authToken = response.authToken;
+
+                            return this.createResponse(response);
+                        }
                     }
                 }
 
@@ -294,7 +313,7 @@
                 response: application
             }, "Requests");
 
-            this.onCache(this._service = new Service(this, this.serviceUri, application.userName, this.authToken = application.authToken));
+            this.onCache(this._service = new Service(this, this.serviceUri, application.userName, application.authToken));
         }
 
         protected async onGetApplication(): Promise<Service.IApplicationResponse> {
@@ -416,7 +435,7 @@
             if (!po)
                 return;
 
-            const actionsClass = await ServiceWorkerActions.get(po.type, this._serviceWorker.db);
+            const actionsClass = await ServiceWorkerActions.get(po.type, this._serviceWorker);
             if (!actionsClass)
                 return;
 
@@ -431,7 +450,7 @@
             if (!query || !query.persistentObject)
                 return;
 
-            const actionsClass = await ServiceWorkerActions.get(query.persistentObject.type, this._serviceWorker.db);
+            const actionsClass = await ServiceWorkerActions.get(query.persistentObject.type, this._serviceWorker);
             if (!actionsClass)
                 return;
 

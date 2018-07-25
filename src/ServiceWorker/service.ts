@@ -48,6 +48,10 @@ namespace Vidyano.Service {
         parameters: ExecuteActionParameters;
     }
 
+    export interface IExecuteActionRefreshParameters extends ExecuteActionParameters {
+        RefreshedPersistentObjectAttributeId: string;
+    }
+
     export interface IExecuteQueryActionRequest extends IExecuteActionRequest {
         query: IQuery;
         selectedItems: IQueryResultItem[];
@@ -94,7 +98,7 @@ namespace Vidyano.Service {
     }
 
     export interface ILanguages {
-        [code: string]: ILanguage;
+        [culture: string]: ILanguage;
     }
 
     export interface ILanguage {
@@ -129,8 +133,9 @@ namespace Vidyano.Service {
         notificationDuration: number;
         queries: IQuery[];
         queryLayoutMode: string;
-        securityToken: string;
+        securityToken: never;
         stateBehavior?: "OpenInEdit" | "StayInEdit" | "AsDialog";
+        dialogSaveAction?: string;
         tabs: IPersistentObjectTab[];
         type: string;
     }
@@ -138,16 +143,23 @@ namespace Vidyano.Service {
     export interface IPersistentObjectAttribute {
         name: string;
         type: string;
+        group: string;
+        tab: string;
         label: string;
         value?: string;
-        objectId?: string;
-        lookup?: IQuery;
         isReadOnly?: boolean;
         isRequired?: boolean;
         isSensitive?: boolean;
         isValueChanged?: boolean;
+        offset: number;
         rules?: string;
         visibility: string;
+    }
+
+    export interface IPersistentObjectAttributeWithReference extends IPersistentObjectAttribute {
+        displayAttribute: string;
+        objectId: string;
+        lookup: IQuery;
     }
 
     export interface IPersistentObjectTab {

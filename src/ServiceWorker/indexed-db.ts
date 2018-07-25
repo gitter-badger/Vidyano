@@ -73,19 +73,6 @@
 
             const tx = this.db.transaction(store, "readwrite");
             const requests = tx.objectStore(store);
-
-            const storeEntry: any = { id: entry.id };
-            for (let prop in entry) {
-                if (prop === "id")
-                    continue;
-
-                const value = entry[prop];
-                if (!value)
-                    continue;
-
-                storeEntry[prop] = typeof value === "object" ? JSON.stringify(value) : value;
-            }
-
             requests.put(entry);
         }
 
@@ -99,20 +86,7 @@
 
             return await new Promise<any>((resolve, reject) => {
                 const getData = requests.get(key);
-                getData.onsuccess = () => {
-                    if (getData.result) {
-                        for (let prop in getData.result) {
-                            if (prop === "id")
-                                continue;
-
-                            const value = <string>getData.result[prop];
-                            if (value && value[0] === "{")
-                                getData.result[prop] = JSON.parse(value);
-                        }
-                    }
-
-                    resolve(getData.result)
-                };
+                getData.onsuccess = () => resolve(getData.result);
                 getData.onerror = () => resolve(null);
             });
         }

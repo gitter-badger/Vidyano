@@ -1,4 +1,63 @@
 declare namespace Vidyano {
+    class CultureInfo {
+        name: string;
+        numberFormat: ICultureInfoNumberFormat;
+        dateFormat: ICultureInfoDateFormat;
+        static currentCulture: CultureInfo;
+        static invariantCulture: CultureInfo;
+        static cultures: {
+            [key: string]: CultureInfo;
+        };
+        constructor(name: string, numberFormat: ICultureInfoNumberFormat, dateFormat: ICultureInfoDateFormat);
+    }
+    interface ICultureInfoNumberFormat {
+        naNSymbol: string;
+        negativeSign: string;
+        positiveSign: string;
+        negativeInfinityText: string;
+        positiveInfinityText: string;
+        percentSymbol: string;
+        percentGroupSizes: Array<number>;
+        percentDecimalDigits: number;
+        percentDecimalSeparator: string;
+        percentGroupSeparator: string;
+        percentPositivePattern: string;
+        percentNegativePattern: string;
+        currencySymbol: string;
+        currencyGroupSizes: Array<number>;
+        currencyDecimalDigits: number;
+        currencyDecimalSeparator: string;
+        currencyGroupSeparator: string;
+        currencyNegativePattern: string;
+        currencyPositivePattern: string;
+        numberGroupSizes: Array<number>;
+        numberDecimalDigits: number;
+        numberDecimalSeparator: string;
+        numberGroupSeparator: string;
+    }
+    interface ICultureInfoDateFormat {
+        amDesignator: string;
+        pmDesignator: string;
+        dateSeparator: string;
+        timeSeparator: string;
+        gmtDateTimePattern: string;
+        universalDateTimePattern: string;
+        sortableDateTimePattern: string;
+        dateTimePattern: string;
+        longDatePattern: string;
+        shortDatePattern: string;
+        longTimePattern: string;
+        shortTimePattern: string;
+        yearMonthPattern: string;
+        firstDayOfWeek: number;
+        dayNames: Array<string>;
+        shortDayNames: Array<string>;
+        minimizedDayNames: Array<string>;
+        monthNames: Array<string>;
+        shortMonthNames: Array<string>;
+    }
+}
+declare namespace Vidyano {
     abstract class DataType {
         static isDateTimeType(type: string): boolean;
         static isNumericType(type: string): boolean;
@@ -50,6 +109,9 @@ declare namespace Vidyano.Service {
         action: string;
         parameters: ExecuteActionParameters;
     }
+    interface IExecuteActionRefreshParameters extends ExecuteActionParameters {
+        RefreshedPersistentObjectAttributeId: string;
+    }
     interface IExecuteQueryActionRequest extends IExecuteActionRequest {
         query: IQuery;
         selectedItems: IQueryResultItem[];
@@ -92,7 +154,7 @@ declare namespace Vidyano.Service {
         windowsAuthentication: boolean;
     }
     interface ILanguages {
-        [code: string]: ILanguage;
+        [culture: string]: ILanguage;
     }
     interface ILanguage {
         name: string;
@@ -124,24 +186,31 @@ declare namespace Vidyano.Service {
         notificationDuration: number;
         queries: IQuery[];
         queryLayoutMode: string;
-        securityToken: string;
+        securityToken: never;
         stateBehavior?: "OpenInEdit" | "StayInEdit" | "AsDialog";
+        dialogSaveAction?: string;
         tabs: IPersistentObjectTab[];
         type: string;
     }
     interface IPersistentObjectAttribute {
         name: string;
         type: string;
+        group: string;
+        tab: string;
         label: string;
         value?: string;
-        objectId?: string;
-        lookup?: IQuery;
         isReadOnly?: boolean;
         isRequired?: boolean;
         isSensitive?: boolean;
         isValueChanged?: boolean;
+        offset: number;
         rules?: string;
         visibility: string;
+    }
+    interface IPersistentObjectAttributeWithReference extends IPersistentObjectAttribute {
+        displayAttribute: string;
+        objectId: string;
+        lookup: IQuery;
     }
     interface IPersistentObjectTab {
         columnCount: number;
@@ -364,13 +433,70 @@ declare namespace Vidyano {
     }
 }
 declare namespace Vidyano {
+    let version: string;
+    type Fetcher<TPayload, TResult> = (payload?: TPayload) => Promise<TResult>;
+    type IClientData = Service.IClientData;
+    type IGetApplicationRequest = Service.IGetApplicationRequest;
+    type IApplicationResponse = Service.IApplicationResponse;
+    type IGetQueryRequest = Service.IGetQueryRequest;
+    type IGetQueryResponse = Service.IGetQueryResponse;
+    type IQuery = Service.IQuery;
+    type IQueryColumn = Service.IQueryColumn;
+    type IQueryResultItem = Service.IQueryResultItem;
+    type IQueryResultItemValue = Service.IQueryResultItemValue;
+    type IGetPersistentObjectRequest = Service.IGetPersistentObjectRequest;
+    type IGetPersistentObjectResponse = Service.IGetPersistentObjectResponse;
+    type IPersistentObject = Service.IPersistentObject;
+    type IPersistentObjectAttribute = Service.IPersistentObjectAttribute;
+    type IPersistentObjectAttributeWithReference = Service.IPersistentObjectAttributeWithReference;
+    type IExecuteActionRequest = Service.IExecuteActionRequest;
+    type IExecuteQueryActionRequest = Service.IExecuteQueryActionRequest;
+    type IExecuteQueryRequest = Service.IExecuteQueryRequest;
+    type IExecuteQueryResponse = Service.IExecuteQueryResponse;
+    type IQueryResult = Service.IQueryResult;
+    type IExecuteQueryFilterActionRequest = Service.IExecuteQueryFilterActionRequest;
+    type IExecutePersistentObjectActionRequest = Service.IExecutePersistentObjectActionRequest;
+    type IExecuteActionResponse = Service.IExecuteActionResponse;
+    class ServiceWorker {
+        private serviceUri;
+        private _verbose;
+        private readonly _db;
+        private _cacheName;
+        private _service;
+        private _clientData;
+        private _application;
+        constructor(serviceUri?: string, _verbose?: boolean);
+        readonly db: IndexedDB;
+        readonly clientData: IClientData;
+        readonly application: Application;
+        private authToken;
+        private _log(message);
+        private _onInstall(e);
+        private _onActivate(e);
+        private _onFetch(e);
+        private _createFetcher<TPayload, TResult>(originalRequest);
+        protected onGetClientData(): Promise<Service.IClientData>;
+        protected onCacheClientData(clientData: Service.IClientData): Promise<void>;
+        protected onCacheApplication(application: Service.IApplicationResponse): Promise<void>;
+        protected onGetApplication(): Promise<Service.IApplicationResponse>;
+        protected onCache(service: IService): Promise<void>;
+        protected createRequest(data: any, request: Request): Request;
+        protected createResponse(data: any, response?: Response): Response;
+    }
+    interface IService {
+        cachePersistentObject(parent: Service.IPersistentObject, id: string, objectId?: string, isNew?: boolean): Promise<void>;
+        cacheQuery(id: string): Promise<void>;
+    }
+}
+declare namespace Vidyano {
     class ServiceWorkerActions {
         private static _types;
-        static get<T>(name: string, db: IndexedDB): Promise<ServiceWorkerActions>;
-        private _db;
+        static get<T>(name: string, serviceWorker: ServiceWorker): Promise<ServiceWorkerActions>;
+        private _serviceWorker;
         readonly db: IndexedDB;
-        private _isPersistentObject;
-        private _isQuery;
+        protected readonly serviceWorker: ServiceWorker;
+        private _isPersistentObject(arg);
+        private _isQuery(arg);
         onCache<T extends IPersistentObject | IQuery>(persistentObjectOrQuery: T): Promise<void>;
         onCachePersistentObject(persistentObject: IPersistentObject): Promise<void>;
         onCacheQuery(query: IQuery): Promise<void>;
@@ -385,6 +511,7 @@ declare namespace Vidyano {
         onExecuteQueryAction(action: string, query: IQuery, selectedItems: IQueryResultItem[], parameters: Service.ExecuteActionParameters): Promise<IPersistentObject>;
         onExecutePersistentObjectAction(action: string, persistentObject: IPersistentObject, parameters: Service.ExecuteActionParameters): Promise<IPersistentObject>;
         onNew(query: IQuery): Promise<IPersistentObject>;
+        onRefresh(persistentObject: IPersistentObject, parameters: Service.IExecuteActionRefreshParameters): Promise<IPersistentObject>;
         onDelete(query: IQuery, selectedItems: IQueryResultItem[]): Promise<void>;
         onSave(obj: IPersistentObject): Promise<IPersistentObject>;
         saveNew(obj: IPersistentObject): Promise<IPersistentObject>;
@@ -402,56 +529,124 @@ declare namespace Vidyano {
     }
 }
 declare namespace Vidyano {
-    let version: string;
-    type Fetcher<TPayload, TResult> = (payload?: TPayload) => Promise<TResult>;
-    type IClientData = Service.IClientData;
-    type IGetApplicationRequest = Service.IGetApplicationRequest;
-    type IApplicationResponse = Service.IApplicationResponse;
-    type IGetQueryRequest = Service.IGetQueryRequest;
-    type IGetQueryResponse = Service.IGetQueryResponse;
-    type IQuery = Service.IQuery;
-    type IQueryColumn = Service.IQueryColumn;
-    type IQueryResultItem = Service.IQueryResultItem;
-    type IQueryResultItemValue = Service.IQueryResultItemValue;
-    type IGetPersistentObjectRequest = Service.IGetPersistentObjectRequest;
-    type IGetPersistentObjectResponse = Service.IGetPersistentObjectResponse;
-    type IPersistentObject = Service.IPersistentObject;
-    type IPersistentObjectAttribute = Service.IPersistentObjectAttribute;
-    type IExecuteActionRequest = Service.IExecuteActionRequest;
-    type IExecuteQueryActionRequest = Service.IExecuteQueryActionRequest;
-    type IExecuteQueryRequest = Service.IExecuteQueryRequest;
-    type IExecuteQueryResponse = Service.IExecuteQueryResponse;
-    type IQueryResult = Service.IQueryResult;
-    type IExecuteQueryFilterActionRequest = Service.IExecuteQueryFilterActionRequest;
-    type IExecutePersistentObjectActionRequest = Service.IExecutePersistentObjectActionRequest;
-    type IExecuteActionResponse = Service.IExecuteActionResponse;
-    class ServiceWorker {
-        private serviceUri?;
-        private _verbose?;
-        private readonly _db;
-        private _service;
-        private _cacheName;
-        constructor(serviceUri?: string, _verbose?: boolean);
-        readonly db: IndexedDB;
-        private authToken;
-        private _log;
-        private _onInstall;
-        private _onActivate;
-        private _onFetch;
-        private _createFetcher;
-        protected onGetClientData(): Promise<Service.IClientData>;
-        protected onCacheClientData(clientData: Service.IClientData): Promise<void>;
-        protected onCacheApplication(application: Service.IApplicationResponse): Promise<void>;
-        protected onGetApplication(): Promise<Service.IApplicationResponse>;
-        protected onCache(service: IService): Promise<void>;
-        protected createRequest(data: any, request: Request): Request;
-        protected createResponse(data: any, response?: Response): Response;
-    }
-    interface IService {
-        cachePersistentObject(parent: Service.IPersistentObject, id: string, objectId?: string, isNew?: boolean): Promise<void>;
-        cacheQuery(id: string): Promise<void>;
+    const vidyanoFiles: string[];
+}
+declare namespace Vidyano {
+    namespace Helpers {
+        type FilteredKeys<T, U> = {
+            [P in keyof T]: T[P] extends U ? P : never;
+        }[keyof T];
+        class ByNameWrapper<T, U extends object> implements ProxyHandler<U> {
+            private _objects;
+            private _wrapper;
+            private _keyProperty;
+            private _wrapped;
+            private constructor();
+            get(target: U, p: PropertyKey, receiver: any): U;
+            static create<T, U extends object>(objects: T[], wrapper: Function, deepFreeze?: boolean, keyProperty?: string): Helpers.ByName<U>;
+            static create<T, U extends object>(objects: T[], wrapper: (o: T) => U, keyProperty?: string): Helpers.ByName<U>;
+        }
+        type ByName<T> = {
+            [key: string]: T;
+            [key: number]: T;
+        };
+        class Wrapper {
+            static _wrap<T>(wrapper: Function, obj: any, deepFreeze?: boolean): T;
+            private static _deepFreeze(obj);
+        }
     }
 }
 declare namespace Vidyano {
-    const vidyanoFiles: string[];
+    class Application {
+        private _serviceWorker;
+        private _application;
+        readonly userLanguage: string;
+        readonly userName: string;
+        readonly hasSensitive: boolean;
+        constructor(_serviceWorker: ServiceWorker, response: Service.IApplicationResponse);
+        getTranslatedMessage(key: string, ...params: string[]): string;
+    }
+}
+declare namespace Vidyano {
+    type PersistentObjectAttribute = {
+        [Q in Helpers.FilteredKeys<IPersistentObjectAttribute, any>]: IPersistentObjectAttribute[Q];
+    } & Wrappers.PersistentObjectAttribute;
+    type ReadOnlyPersistentObjectAttribute = Readonly<{
+        [Q in Helpers.FilteredKeys<IPersistentObjectAttribute, any>]: IPersistentObjectAttribute[Q];
+    }> & Wrappers.PersistentObjectAttribute;
+    type PersistentObjectAttributeWithReference = {
+        [Q in Helpers.FilteredKeys<IPersistentObjectAttributeWithReference, any>]: IPersistentObjectAttributeWithReference[Q];
+    } & Wrappers.PersistentObjectAttributeWithReference;
+    type ReadOnlyPersistentObjectAttributeWithReference = Readonly<{
+        [Q in Helpers.FilteredKeys<IPersistentObjectAttributeWithReference, any>]: IPersistentObjectAttributeWithReference[Q];
+    }> & Wrappers.PersistentObjectAttributeWithReference;
+    namespace Wrappers {
+        class PersistentObjectAttribute {
+            private _obj;
+            protected constructor(_obj: IPersistentObjectAttribute);
+            readonly isReference: boolean;
+        }
+        class PersistentObjectAttributeWithReference extends Wrappers.PersistentObjectAttribute {
+            private constructor();
+        }
+    }
+}
+declare namespace Vidyano {
+    type PersistentObject = {
+        [Q in Helpers.FilteredKeys<IPersistentObject, any>]: IPersistentObject[Q];
+    } & Wrappers.PersistentObject;
+    type ReadOnlyPersistentObject = Readonly<{
+        [Q in Helpers.FilteredKeys<IPersistentObject, any>]: IPersistentObject[Q];
+    }> & Wrappers.PersistentObject;
+    namespace Wrappers {
+        class PersistentObject {
+            private _obj;
+            private _parent;
+            private readonly _attributes;
+            private readonly _queries;
+            private constructor();
+            readonly queries: Helpers.ByName<ReadOnlyQuery>;
+            getAttribute(name: string): IPersistentObjectAttribute;
+        }
+    }
+}
+declare namespace Vidyano {
+    type QueryResultItemValue = Readonly<Service.IQueryResultItemValue> & Wrappers.QueryResultItemValue;
+    namespace Wrappers {
+        class QueryResultItemValue {
+            private _value;
+            private constructor();
+        }
+    }
+}
+declare namespace Vidyano {
+    type QueryResultItem = Readonly<{
+        [Q in Helpers.FilteredKeys<IQueryResultItem, string | boolean | number | Service.KeyValueString>]: IQueryResultItem[Q];
+    }> & Wrappers.QueryResultItem;
+    namespace Wrappers {
+        class QueryResultItem {
+            private _item;
+            private readonly _values;
+            private constructor();
+            readonly values: Helpers.ByName<QueryResultItemValue>;
+        }
+    }
+}
+declare namespace Vidyano {
+    type Query = {
+        [Q in Helpers.FilteredKeys<IQuery, string | boolean | number>]: IQuery[Q];
+    } & Wrappers.Query;
+    type ReadOnlyQuery = Readonly<{
+        [Q in Helpers.FilteredKeys<IQuery, string | boolean | number>]: IQuery[Q];
+    }> & Wrappers.Query;
+    namespace Wrappers {
+        class Query {
+            private _query;
+            private readonly _persistentObject;
+            private readonly _items;
+            private constructor();
+            readonly persistentObject: ReadOnlyPersistentObject;
+            readonly items: Helpers.ByName<QueryResultItem>;
+        }
+    }
 }
