@@ -393,8 +393,8 @@ declare namespace Vidyano {
     let version: string;
     type Fetcher<TPayload, TResult> = (payload?: TPayload) => Promise<TResult>;
     class ServiceWorker {
-        private serviceUri?;
-        private _verbose?;
+        private serviceUri;
+        private _verbose;
         private readonly _db;
         private _cacheName;
         private _service;
@@ -405,11 +405,11 @@ declare namespace Vidyano {
         readonly clientData: Service.ClientData;
         readonly application: Application;
         private authToken;
-        private _log;
-        private _onInstall;
-        private _onActivate;
-        private _onFetch;
-        private _createFetcher;
+        private _log(message);
+        private _onInstall(e);
+        private _onActivate(e);
+        private _onFetch(e);
+        private _createFetcher<TPayload, TResult>(originalRequest);
         protected onGetClientData(): Promise<Service.ClientData>;
         protected onCacheClientData(clientData: Service.ClientData): Promise<void>;
         protected onCacheApplication(application: Service.ApplicationResponse): Promise<void>;
@@ -430,8 +430,8 @@ declare namespace Vidyano {
         private _serviceWorker;
         readonly db: IndexedDB;
         protected readonly serviceWorker: ServiceWorker;
-        private _isPersistentObject;
-        private _isQuery;
+        private _isPersistentObject(arg);
+        private _isQuery(arg);
         onCache<T extends Service.PersistentObject | Service.Query>(persistentObjectOrQuery: T): Promise<void>;
         onCachePersistentObject(persistentObject: Service.PersistentObject): Promise<void>;
         onCacheQuery(query: Service.Query): Promise<void>;
@@ -486,23 +486,25 @@ declare namespace Vidyano {
             [key: string]: T;
             [key: number]: T;
         };
-        class ByNameWrapper<T, U extends object> implements ProxyHandler<U> {
+        class ByNameWrapper<T, U extends Wrapper<T>> implements ProxyHandler<U> {
+            private _target;
             private _objects;
             private _wrapper;
             private _keyProperty;
             private _wrapped;
             private constructor();
-            get(target: U, p: PropertyKey, receiver: any): U;
-            readonly length: number;
+            get(target: U, p: PropertyKey, receiver: any): any;
+            private _unwrap();
             static create<T, U extends object>(objects: T[], wrapper: Function, deepFreeze?: boolean, keyProperty?: string): ByName<U>;
             static create<T, U extends object>(objects: T[], wrapper: (o: T) => U, keyProperty?: string): ByName<U>;
         }
         abstract class Wrapper<T> {
-            protected abstract _unwrap(): T;
+            private __wrappedProperties__;
+            protected _unwrap(...children: string[]): T;
             static _wrap<T>(obj: any, deepFreeze?: boolean): T;
             static _wrap<T>(wrapper: Function, obj: any, deepFreeze?: boolean): T;
             static _unwrap<T extends Wrapper<U>, U>(obj: T): U;
-            private static _deepFreeze;
+            private static _deepFreeze(obj);
         }
     }
 }
@@ -535,7 +537,7 @@ declare namespace Vidyano {
     namespace Wrappers {
         class PersistentObjectWrapper extends Wrapper<Service.PersistentObject> {
             private _obj;
-            private _parent?;
+            private _parent;
             private readonly _attributes;
             private readonly _queries;
             private constructor();

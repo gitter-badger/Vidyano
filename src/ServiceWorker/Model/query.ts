@@ -31,7 +31,7 @@ namespace Vidyano {
             }
 
             protected _unwrap(): Service.Query {
-                return this._query;
+                return super._unwrap("columns", "persistentObject", "result");
             }
         }
     }
