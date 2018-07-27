@@ -44,7 +44,7 @@ namespace Vidyano {
         attributes: PersistentObjectAttribute[];
         queries: Query[];
 
-        constructor(service: Service, po: Service.IPersistentObject);
+        constructor(service: Service, po: Service.PersistentObject);
         constructor(service: Service, po: any) {
             super(service, (po._actionNames || po.actions || []).map(a => a === "Edit" && po.isNew ? "Save" : a), po.actionLabels);
 

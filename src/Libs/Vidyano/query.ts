@@ -84,7 +84,7 @@ namespace Vidyano {
     }
 
     export class Query extends ServiceObjectWithActions {
-        private _lastResult: Service.IQueryResult;
+        private _lastResult: Service.QueryResult;
         private _asLookup: boolean;
         private _isSelectionModifying: boolean;
         private _totalItems: number;
@@ -124,7 +124,7 @@ namespace Vidyano {
         items: QueryResultItem[];
         selectAll: IQuerySelectAll;
 
-        constructor(service: Service, query: Service.IQuery, parent?: PersistentObject, asLookup?: boolean, maxSelectedItems?: number);
+        constructor(service: Service, query: Service.Query, parent?: PersistentObject, asLookup?: boolean, maxSelectedItems?: number);
         constructor(service: Service, query: any, public parent?: PersistentObject, asLookup: boolean = false, public maxSelectedItems?: number) {
             super(service, query._actionNames || query.actions, query.actionLabels);
 
@@ -495,7 +495,7 @@ namespace Vidyano {
             return result;
         }
 
-        _setResult(result: Service.IQueryResult) {
+        _setResult(result: Service.QueryResult) {
             this._lastResult = result;
 
             this.continuation = result.continuation;
@@ -805,7 +805,7 @@ namespace Vidyano {
             this._setCanFilter(this.actions.some(a => a.name === "Filter") && this.columns.some(c => c.canFilter));
         }
 
-        private _updateGroupingInfo(groupingInfo: Service.IQueryGroupingInfo) {
+        private _updateGroupingInfo(groupingInfo: Service.QueryGroupingInfo) {
             if (!groupingInfo) {
                 this._setGroupingInfo(null);
                 return;

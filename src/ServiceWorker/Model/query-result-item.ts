@@ -1,18 +1,25 @@
-﻿namespace Vidyano {
-    export type QueryResultItem = Readonly<{
-        [Q in Helpers.FilteredKeys<IQueryResultItem, string | boolean | number | Service.KeyValueString>]: IQueryResultItem[Q]
-    }> & Wrappers.QueryResultItem;
+﻿/// <reference path="wrappers.ts" />
+
+namespace Vidyano {
+    export type QueryResultItem = Wrappers.Wrap<Service.QueryResultItem, never, Wrappers.QueryResultItemWrapper>;
+    export type ReadOnlyQueryResultItem = Readonly<QueryResultItem>;
 
     export namespace Wrappers {
-        export class QueryResultItem {
-            private readonly _values: Helpers.ByName<QueryResultItemValue>;
+        export class QueryResultItemWrapper extends Wrapper<Service.QueryResultItem> {
+            private readonly _values: ByName<Vidyano.QueryResultItemValue>;
 
-            private constructor(private _item: IQueryResultItem) {
-                this._values = Helpers.ByNameWrapper.create(this._item.values, QueryResultItemValue, true, "key");
+            private constructor(private _item: Service.QueryResultItem) {
+                super();
+
+                this._values = ByNameWrapper.create(this._item.values, QueryResultItemValueWrapper, true, "key");
             }
 
-            get values(): Helpers.ByName<QueryResultItemValue> {
+            get values(): ByName<QueryResultItemValue> {
                 return this._values;
+            }
+
+            protected _unwrap(): Service.QueryResultItem {
+                return this._item;
             }
         }
     }

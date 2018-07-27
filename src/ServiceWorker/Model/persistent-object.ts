@@ -1,28 +1,31 @@
-﻿namespace Vidyano {
-    export type PersistentObject = {
-        [Q in Helpers.FilteredKeys<IPersistentObject, any>]: IPersistentObject[Q]
-    } & Wrappers.PersistentObject;
+﻿/// <reference path="wrappers.ts" />
 
-    export type ReadOnlyPersistentObject = Readonly<{
-        [Q in Helpers.FilteredKeys<IPersistentObject, any>]: IPersistentObject[Q]
-    }> & Wrappers.PersistentObject;
+namespace Vidyano {
+    export type PersistentObject = Wrappers.Wrap<Service.PersistentObject, "breadcrumb" | "label" | "notification" | "notificationType" | "notificationDuration", Wrappers.PersistentObjectWrapper>;
+    export type ReadOnlyPersistentObject = Readonly<PersistentObject>;
 
     export namespace Wrappers {
-        export class PersistentObject {
-            private readonly _attributes: Helpers.ByName<PersistentObjectAttribute>;
-            private readonly _queries: Helpers.ByName<ReadOnlyQuery>;
+        export class PersistentObjectWrapper extends Wrapper<Service.PersistentObject> {
+            private readonly _attributes: ByName<PersistentObjectAttribute>;
+            private readonly _queries: ByName<ReadOnlyQuery>;
 
-            private constructor(private _obj: IPersistentObject, private _parent?: Query) {
-                this._attributes = Helpers.ByNameWrapper.create(this._obj.attributes, attr => Helpers.Wrapper._wrap(attr.type !== "Reference" ? PersistentObjectAttribute : PersistentObjectAttributeWithReference, attr, !(_parent instanceof Query)));
-                this._queries = Helpers.ByNameWrapper.create(this._obj.queries, Query, true);
+            private constructor(private _obj: Service.PersistentObject, private _parent?: QueryWrapper) {
+                super();
+
+                this._attributes = ByNameWrapper.create(this._obj.attributes, attr => Wrapper._wrap(attr.type !== "Reference" ? PersistentObjectAttributeWrapper : PersistentObjectAttributeWithReferenceWrapper, attr, !(_parent instanceof QueryWrapper)));
+                this._queries = ByNameWrapper.create(this._obj.queries, QueryWrapper, true);
             }
 
-            get queries(): Helpers.ByName<ReadOnlyQuery> {
+            get queries(): ByName<ReadOnlyQuery> {
                 return this._queries;
             }
 
-            getAttribute(name: string): IPersistentObjectAttribute {
-                return this._obj.attributes.find(a => a.name === name);
+            get attributes(): ByName<PersistentObjectAttribute> {
+                return this._attributes;
+            }
+
+            protected _unwrap(): Service.PersistentObject {
+                return this._obj;
             }
         }
     }

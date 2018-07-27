@@ -1,28 +1,37 @@
-﻿namespace Vidyano {
-    export type Query = {
-        [Q in Helpers.FilteredKeys<IQuery, string | boolean | number>]: IQuery[Q]
-    } & Wrappers.Query;
+﻿/// <reference path="wrappers.ts" />
 
-    export type ReadOnlyQuery = Readonly<{
-        [Q in Helpers.FilteredKeys<IQuery, string | boolean | number>]: IQuery[Q]
-    }> & Wrappers.Query;
+namespace Vidyano {
+    export type Query = Wrappers.Wrap<Service.Query, "actionLabels" | "allowTextSearch" | "label" | "enableSelectAll" | "notification" | "notificationType" | "notificationDuration" | "sortOptions" | "textSearch", Wrappers.QueryWrapper>;
+    export type ReadOnlyQuery = Readonly<Query>;
 
     export namespace Wrappers {
-        export class Query {
+        export class QueryWrapper extends Wrapper<Service.Query> {
+            private readonly _columns: ByName<QueryColumn>;
             private readonly _persistentObject: ReadOnlyPersistentObject;
-            private readonly _items: Helpers.ByName<QueryResultItem>;
+            private readonly _result: QueryResult;
 
-            private constructor(private _query: IQuery) {
-                this._persistentObject = Helpers.Wrapper._wrap(PersistentObject, this._query.persistentObject, true);
-                this._items = Helpers.ByNameWrapper.create(this._query.result.items, QueryResultItem, true, "id");
+            private constructor(private _query: Service.Query) {
+                super();
+
+                this._columns = ByNameWrapper.create(this._query.columns, QueryColumnWrapper, true, "name");
+                this._persistentObject = Wrapper._wrap(PersistentObjectWrapper, this._query.persistentObject, true);
+                this._result = Wrapper._wrap(QueryResultWrapper, this._query.result);
+            }
+
+            get columns(): ByName<QueryColumn> {
+                return this._columns;
             }
 
             get persistentObject(): ReadOnlyPersistentObject {
                 return this._persistentObject;
             }
 
-            get items(): Helpers.ByName<QueryResultItem> {
-                return this._items;
+            get result(): QueryResult {
+                return this._result;
+            }
+
+            protected _unwrap(): Service.Query {
+                return this._query;
             }
         }
     }

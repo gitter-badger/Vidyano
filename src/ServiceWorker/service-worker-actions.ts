@@ -49,22 +49,22 @@
             return this._serviceWorker;
         }
 
-        private _isPersistentObject(arg: any): arg is IPersistentObject {
-            return (arg as IPersistentObject).type !== undefined;
+        private _isPersistentObject(arg: any): arg is Service.PersistentObject {
+            return (arg as Service.PersistentObject).type !== undefined;
         }
 
-        private _isQuery(arg: any): arg is IQuery {
-            return (arg as IQuery).persistentObject !== undefined;
+        private _isQuery(arg: any): arg is Service.Query {
+            return (arg as Service.Query).persistentObject !== undefined;
         }
 
-        async onCache<T extends IPersistentObject | IQuery>(persistentObjectOrQuery: T): Promise<void> {
+        async onCache<T extends Service.PersistentObject | Service.Query>(persistentObjectOrQuery: T): Promise<void> {
             if (this._isPersistentObject(persistentObjectOrQuery))
                 await this.onCachePersistentObject(persistentObjectOrQuery);
             else if (this._isQuery(persistentObjectOrQuery))
                 await this.onCacheQuery(persistentObjectOrQuery);
         }
 
-        async onCachePersistentObject(persistentObject: IPersistentObject): Promise<void> {
+        async onCachePersistentObject(persistentObject: Service.PersistentObject): Promise<void> {
             await this.db.save({
                 id: persistentObject.id,
                 persistentObject: persistentObject
@@ -76,7 +76,7 @@
             }, "ActionClassesById");
         }
 
-        async onCacheQuery(query: IQuery): Promise<void> {
+        async onCacheQuery(query: Service.Query): Promise<void> {
             await this.db.save({
                 id: query.id,
                 query: query
@@ -99,9 +99,9 @@
             }, "ActionClassesById");
         }
 
-        async getOwnerQuery(objOrId: IPersistentObject | string): Promise<IQuery> {
+        async getOwnerQuery(objOrId: Service.PersistentObject | string): Promise<Service.Query> {
             if (typeof objOrId === "object")
-                objOrId = (objOrId as IPersistentObject).id;
+                objOrId = (objOrId as Service.PersistentObject).id;
 
             const storeObj = await this.db.load(objOrId, "PersistentObjects");
             if (storeObj == null || !storeObj.query)
@@ -118,7 +118,7 @@
             return query;
         }
 
-        async onGetPersistentObject(parent: IPersistentObject, id: string, objectId?: string, isNew?: boolean): Promise<IPersistentObject> {
+        async onGetPersistentObject(parent: Service.PersistentObject, id: string, objectId?: string, isNew?: boolean): Promise<Service.PersistentObject> {
             const storeObj = await this.db.load(id, "PersistentObjects");
             if (storeObj == null || !storeObj.query)
                 return null;
@@ -160,7 +160,7 @@
             return po;
         }
 
-        async onGetQuery(id: string): Promise<IQuery> {
+        async onGetQuery(id: string): Promise<Query> {
             const storeQuery = await this.db.load(id, "Queries");
             const query = storeQuery ? storeQuery.query : null;
             if (!query)
@@ -176,35 +176,35 @@
                     query.actions.splice(filterIndex, 1);
             }
 
-            return query;
+            return Wrappers.QueryWrapper._wrap(query);
         }
 
-        async onExecuteQuery(query: IQuery): Promise<IQueryResult> {
-            console.log(this._serviceWorker.application.getTranslatedMessage("ApplicationOutdated"));
-            const cachedQuery = await this.onGetQuery(query.id);
+        async onExecuteQuery(query: Query): Promise<QueryResult> {
+            //const cachedQuery = await this.onGetQuery(query.id);
 
-            const result: IQueryResult = {
-                columns: query.columns,
-                items: cachedQuery.result.items,
-                sortOptions: query.sortOptions,
-                charts: cachedQuery.result.charts
-            };
+            //const result: Service.QueryResult = {
+            //    columns: query.columns,
+            //    items: cachedQuery.result.items,
+            //    sortOptions: query.sortOptions,
+            //    charts: cachedQuery.result.charts
+            //};
 
-            if (this.onFilter !== ServiceWorkerActions.prototype.onFilter)
-                result.items = this.onFilter(query);
+            //if (this.onFilter !== ServiceWorkerActions.prototype.onFilter)
+            //    result.items = this.onFilter(query);
 
-            return query.sortOptions !== cachedQuery.sortOptions ? this.onSortQueryResult(result) : result;
+            //return query.sortOptions !== cachedQuery.sortOptions ? this.onSortQueryResult(result) : result;
+            return null;
         }
 
-        onSortQueryResult(result: IQueryResult): IQueryResult {
-            const sortOptions: [Service.IQueryColumn, number][] = result.sortOptions.split(";").map(option => option.trim()).map(option => {
+        onSortQueryResult(result: Service.QueryResult): Service.QueryResult {
+            const sortOptions: [Service.QueryColumn, number][] = result.sortOptions.split(";").map(option => option.trim()).map(option => {
                 const optionParts = option.split(" ");
                 const column = result.columns.find(c => c.name.toUpperCase() === optionParts[0].toUpperCase());
                 if (!column)
                     return null;
 
                 const sort = optionParts.length === 1 ? 1 : (<Service.SortDirection>optionParts[1] === "ASC" ? 1 : -1);
-                return <[Service.IQueryColumn, number]>[column, sort];
+                return <[Service.QueryColumn, number]>[column, sort];
             }).filter(so => so != null);
 
             result.items = result.items.sort((i1, i2) => {
@@ -235,15 +235,15 @@
             return value1.localeCompare(value2);
         }
 
-        protected onFilter(query: IQuery): IQueryResultItem[] {
+        protected onFilter(query: Service.Query): QueryResultItem[] {
             throw "Not implemented";
         }
 
-        async onExecuteQueryFilterAction(action: string, query: IQuery, parameters: Service.ExecuteActionParameters): Promise<IPersistentObject> {
+        async onExecuteQueryFilterAction(action: string, query: Service.Query, parameters: Service.ExecuteActionParameters): Promise<PersistentObject> {
             throw "Not implemented";
         }
 
-        async onExecuteQueryAction(action: string, query: IQuery, selectedItems: IQueryResultItem[], parameters: Service.ExecuteActionParameters): Promise<IPersistentObject> {
+        async onExecuteQueryAction(action: string, query: Query, selectedItems: QueryResultItem[], parameters: Service.ExecuteActionParameters): Promise<PersistentObject> {
             if (action === "New")
                 return this.onNew(query);
             else if (action === "Delete")
@@ -252,122 +252,125 @@
             return null;
         }
 
-        async onExecutePersistentObjectAction(action: string, persistentObject: IPersistentObject, parameters: Service.ExecuteActionParameters): Promise<IPersistentObject> {
+        async onExecutePersistentObjectAction(action: string, persistentObject: PersistentObject, parameters: Service.ExecuteActionParameters): Promise<PersistentObject> {
             if (action === "Save")
                 return this.onSave(persistentObject);
             else if (action === "Refresh")
-                return this.onRefresh(persistentObject, parameters as Service.IExecuteActionRefreshParameters);
+                return this.onRefresh(persistentObject, parameters as Service.ExecuteActionRefreshParameters);
 
             return null;
         }
 
-        async onNew(query: IQuery): Promise<IPersistentObject> {
-            const storeQuery = await this.db.load(query.id, "Queries");
-            const storeQueryQ = storeQuery ? storeQuery.query : null;
-            if (!query || !storeQueryQ)
-                return null;
+        async onNew(query: Query): Promise<PersistentObject> {
+            //const storeQuery = await this.db.load(query.id, "Queries");
+            //const storeQueryQ = storeQuery ? storeQuery.query : null;
+            //if (!query || !storeQueryQ)
+            //    return null;
 
-            const newPo = storeQueryQ.persistentObject;
-            newPo.actions = ["Edit"];
-            newPo.isNew = true;
-            newPo.breadcrumb = newPo.newBreadcrumb || `New ${newPo.label}`;
-            return newPo;
+            //const newPo = storeQueryQ.persistentObject;
+            //newPo.actions = ["Edit"];
+            //newPo.isNew = true;
+            //newPo.breadcrumb = newPo.newBreadcrumb || `New ${newPo.label}`;
+            //return newPo;
+            return null;
         }
 
-        async onRefresh(persistentObject: IPersistentObject, parameters: Service.IExecuteActionRefreshParameters): Promise<IPersistentObject> {
+        async onRefresh(persistentObject: PersistentObject, parameters: Service.ExecuteActionRefreshParameters): Promise<PersistentObject> {
             return persistentObject;
         }
 
-        async onDelete(query: IQuery, selectedItems: IQueryResultItem[]) {
-            const storeQuery = await this.db.load(query.id, "Queries");
-            query = storeQuery.query;
+        async onDelete(query: Query, selectedItems: QueryResultItem[]) {
+            //const storeQuery = await this.db.load(query.id, "Queries");
+            //query = storeQuery.query;
 
-            selectedItems.forEach(item => {
-                const i = query.result.items.findIndex(i => i.id === item.id);
-                if (i >= 0)
-                    query.result.items.splice(i, 1);
-            });
+            //selectedItems.forEach(item => {
+            //    const i = query.result.items.findIndex(i => i.id === item.id);
+            //    if (i >= 0)
+            //        query.result.items.splice(i, 1);
+            //});
 
-            storeQuery.query = query;
-            await this.db.save(storeQuery, "Queries");
+            //storeQuery.query = query;
+            //await this.db.save(storeQuery, "Queries");
         }
 
-        async onSave(obj: IPersistentObject): Promise<IPersistentObject> {
+        async onSave(obj: PersistentObject): Promise<PersistentObject> {
             if (obj.isNew)
                 return this.saveNew(obj);
 
             return this.saveExisting(obj);
         }
 
-        async saveNew(obj: IPersistentObject): Promise<IPersistentObject> {
-            obj.objectId = `SW-NEW-${Date.now()}`;
+        async saveNew(obj: PersistentObject): Promise<PersistentObject> {
+            //obj.objectId = `SW-NEW-${Date.now()}`;
 
-            const storeObj = await this.db.load(obj.id, "PersistentObjects");
-            const storeQuery = await this.db.load(storeObj.query, "Queries");
-            const query = storeQuery.query;
+            //const storeObj = await this.db.load(obj.id, "PersistentObjects");
+            //const storeQuery = await this.db.load(storeObj.query, "Queries");
+            //const query = storeQuery.query;
 
-            await this.editQueryResultItemValues(query, obj, "New");
-            this.onSortQueryResult(query.result);
+            //await this.editQueryResultItemValues(query, obj, "New");
+            //this.onSortQueryResult(query.result);
 
-            storeQuery.query = query;
-            await this.db.save(storeQuery, "Queries");
+            //storeQuery.query = query;
+            //await this.db.save(storeQuery, "Queries");
 
-            obj.attributes.forEach(attr => attr.isValueChanged = false);
-            obj.isNew = false;
+            //obj.attributes.forEach(attr => attr.isValueChanged = false);
+            //obj.isNew = false;
 
-            return obj;
+            //return obj;
+            return null;
         }
 
-        async saveExisting(obj: IPersistentObject): Promise<IPersistentObject> {
-            const storeObj = await this.db.load(obj.id, "PersistentObjects");
-            const storeQuery = await this.db.load(storeObj.query, "Queries");
-            const query = storeQuery.query;
+        async saveExisting(obj: PersistentObject): Promise<PersistentObject> {
+            //const storeObj = await this.db.load(obj.id, "PersistentObjects");
+            //const storeQuery = await this.db.load(storeObj.query, "Queries");
+            //const query = storeQuery.query;
 
-            await this.editQueryResultItemValues(query, obj, "Edit");
-            this.onSortQueryResult(query.result);
+            //await this.editQueryResultItemValues(query, obj, "Edit");
+            //this.onSortQueryResult(query.result);
 
-            storeQuery.query = query;
-            await this.db.save(storeQuery, "Queries");
+            //storeQuery.query = query;
+            //await this.db.save(storeQuery, "Queries");
 
-            obj.attributes.forEach(attr => attr.isValueChanged = false);
+            //obj.attributes.forEach(attr => attr.isValueChanged = false);
 
-            return obj;
+            //return obj;
+            return null;
         }
 
-        async editQueryResultItemValues(query: IQuery, persistentObject: IPersistentObject, changeType: ItemChangeType) {
-            let item = query.result.items.find(i => i.id === persistentObject.objectId);
-            for (let attribute of persistentObject.attributes.filter(a => a.isValueChanged)) {
-                if (!item && changeType === "New") {
-                    item = {
-                        id: attribute.objectId,
-                        values: []
-                    };
+        async editQueryResultItemValues(query: Service.Query, persistentObject: Service.PersistentObject, changeType: ItemChangeType) {
+        //    let item = query.result.items.find(i => i.id === persistentObject.objectId);
+        //    for (let attribute of persistentObject.attributes.filter(a => a.isValueChanged)) {
+        //        if (!item && changeType === "New") {
+        //            item = {
+        //                id: attribute.objectId,
+        //                values: []
+        //            };
 
-                    query.result.items.push(item);
-                    query.result.totalItems++;
-                }
+        //            query.result.items.push(item);
+        //            query.result.totalItems++;
+        //        }
 
-                if (!item)
-                    throw "Unable to resolve item.";
+        //        if (!item)
+        //            throw "Unable to resolve item.";
 
-                let value = item.values.find(v => v.key === attribute.name);
-                if (!value) {
-                    value = {
-                        key: attribute.name,
-                        value: attribute.value
-                    };
+        //        let value = item.values.find(v => v.key === attribute.name);
+        //        if (!value) {
+        //            value = {
+        //                key: attribute.name,
+        //                value: attribute.value
+        //            };
 
-                    item.values.push(value);
-                }
-                else
-                    value.value = attribute.value;
+        //            item.values.push(value);
+        //        }
+        //        else
+        //            value.value = attribute.value;
 
-                const attributeMetaData = query.persistentObject.attributes.find(a => a.name === attribute.name);
-                if (attributeMetaData && attributeMetaData.type === "Reference" && attributeMetaData.lookup) {
-                    value.persistentObjectId = attributeMetaData.lookup.persistentObject.id;
-                    value.objectId = attribute.objectId;
-                }
-            }
+        //        const attributeMetaData = query.persistentObject.attributes.find(a => a.name === attribute.name);
+        //        if (attributeMetaData && attributeMetaData.type === "Reference" && attributeMetaData.lookup) {
+        //            value.persistentObjectId = attributeMetaData.lookup.persistentObject.id;
+        //            value.objectId = attribute.objectId;
+        //        }
+        //    }
         }
     }
 

@@ -10,64 +10,64 @@ declare namespace Vidyano.Service {
     type KeyValueString = KeyValue<string>;
     type NotificationType = "" | "OK" | "Notice" | "Warning" | "Error";
     type SortDirection = "" | "ASC" | "DESC";
-    interface IRequest {
+    type Request = {
         userName?: string;
         authToken?: string;
         clientVersion?: string;
         environment: "Web" | "Web,ServiceWorker";
         environmentVersion: string;
-    }
-    interface IResponse {
+    };
+    type Response = {
         authToken: string;
-    }
-    interface IGetApplicationRequest extends IRequest {
+    };
+    type GetApplicationRequest = {
         password?: string;
-    }
-    interface IGetQueryRequest extends IRequest {
+    } & Request;
+    type GetQueryRequest = {
         id: string;
-    }
-    interface IGetQueryResponse extends IResponse {
-        query: IQuery;
-    }
-    interface IGetPersistentObjectRequest extends IRequest {
+    } & Request;
+    type GetQueryResponse = {
+        query: Query;
+    } & Response;
+    type GetPersistentObjectRequest = {
         persistentObjectTypeId: string;
         objectId?: string;
         isNew?: boolean;
-        parent?: IPersistentObject;
-    }
-    interface IGetPersistentObjectResponse extends IResponse {
-        result: IPersistentObject;
-    }
+        parent?: PersistentObject;
+    } & Request;
+    type GetPersistentObjectResponse = {
+        result: PersistentObject;
+    } & Response;
     type ExecuteActionParameters = {
         [key: string]: string;
     };
-    interface IExecuteActionRequest extends IRequest {
+    type ExecuteActionRequest = {
         action: string;
         parameters: ExecuteActionParameters;
-    }
-    interface IExecuteActionRefreshParameters extends ExecuteActionParameters {
+    } & Request;
+    type ExecuteActionRefreshParameters = {
         RefreshedPersistentObjectAttributeId: string;
-    }
-    interface IExecuteQueryActionRequest extends IExecuteActionRequest {
-        query: IQuery;
-        selectedItems: IQueryResultItem[];
-    }
-    interface IExecuteQueryFilterActionRequest extends IExecuteActionRequest {
-        query: IQuery;
-    }
-    interface IExecutePersistentObjectActionRequest extends IExecuteActionRequest {
-        parent: IPersistentObject;
-    }
-    interface IExecuteActionResponse extends IResponse {
-        result: IPersistentObject;
-    }
-    interface IExecuteQueryRequest extends IRequest {
-        query: IQuery;
-    }
-    interface IExecuteQueryResponse extends IResponse {
-        result: IQueryResult;
-    }
-    interface IProviderParameters {
+    } & ExecuteActionParameters;
+    type ExecuteQueryActionRequest = {
+        query: Query;
+        selectedItems: QueryResultItem[];
+    } & ExecuteActionRequest;
+    type ExecuteQueryFilterActionRequest = {
+        query: Query;
+    } & ExecuteActionRequest;
+    type ExecutePersistentObjectActionRequest = {
+        parent: PersistentObject;
+    } & ExecuteActionRequest;
+    type ExecuteActionResponse = {
+        result: PersistentObject;
+    } & Response;
+    type ExecuteQueryRequest = {
+        query: Query;
+    } & Request;
+    type ExecuteQueryResponse = {
+        result: QueryResult;
+    } & Response;
+    type ProviderParameters = {
         label: string;
         description: string;
         requestUri: string;
@@ -77,99 +77,105 @@ declare namespace Vidyano.Service {
         registerUser?: string;
         forgotPassword?: boolean;
         getCredentialType?: boolean;
-    }
-    interface IClientData {
+    };
+    type ClientData = {
         defaultUser: string;
         exception: string;
-        languages: ILanguages;
+        languages: Languages;
         providers: {
             [name: string]: {
-                parameters: IProviderParameters;
+                parameters: ProviderParameters;
             };
         };
         windowsAuthentication: boolean;
-    }
-    interface ILanguages {
-        [culture: string]: ILanguage;
-    }
-    interface ILanguage {
+    };
+    type Languages = {
+        [culture: string]: Language;
+    };
+    type Language = {
         name: string;
         isDefault: boolean;
         messages: KeyValueString;
-    }
-    interface IApplicationResponse extends IResponse {
-        application: IPersistentObject;
+    };
+    type ApplicationResponse = {
+        application: PersistentObject;
         userCultureInfo: string;
         userLanguage: string;
         userName: string;
         hasSensitive: boolean;
-    }
-    interface IPersistentObject {
-        actions?: string[];
-        attributes?: IPersistentObjectAttribute[];
+    } & Response;
+    type PersistentObject = {
+        actions: string[];
+        attributes: PersistentObjectAttribute[];
         breadcrumb?: string;
-        newBreadcrumb?: string;
-        isBreadcrumbSensitive?: boolean;
+        dialogSaveAction: string;
         fullTypeName: string;
         id: string;
-        objectId: string;
-        isSystem: boolean;
+        isBreadcrumbSensitive: boolean;
         isNew?: boolean;
+        isSystem: boolean;
         label: string;
         newOptions: string;
         notification: string;
         notificationType: NotificationType;
         notificationDuration: number;
-        queries: IQuery[];
+        objectId: string;
+        queries: Query[];
         queryLayoutMode: string;
         securityToken: never;
-        stateBehavior?: "OpenInEdit" | "StayInEdit" | "AsDialog";
-        dialogSaveAction?: string;
-        tabs: IPersistentObjectTab[];
+        stateBehavior: "OpenInEdit" | "StayInEdit" | "AsDialog";
+        tabs: PersistentObjectTab[];
         type: string;
-    }
-    interface IPersistentObjectAttribute {
+    };
+    type PersistentObjectAttribute = {
         name: string;
         type: string;
+        group: string;
+        tab: string;
         label: string;
-        value?: string;
-        objectId?: string;
-        lookup?: IQuery;
+        value: string;
         isReadOnly?: boolean;
         isRequired?: boolean;
         isSensitive?: boolean;
         isValueChanged?: boolean;
+        offset: number;
         rules?: string;
         visibility: string;
-    }
-    interface IPersistentObjectTab {
+    };
+    type PersistentObjectAttributeWithReference = {
+        displayAttribute: string;
+        lookup: Query;
+        objectId: string;
+    } & PersistentObjectAttribute;
+    type PersistentObjectTab = {
         columnCount: number;
         id: string;
         name: string;
-    }
-    interface IQuery {
-        actions: string[];
+    };
+    type Query = {
         actionLabels?: KeyValueString;
+        actions: string[];
         allowTextSearch: boolean;
         autoQuery: boolean;
         canRead: boolean;
-        columns: IQueryColumn[];
+        columns: QueryColumn[];
         disableBulkEdit: boolean;
         enableSelectAll: boolean;
-        filters: IPersistentObject;
+        filters: PersistentObject;
         groupedBy: string;
         id: string;
         label: string;
         name: string;
-        notificationType: NotificationType;
         notification: string;
+        notificationType: NotificationType;
+        notificationDuration: number;
         pageSize: number;
-        persistentObject: IPersistentObject;
-        result: IQueryResult;
+        persistentObject: PersistentObject;
+        result: QueryResult;
         sortOptions: string;
         textSearch: string;
-    }
-    interface IQueryColumn {
+    };
+    type QueryColumn = {
         canFilter: boolean;
         canGroupBy: boolean;
         canListDistincts: boolean;
@@ -181,141 +187,98 @@ declare namespace Vidyano.Service {
         name: string;
         offset: number;
         type: string;
-    }
-    interface IQueryResult {
-        pageSize?: number;
-        totalItems?: number;
-        columns: IQueryColumn[];
-        items: IQueryResultItem[];
-        groupingInfo?: IQueryGroupingInfo;
-        groupedBy?: string;
-        notification?: string;
-        notificationType?: NotificationType;
-        notificationDuration?: number;
-        sortOptions: string;
-        charts: IQueryChart[];
-        totalItem?: IQueryResultItem;
+    };
+    type QueryResult = {
+        charts: QueryChart[];
+        columns: QueryColumn[];
         continuation?: string;
-        textSearch?: string;
-    }
-    interface IQueryResultItem {
+        groupedBy?: string;
+        groupingInfo?: QueryGroupingInfo;
+        items: QueryResultItem[];
+        notification?: string;
+        notificationDuration?: number;
+        notificationType?: NotificationType;
+        pageSize?: number;
+        sortOptions: string;
+        totalItem?: QueryResultItem;
+        totalItems?: number;
+    };
+    type QueryResultItem = {
         id: string;
-        values: IQueryResultItemValue[];
+        values: QueryResultItemValue[];
         typeHints?: KeyValueString;
-    }
-    interface IQueryResultItemValue {
+    };
+    type QueryResultItemValue = {
         key: string;
         value: string;
         objectId?: string;
         persistentObjectId?: string;
         typeHints?: KeyValueString;
-    }
-    interface IQueryGroupingInfo {
+    };
+    type QueryGroupingInfo = {
         groupedBy: string;
-        groups?: IQueryResultItemGroup[];
-    }
-    interface IQueryResultItemGroup {
+        groups?: QueryResultItemGroup[];
+    };
+    type QueryResultItemGroup = {
         name: string;
         count: number;
-    }
-    interface IQueryChart {
+    };
+    type QueryChart = {
         label: string;
         name: string;
         type: string;
         options: any;
-    }
-    interface IRetryAction {
-        title: string;
+    };
+    type RetryAction = {
+        cancelOption?: number;
+        defaultOption?: number;
         message: string;
         options: string[];
-        defaultOption?: number;
-        cancelOption?: number;
-        persistentObject?: IPersistentObject;
-    }
-    interface IProfilerRequest {
-        when: Date;
-        profiler: IProfiler;
-        transport: number;
+        persistentObject?: PersistentObject;
+        title: string;
+    };
+    type ProfilerRequest = {
         method: string;
+        profiler: Profiler;
         request: any;
         response: any;
-    }
-    interface IProfiler {
-        taskId: number;
+        transport: number;
+        when: Date;
+    };
+    type Profiler = {
         elapsedMilliseconds: number;
-        entries: IProfilerEntry[];
-        sql: IProfilerSQL[];
+        entries: ProfilerEntry[];
         exceptions: {
             id: string;
             message: string;
         }[];
-    }
-    interface IProfilerEntry {
-        entries: IProfilerEntry[];
+        sql: ProfilerSql[];
+        taskId: number;
+    };
+    type ProfilerEntry = {
+        arguments: any[];
+        elapsedMilliseconds: number;
+        entries: ProfilerEntry[];
+        exception: string;
+        hasNPlusOne?: boolean;
         methodName: string;
         sql: string[];
         started: number;
-        elapsedMilliseconds: number;
-        hasNPlusOne?: boolean;
-        exception: string;
-        arguments: any[];
-    }
-    interface IProfilerSQL {
+    };
+    type ProfilerSql = {
         commandId: string;
         commandText: string;
         elapsedMilliseconds: number;
+        parameters: ProfilerSqlParameter[];
         recordsAffected: number;
         taskId: number;
         type: string;
-        parameters: IProfilerSQLParameter[];
-    }
-    interface IProfilerSQLParameter {
+    };
+    type ProfilerSqlParameter = {
         name: string;
         type: string;
         value: string;
-    }
-    interface IProfilerRequest {
-        when: Date;
-        profiler: IProfiler;
-        transport: number;
-        method: string;
-        request: any;
-        response: any;
-    }
-    interface IProfiler {
-        taskId: number;
-        elapsedMilliseconds: number;
-        entries: IProfilerEntry[];
-        sql: IProfilerSQL[];
-        exceptions: {
-            id: string;
-            message: string;
-        }[];
-    }
-    interface IProfilerEntry {
-        entries: IProfilerEntry[];
-        methodName: string;
-        sql: string[];
-        started: number;
-        elapsedMilliseconds: number;
-        hasNPlusOne?: boolean;
-        exception: string;
-        arguments: any[];
-    }
-    interface IProfilerSQL {
-        commandId: string;
-        commandText: string;
-        elapsedMilliseconds: number;
-        recordsAffected: number;
-        taskId: number;
-        type: string;
-        parameters: IProfilerSQLParameter[];
-    }
-    interface IProfilerSQLParameter {
-        name: string;
-        type: string;
-        value: string;
-    }
+    };
 }
 declare namespace Vidyano {
     class CultureInfo {
@@ -615,7 +578,7 @@ declare namespace Vidyano {
         triggersRefresh: boolean;
         column: number;
         columnSpan: number;
-        constructor(service: Service, attr: Service.IPersistentObjectAttribute, parent: PersistentObject);
+        constructor(service: Service, attr: Service.PersistentObjectAttribute, parent: PersistentObject);
         readonly groupKey: string;
         group: PersistentObjectAttributeGroup;
         readonly tabKey: string;
@@ -761,7 +724,7 @@ declare namespace Vidyano {
         queriesToRefresh: Array<string>;
         attributes: PersistentObjectAttribute[];
         queries: Query[];
-        constructor(service: Service, po: Service.IPersistentObject);
+        constructor(service: Service, po: Service.PersistentObject);
         private _createPersistentObjectAttribute;
         readonly id: string;
         readonly isSystem: boolean;
@@ -816,7 +779,7 @@ declare namespace Vidyano {
         private _queryRe;
         readonly programUnits: ProgramUnit[];
         readonly hasSensitive: boolean;
-        constructor(service: Service, { application, hasSensitive }: Service.IApplicationResponse);
+        constructor(service: Service, { application, hasSensitive }: Service.ApplicationResponse);
         readonly userId: string;
         readonly friendlyUserName: string;
         readonly feedbackId: string;
@@ -927,7 +890,7 @@ declare namespace Vidyano {
         isHidden: boolean;
         width: string;
         typeHints: any;
-        constructor(service: Service, col: Service.IQueryColumn, query: Query);
+        constructor(service: Service, col: Service.QueryColumn, query: Query);
         readonly id: string;
         readonly name: string;
         readonly type: string;
@@ -1076,7 +1039,7 @@ declare namespace Vidyano {
         continuation: string;
         items: QueryResultItem[];
         selectAll: IQuerySelectAll;
-        constructor(service: Service, query: Service.IQuery, parent?: PersistentObject, asLookup?: boolean, maxSelectedItems?: number);
+        constructor(service: Service, query: Service.Query, parent?: PersistentObject, asLookup?: boolean, maxSelectedItems?: number);
         readonly isSystem: boolean;
         readonly filters: QueryFilters;
         readonly canFilter: boolean;
@@ -1111,7 +1074,7 @@ declare namespace Vidyano {
         readonly isFiltering: boolean;
         private _updateIsFiltering;
         _toServiceObject(): any;
-        _setResult(result: Service.IQueryResult): void;
+        _setResult(result: Service.QueryResult): void;
         getColumn(name: string): QueryColumn;
         getItemsInMemory(start: number, length: number): QueryResultItem[];
         getItemsByIndex(...indexes: number[]): Promise<QueryResultItem[]>;
@@ -1166,13 +1129,13 @@ declare namespace Vidyano {
         readonly service: Vidyano.Service;
         createData(data: any): void;
         trackEvent(name: string, option: string, owner: ServiceObjectWithActions): void;
-        onInitialize(clientData: Service.IClientData): Promise<Service.IClientData>;
+        onInitialize(clientData: Service.ClientData): Promise<Service.ClientData>;
         onSessionExpired(): Promise<boolean>;
         onActionConfirmation(action: Action, option: number): Promise<boolean>;
         onAction(args: ExecuteActionArgs): Promise<PersistentObject>;
         onOpen(obj: ServiceObject, replaceCurrent?: boolean, fromAction?: boolean): void;
         onClose(obj: ServiceObject): void;
-        onConstructApplication(application: Service.IApplicationResponse): Application;
+        onConstructApplication(application: Service.ApplicationResponse): Application;
         onConstructPersistentObject(service: Service, po: any): PersistentObject;
         onConstructPersistentObjectAttributeTab(service: Service, groups: linqjs.Enumerable<PersistentObjectAttributeGroup>, key: string, id: string, name: string, layout: any, parent: PersistentObject, columnCount: number, isVisible: boolean): PersistentObjectAttributeTab;
         onConstructPersistentObjectQueryTab(service: Service, query: Query): PersistentObjectQueryTab;
@@ -1194,7 +1157,7 @@ declare namespace Vidyano {
         onSelectedItemsActions(query: Query, selectedItems: QueryResultItem[], action: ISelectedItemsActionArgs): void;
         onRefreshFromResult(po: PersistentObject): void;
         onUpdateAvailable(): void;
-        onRetryAction(retry: Service.IRetryAction): Promise<string>;
+        onRetryAction(retry: Service.RetryAction): Promise<string>;
         onGetAttributeDisplayValue(attribute: Vidyano.PersistentObjectAttribute, value: any): string;
         setDefaultTranslations(languages: Language[]): void;
     }
@@ -1259,7 +1222,7 @@ declare namespace Vidyano {
         readonly languages: Language[];
         readonly windowsAuthentication: boolean;
         readonly providers: {
-            [name: string]: Service.IProviderParameters;
+            [name: string]: Service.ProviderParameters;
         };
         readonly isUsingDefaultCredentials: boolean;
         private _setIsUsingDefaultCredentials;
@@ -1269,7 +1232,7 @@ declare namespace Vidyano {
         readonly registerUserName: string;
         authToken: string;
         profile: boolean;
-        readonly profiledRequests: Service.IProfilerRequest[];
+        readonly profiledRequests: Service.ProfilerRequest[];
         private _setProfiledRequests;
         getTranslatedMessage(key: string, ...params: string[]): string;
         initialize(skipDefaultCredentialLogin?: boolean): Promise<Application>;
@@ -1281,7 +1244,7 @@ declare namespace Vidyano {
         private _getApplication;
         getQuery(id: string, asLookup?: boolean): Promise<Query>;
         getPersistentObject(parent: PersistentObject, id: string, objectId?: string, isNew?: boolean): Promise<PersistentObject>;
-        executeQuery(parent: PersistentObject, query: Query, asLookup?: boolean, throwExceptions?: boolean): Promise<Service.IQueryResult>;
+        executeQuery(parent: PersistentObject, query: Query, asLookup?: boolean, throwExceptions?: boolean): Promise<Service.QueryResult>;
         executeAction(action: string, parent: PersistentObject, query: Query, selectedItems: Array<QueryResultItem>, parameters?: any, skipHooks?: boolean): Promise<PersistentObject>;
         getReport(token: string, { filter, orderBy, top, skip, hideIds, hideType }?: IReportOptions): Promise<any[]>;
         getInstantSearch(search: string): Promise<IInstantSearchResult[]>;
@@ -1295,8 +1258,6 @@ declare namespace Vidyano {
         notificationType: NotificationType;
         notificationDuration: number;
     }
-    type ILanguages = Service.ILanguages;
-    type ILanguage = Service.ILanguage;
     interface IReportOptions {
         filter?: string;
         orderBy?: string;
@@ -1486,10 +1447,10 @@ declare namespace Vidyano {
     }
 }
 declare namespace Vidyano {
-    class Language extends Vidyano.Common.Observable<ServiceObject> implements ILanguage {
+    class Language extends Vidyano.Common.Observable<ServiceObject> implements Service.Language {
         private _language;
         private _culture;
-        constructor(_language: ILanguage, _culture: string);
+        constructor(_language: Service.Language, _culture: string);
         readonly culture: string;
         readonly name: string;
         readonly isDefault: boolean;
@@ -1499,10 +1460,10 @@ declare namespace Vidyano {
     }
 }
 declare namespace Vidyano {
-    interface IQueryGroupingInfo extends Service.IQueryGroupingInfo {
+    interface IQueryGroupingInfo extends Service.QueryGroupingInfo {
         groups?: QueryResultItemGroup[];
     }
-    class QueryResultItemGroup implements Service.IQueryResultItemGroup {
+    class QueryResultItemGroup implements Service.QueryResultItemGroup {
         readonly query: Query;
         private _start;
         private _end;
@@ -1510,12 +1471,12 @@ declare namespace Vidyano {
         private _count;
         private _items;
         isCollapsed: boolean;
-        constructor(query: Query, group: Service.IQueryResultItemGroup, _start: number, _end: number);
+        constructor(query: Query, group: Service.QueryResultItemGroup, _start: number, _end: number);
         readonly name: string;
         readonly count: number;
         readonly start: number;
         readonly end: number;
         readonly items: QueryResultItem[];
-        update(group: Service.IQueryResultItemGroup, start: number, end: number): void;
+        update(group: Service.QueryResultItemGroup, start: number, end: number): void;
     }
 }

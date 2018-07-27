@@ -2,43 +2,43 @@
     export type Store = "Requests" | "Queries" | "PersistentObjects" | "ActionClassesById";
     export type RequestMapKey = "GetQuery" | "GetPersistentObject"
 
-    export interface IStoreGetClientDataRequest {
+    export type StoreGetClientDataRequest = {
         id: "GetClientData";
-        response: IClientData;
-    }
+        response: Service.ClientData;
+    };
 
-    export interface IStoreGetApplicationRequest {
+    export type StoreGetApplicationRequest = {
         id: "GetApplication";
-        response: IApplicationResponse;
+        response: Service.ApplicationResponse;
     }
 
-    export interface IStoreQuery {
+    export type StoreQuery = {
         id: string;
-        query: IQuery;
-    }
+        query: Service.Query;
+    };
 
-    export interface IStorePersistentObject {
+    export type StorePersistentObject = {
         id: string;
         query?: string;
-        persistentObject: IPersistentObject;
-    }
+        persistentObject: Service.PersistentObject;
+    };
 
-    export interface IStoreActionClassById {
+    export type StoreActionClassById = {
         id: string;
         name: string;
-    }
+    };
 
-    export interface StoreNameMap {
-        "Requests": IStoreGetClientDataRequest | IStoreGetApplicationRequest;
-        "Queries": IStoreQuery;
-        "PersistentObjects": IStorePersistentObject;
-        "ActionClassesById": IStoreActionClassById;
-    }
+    export type StoreNameMap = {
+        "Requests": StoreGetClientDataRequest | StoreGetApplicationRequest;
+        "Queries": StoreQuery;
+        "PersistentObjects": StorePersistentObject;
+        "ActionClassesById": StoreActionClassById;
+    };
 
-    export interface RequestsStoreNameMap {
-        "GetClientData": IStoreGetClientDataRequest;
-        "GetApplication": IStoreGetApplicationRequest;
-    }
+    export type RequestsStoreNameMap = {
+        "GetClientData": StoreGetClientDataRequest;
+        "GetApplication": StoreGetApplicationRequest;
+    };
 
     export class IndexedDB {
         private _initializing: Promise<void>;

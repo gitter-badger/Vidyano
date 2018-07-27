@@ -42,7 +42,7 @@
         column: number;
         columnSpan: number;
 
-        constructor(service: Service, attr: Service.IPersistentObjectAttribute, parent: PersistentObject);
+        constructor(service: Service, attr: Service.PersistentObjectAttribute, parent: PersistentObject);
         constructor(service: Service, attr: any, public parent: PersistentObject) {
             super(service);
 

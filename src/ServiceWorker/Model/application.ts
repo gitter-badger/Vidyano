@@ -5,8 +5,8 @@
         readonly userName: string;
         readonly hasSensitive: boolean;
 
-        constructor(private _serviceWorker: ServiceWorker, response: Service.IApplicationResponse) {
-            this._application = Helpers.Wrapper._wrap(Wrappers.PersistentObject, response.application);
+        constructor(private _serviceWorker: ServiceWorker, response: Service.ApplicationResponse) {
+            this._application = Wrappers.Wrapper._wrap(Wrappers.PersistentObjectWrapper, response.application);
             this.userLanguage = response.userLanguage;
             this.userName = response.userName;
             this.hasSensitive = response.hasSensitive;
@@ -15,7 +15,7 @@
         }
 
         getTranslatedMessage(key: string, ...params: string[]): string {
-            const msgItem = this._application.queries.ClientMessages.items[key];
+            const msgItem = this._application.queries.ClientMessages.result.items[key];
             const msg = msgItem ? msgItem.values.Value.value : this._serviceWorker.clientData.languages[this.userLanguage].messages[key];
 
             return msg ? StringEx.format.apply(null, [msg].concat(params)) : key;

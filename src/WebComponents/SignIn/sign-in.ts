@@ -462,7 +462,7 @@
             } : null);
         }
 
-        private _providers(providers: { [name: string]: Service.IProviderParameters }): { name: string; parameters: Service.IProviderParameters; }[] {
+        private _providers(providers: { [name: string]: Service.ProviderParameters }): { name: string; parameters: Service.ProviderParameters; }[] {
             return Object.keys(providers).filter(key => key !== "Vidyano").map(key => {
                 return {
                     key: key,

@@ -16,7 +16,7 @@
             // Noop
         }
 
-        onInitialize(clientData: Service.IClientData): Promise<Service.IClientData> {
+        onInitialize(clientData: Service.ClientData): Promise<Service.ClientData> {
             return Promise.resolve(clientData);
         }
 
@@ -40,7 +40,7 @@
             // Noop
         }
 
-        onConstructApplication(application: Service.IApplicationResponse): Application {
+        onConstructApplication(application: Service.ApplicationResponse): Application {
             return new Application(this.service, application);
         }
 
@@ -150,7 +150,7 @@
             localStorage.removeItem("vi-updateAvailable");
         }
 
-        onRetryAction(retry: Service.IRetryAction): Promise<string> {
+        onRetryAction(retry: Service.RetryAction): Promise<string> {
             return Promise.resolve(null);
         }
 

@@ -9,17 +9,17 @@ namespace Vidyano {
         private static _token: string;
         private _lastAuthTokenUpdate: Date = new Date();
         private _isUsingDefaultCredentials: boolean;
-        private _clientData: Service.IClientData;
+        private _clientData: Service.ClientData;
         private _language: Language;
         private _languages: Language[];
         private _windowsAuthentication: boolean;
-        private _providers: { [name: string]: Service.IProviderParameters };
+        private _providers: { [name: string]: Service.ProviderParameters };
         private _isSignedIn: boolean;
         private _application: Application;
         private _userName: string;
         private _authToken: string;
         private _profile: boolean;
-        private _profiledRequests: Service.IProfilerRequest[];
+        private _profiledRequests: Service.ProfilerRequest[];
         private _queuedClientOperations: ClientOperations.IClientOperation[] = [];
         private _initial: Vidyano.PersistentObject;
         staySignedIn: boolean;
@@ -197,7 +197,7 @@ namespace Vidyano {
                 if (elapsedMs)
                     result.profiler.elapsedMilliseconds = Service.fromServiceString(elapsedMs, "Int32");
 
-                const request: Service.IProfilerRequest = {
+                const request: Service.ProfilerRequest = {
                     when: createdRequest,
                     profiler: result.profiler,
                     transport: Math.round(requestEnd - requestStart - result.profiler.elapsedMilliseconds),
@@ -447,7 +447,7 @@ namespace Vidyano {
             return this._windowsAuthentication;
         }
 
-        get providers(): { [name: string]: Service.IProviderParameters } {
+        get providers(): { [name: string]: Service.ProviderParameters } {
             return this._providers;
         }
 
@@ -528,11 +528,11 @@ namespace Vidyano {
             this.notifyPropertyChanged("profile", val, oldValue);
         }
 
-        get profiledRequests(): Service.IProfilerRequest[] {
+        get profiledRequests(): Service.ProfilerRequest[] {
             return this._profiledRequests;
         }
 
-        private _setProfiledRequests(requests: Service.IProfilerRequest[]) {
+        private _setProfiledRequests(requests: Service.ProfilerRequest[]) {
             this.notifyPropertyChanged("profiledRequests", this._profiledRequests = requests);
         }
 
@@ -766,7 +766,7 @@ namespace Vidyano {
             return this.hooks.onConstructPersistentObject(this, result.result);
         }
 
-        async executeQuery(parent: PersistentObject, query: Query, asLookup: boolean = false, throwExceptions?: boolean): Promise<Service.IQueryResult> {
+        async executeQuery(parent: PersistentObject, query: Query, asLookup: boolean = false, throwExceptions?: boolean): Promise<Service.QueryResult> {
             const data = this._createData("executeQuery");
             data.query = query._toServiceObject();
 
@@ -1082,9 +1082,6 @@ namespace Vidyano {
         notificationType: NotificationType;
         notificationDuration: number;
     }
-
-    export type ILanguages = Service.ILanguages;
-    export type ILanguage = Service.ILanguage;
 
     export interface IReportOptions {
         filter?: string;

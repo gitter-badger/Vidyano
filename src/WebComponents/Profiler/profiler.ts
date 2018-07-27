@@ -1,7 +1,7 @@
 namespace Vidyano.WebComponents {
     "use strict";
 
-    export interface IProfilerRequestExt extends Service.IProfilerRequest {
+    export interface IProfilerRequestExt extends Service.ProfilerRequest {
         hasNPlusOne: boolean;
         parameters: {
             key: string;
@@ -11,7 +11,7 @@ namespace Vidyano.WebComponents {
     }
 
     export interface IFlattenedProfilerEntry {
-        entry: Service.IProfilerEntry;
+        entry: Service.ProfilerEntry;
         level: number;
     }
 
@@ -67,8 +67,8 @@ namespace Vidyano.WebComponents {
         private _boundMousehweel = this._onMousewheel.bind(this);
         readonly lastRequest: IProfilerRequestExt; private _setLastRequest: (request: IProfilerRequestExt) => void;
         readonly selectedRequest: IProfilerRequestExt; private _setSelectedRequest: (request: IProfilerRequestExt) => void;
-        readonly hoveredEntry: Service.IProfilerEntry; private _setHoveredEntry: (entry: Service.IProfilerEntry) => void;
-        readonly selectedEntry: Service.IProfilerEntry; private _setSelectedEntry: (entry: Service.IProfilerEntry) => void;
+        readonly hoveredEntry: Service.ProfilerEntry; private _setHoveredEntry: (entry: Service.ProfilerEntry) => void;
+        readonly selectedEntry: Service.ProfilerEntry; private _setSelectedEntry: (entry: Service.ProfilerEntry) => void;
         readonly zoom: number; private _setZoom: (value: number) => void;
         timelineSize: ISize;
         profiledRequests: IProfilerRequestExt[];
@@ -101,7 +101,7 @@ namespace Vidyano.WebComponents {
             return request.hasNPlusOne || (request.profiler.exceptions && request.profiler.exceptions.length > 0);
         }
 
-        private _hasNPlusOne(request: Service.IProfilerRequest, entries: Service.IProfilerEntry[] = request.profiler.entries): boolean {
+        private _hasNPlusOne(request: Service.ProfilerRequest, entries: Service.ProfilerEntry[] = request.profiler.entries): boolean {
             if (!entries)
                 return false;
 
@@ -118,7 +118,7 @@ namespace Vidyano.WebComponents {
             return hasNPlusOne;
         }
 
-        private _hasSelectedEntry(selectedEntry: Service.IProfilerEntry): boolean {
+        private _hasSelectedEntry(selectedEntry: Service.ProfilerEntry): boolean {
             return !!selectedEntry;
         }
 
@@ -273,7 +273,7 @@ namespace Vidyano.WebComponents {
             entryGroupSelection.exit().remove();
         }
 
-        private _flattenEntries(entries: Service.IProfilerEntry[] = [], level: number = 1, flattenedEntries: IFlattenedProfilerEntry[] = []): IFlattenedProfilerEntry[] {
+        private _flattenEntries(entries: Service.ProfilerEntry[] = [], level: number = 1, flattenedEntries: IFlattenedProfilerEntry[] = []): IFlattenedProfilerEntry[] {
             entries.forEach(entry => {
                 flattenedEntries.push({
                     entry: entry,
@@ -286,7 +286,7 @@ namespace Vidyano.WebComponents {
             return flattenedEntries;
         };
 
-        private _computeEntryClassName(e: Service.IProfilerEntry): string {
+        private _computeEntryClassName(e: Service.ProfilerEntry): string {
             let className = "entry";
             let hasDetails = false;
 
@@ -326,7 +326,7 @@ namespace Vidyano.WebComponents {
             return StringEx.format(`{0:${Vidyano.CultureInfo.currentCulture.dateFormat.shortDatePattern} ${Vidyano.CultureInfo.currentCulture.dateFormat.shortTimePattern}}`, date);
         }
 
-        private _selectedEntryChanged(entry: Service.IProfilerEntry) {
+        private _selectedEntryChanged(entry: Service.ProfilerEntry) {
             const info = document.createDocumentFragment();
             this.empty(this.$.selectedEntryInfo);
 

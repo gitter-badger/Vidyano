@@ -31,7 +31,7 @@ namespace Vidyano {
         width: string;
         typeHints: any;
 
-        constructor(service: Service, col: Service.IQueryColumn, query: Query);
+        constructor(service: Service, col: Service.QueryColumn, query: Query);
         constructor(service: Service, col: any, public query: Query) {
             super(service);
 

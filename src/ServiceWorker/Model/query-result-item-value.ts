@@ -1,9 +1,16 @@
-﻿namespace Vidyano {
-    export type QueryResultItemValue = Readonly<Service.IQueryResultItemValue> & Wrappers.QueryResultItemValue;
+﻿/// <reference path="wrappers.ts" />
+
+namespace Vidyano {
+    export type QueryResultItemValue = Readonly<Service.QueryResultItemValue> & Wrappers.QueryResultItemValueWrapper;
 
     export namespace Wrappers {
-        export class QueryResultItemValue {
-            private constructor(private _value: IQueryResultItemValue) {
+        export class QueryResultItemValueWrapper extends Wrapper<Service.QueryResultItemValue> {
+            private constructor(private _value: Service.QueryResultItemValue) {
+                super();
+            }
+
+            protected _unwrap(): Service.QueryResultItemValue {
+                return this._value;
             }
         }
     }

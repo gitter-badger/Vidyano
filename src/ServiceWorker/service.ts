@@ -6,78 +6,79 @@ namespace Vidyano.Service {
     export type NotificationType = "" | "OK" | "Notice" | "Warning" | "Error";
     export type SortDirection = "" | "ASC" | "DESC";
 
-    export interface IRequest {
+    export type Request = {
         userName?: string;
         authToken?: string;
         clientVersion?: string;
         environment: "Web" | "Web,ServiceWorker";
         environmentVersion: string;
-    }
+    };
 
-    export interface IResponse {
+    export type Response = {
         authToken: string;
-    }
+    };
 
-    export interface IGetApplicationRequest extends IRequest {
+    export type GetApplicationRequest = {
         password?: string;
-    }
+    } & Request;
 
-    export interface IGetQueryRequest extends IRequest {
+    export type GetQueryRequest = {
         id: string;
-    }
+    } & Request;
 
-    export interface IGetQueryResponse extends IResponse {
-        query: IQuery;
-    }
+    export type GetQueryResponse = {
+        query: Query;
+    } & Response;
 
-    export interface IGetPersistentObjectRequest extends IRequest {
+    export type GetPersistentObjectRequest = {
         persistentObjectTypeId: string;
         objectId?: string;
         isNew?: boolean;
-        parent?: IPersistentObject;
-    }
+        parent?: PersistentObject;
+    } & Request;
 
-    export interface IGetPersistentObjectResponse extends IResponse {
-        result: IPersistentObject;
-    }
+    export type GetPersistentObjectResponse = {
+        result: PersistentObject;
+    } & Response;
 
     export type ExecuteActionParameters = { [key: string]: string; }
 
-    export interface IExecuteActionRequest extends IRequest {
+    export type ExecuteActionRequest = {
         action: string;
         parameters: ExecuteActionParameters;
-    }
+    } & Request;
 
-    export interface IExecuteActionRefreshParameters extends ExecuteActionParameters {
+    export type ExecuteActionRefreshParameters = {
+// ReSharper disable once InconsistentNaming
         RefreshedPersistentObjectAttributeId: string;
-    }
+    } & ExecuteActionParameters;
 
-    export interface IExecuteQueryActionRequest extends IExecuteActionRequest {
-        query: IQuery;
-        selectedItems: IQueryResultItem[];
-    }
+    export type ExecuteQueryActionRequest = {
+        query: Query;
+        selectedItems: QueryResultItem[];
+    } & ExecuteActionRequest;
 
-    export interface IExecuteQueryFilterActionRequest extends IExecuteActionRequest {
-        query: IQuery;
-    }
+    export type ExecuteQueryFilterActionRequest = {
+        query: Query;
+    } & ExecuteActionRequest;
 
-    export interface IExecutePersistentObjectActionRequest extends IExecuteActionRequest {
-        parent: IPersistentObject;
-    }
+    export type ExecutePersistentObjectActionRequest = {
+        parent: PersistentObject;
+    } & ExecuteActionRequest;
 
-    export interface IExecuteActionResponse extends IResponse {
-        result: IPersistentObject;
-    }
+    export type ExecuteActionResponse = {
+        result: PersistentObject;
+    } & Response;
 
-    export interface IExecuteQueryRequest extends IRequest {
-        query: IQuery;
-    }
+    export type ExecuteQueryRequest = {
+        query: Query;
+    } & Request;
 
-    export interface IExecuteQueryResponse extends IResponse {
-        result: IQueryResult;
-    }
+    export type ExecuteQueryResponse = {
+        result: QueryResult;
+    } & Response;
 
-    export interface IProviderParameters {
+    export type ProviderParameters = {
         label: string;
         description: string;
         requestUri: string;
@@ -87,66 +88,65 @@ namespace Vidyano.Service {
         registerUser?: string;
         forgotPassword?: boolean;
         getCredentialType?: boolean;
-    }
+    };
 
-    export interface IClientData {
+    export type ClientData = {
         defaultUser: string;
         exception: string;
-        languages: ILanguages;
-        providers: { [name: string]: { parameters: IProviderParameters } };
+        languages: Languages;
+        providers: { [name: string]: { parameters: ProviderParameters } };
         windowsAuthentication: boolean;
-    }
+    };
 
-    export interface ILanguages {
-        [culture: string]: ILanguage;
-    }
+    export type Languages = {
+        [culture: string]: Language;
+    };
 
-    export interface ILanguage {
+    export type Language = {
         name: string;
         isDefault: boolean;
         messages: KeyValueString;
-    }
+    };
 
-    export interface IApplicationResponse extends IResponse {
-        application: IPersistentObject;
+    export type ApplicationResponse = {
+        application: PersistentObject;
         userCultureInfo: string;
         userLanguage: string;
         userName: string;
         hasSensitive: boolean;
-    }
+    } & Response;
 
-    export interface IPersistentObject {
-        actions?: string[];
-        attributes?: IPersistentObjectAttribute[];
+    export type PersistentObject = {
+        actions: string[];
+        attributes: PersistentObjectAttribute[];
         breadcrumb?: string;
-        newBreadcrumb?: string;
-        isBreadcrumbSensitive?: boolean;
+        dialogSaveAction: string;
         fullTypeName: string;
         id: string;
-        objectId: string;
-        isSystem: boolean;
+        isBreadcrumbSensitive: boolean;
         isNew?: boolean;
+        isSystem: boolean;
         label: string;
         newOptions: string;
         notification: string;
         notificationType: NotificationType;
         notificationDuration: number;
-        queries: IQuery[];
+        objectId: string;
+        queries: Query[];
         queryLayoutMode: string;
         securityToken: never;
-        stateBehavior?: "OpenInEdit" | "StayInEdit" | "AsDialog";
-        dialogSaveAction?: string;
-        tabs: IPersistentObjectTab[];
+        stateBehavior: "OpenInEdit" | "StayInEdit" | "AsDialog";
+        tabs: PersistentObjectTab[];
         type: string;
-    }
+    };
 
-    export interface IPersistentObjectAttribute {
+    export type PersistentObjectAttribute = {
         name: string;
         type: string;
         group: string;
         tab: string;
         label: string;
-        value?: string;
+        value: string;
         isReadOnly?: boolean;
         isRequired?: boolean;
         isSensitive?: boolean;
@@ -154,44 +154,45 @@ namespace Vidyano.Service {
         offset: number;
         rules?: string;
         visibility: string;
-    }
+    };
 
-    export interface IPersistentObjectAttributeWithReference extends IPersistentObjectAttribute {
+    export type PersistentObjectAttributeWithReference = {
         displayAttribute: string;
+        lookup: Query;
         objectId: string;
-        lookup: IQuery;
-    }
+    } & PersistentObjectAttribute;
 
-    export interface IPersistentObjectTab {
+    export type PersistentObjectTab = {
         columnCount: number;
         id: string;
         name: string;
-    }
+    };
 
-    export interface IQuery {
-        actions: string[];
+    export type Query = {
         actionLabels?: KeyValueString;
+        actions: string[];
         allowTextSearch: boolean;
         autoQuery: boolean;
         canRead: boolean;
-        columns: IQueryColumn[];
+        columns: QueryColumn[];
         disableBulkEdit: boolean;
         enableSelectAll: boolean;
-        filters: IPersistentObject;
+        filters: PersistentObject;
         groupedBy: string;
         id: string;
         label: string;
         name: string;
-        notificationType: NotificationType;
         notification: string;
+        notificationType: NotificationType;
+        notificationDuration: number;
         pageSize: number;
-        persistentObject: IPersistentObject;
-        result: IQueryResult;
+        persistentObject: PersistentObject;
+        result: QueryResult;
         sortOptions: string;
         textSearch: string;
-    }
+    };
 
-    export interface IQueryColumn {
+    export type QueryColumn = {
         canFilter: boolean;
         canGroupBy: boolean;
         canListDistincts: boolean;
@@ -203,156 +204,108 @@ namespace Vidyano.Service {
         name: string;
         offset: number;
         type: string;
-    }
+    };
 
-    export interface IQueryResult {
-        pageSize?: number;
-        totalItems?: number;
-        columns: IQueryColumn[];
-        items: IQueryResultItem[];
-        groupingInfo?: IQueryGroupingInfo;
-        groupedBy?: string;
-        notification?: string;
-        notificationType?: NotificationType;
-        notificationDuration?: number;
-        sortOptions: string;
-        charts: IQueryChart[];
-        totalItem?: IQueryResultItem;
+    export type QueryResult = {
+        charts: QueryChart[];
+        columns: QueryColumn[];
         continuation?: string;
-        textSearch?: string;
-    }
+        groupedBy?: string;
+        groupingInfo?: QueryGroupingInfo;
+        items: QueryResultItem[];
+        notification?: string;
+        notificationDuration?: number;
+        notificationType?: NotificationType;
+        pageSize?: number;
+        sortOptions: string;
+        totalItem?: QueryResultItem;
+        totalItems?: number;
+    };
 
-    export interface IQueryResultItem {
+    export type QueryResultItem = {
         id: string;
-        values: IQueryResultItemValue[];
+        values: QueryResultItemValue[];
         typeHints?: KeyValueString;
-    }
+    };
 
-    export interface IQueryResultItemValue {
+    export type QueryResultItemValue = {
         key: string;
         value: string;
         objectId?: string;
         persistentObjectId?: string;
         typeHints?: KeyValueString;
-    }
+    };
 
-    export interface IQueryGroupingInfo {
+    export type QueryGroupingInfo = {
         groupedBy: string;
-        groups?: IQueryResultItemGroup[];
+        groups?: QueryResultItemGroup[];
     }
 
-    export interface IQueryResultItemGroup {
+    export type QueryResultItemGroup = {
         name: string;
         count: number;
-    }
+    };
 
-    export interface IQueryChart {
+    export type QueryChart = {
         label: string;
         name: string;
         type: string;
         options: any;
-    }
+    };
 
-    export interface IRetryAction {
-        title: string;
+    export type RetryAction = {
+        cancelOption?: number;
+        defaultOption?: number;
         message: string;
         options: string[];
-        defaultOption?: number;
-        cancelOption?: number;
-        persistentObject?: IPersistentObject;
-    }
+        persistentObject?: PersistentObject;
+        title: string;
+    };
 
-    export interface IProfilerRequest {
-        when: Date;
-        profiler: IProfiler;
-        transport: number;
+    export type ProfilerRequest = {
         method: string;
+        profiler: Profiler;
         request: any;
         response: any;
-    }
+        transport: number;
+        when: Date;
+    };
 
-    export interface IProfiler {
-        taskId: number;
+    export type Profiler = {
         elapsedMilliseconds: number;
-        entries: IProfilerEntry[];
-        sql: IProfilerSQL[];
+        entries: ProfilerEntry[];
         exceptions: {
             id: string;
             message: string;
         }[];
+        sql: ProfilerSql[];
+        taskId: number;
     }
 
-    export interface IProfilerEntry {
-        entries: IProfilerEntry[];
+    export type ProfilerEntry = {
+        arguments: any[];
+        elapsedMilliseconds: number;
+        entries: ProfilerEntry[];
+        exception: string;
+        hasNPlusOne?: boolean;
         methodName: string;
         sql: string[];
         started: number;
-        elapsedMilliseconds: number;
-        hasNPlusOne?: boolean;
-        exception: string;
-        arguments: any[];
-    }
+    };
 
-    export interface IProfilerSQL {
+    export type ProfilerSql = {
         commandId: string;
         commandText: string;
         elapsedMilliseconds: number;
+        parameters: ProfilerSqlParameter[];
         recordsAffected: number;
         taskId: number;
         type: string;
-        parameters: IProfilerSQLParameter[];
-    }
+    };
 
-    export interface IProfilerSQLParameter {
+    export type ProfilerSqlParameter = {
         name: string;
         type: string;
         value: string;
-    }
-
-    export interface IProfilerRequest {
-        when: Date;
-        profiler: IProfiler;
-        transport: number;
-        method: string;
-        request: any;
-        response: any;
-    }
-
-    export interface IProfiler {
-        taskId: number;
-        elapsedMilliseconds: number;
-        entries: IProfilerEntry[];
-        sql: IProfilerSQL[];
-        exceptions: {
-            id: string;
-            message: string;
-        }[];
-    }
-
-    export interface IProfilerEntry {
-        entries: IProfilerEntry[];
-        methodName: string;
-        sql: string[];
-        started: number;
-        elapsedMilliseconds: number;
-        hasNPlusOne?: boolean;
-        exception: string;
-        arguments: any[];
-    }
-
-    export interface IProfilerSQL {
-        commandId: string;
-        commandText: string;
-        elapsedMilliseconds: number;
-        recordsAffected: number;
-        taskId: number;
-        type: string;
-        parameters: IProfilerSQLParameter[];
-    }
-
-    export interface IProfilerSQLParameter {
-        name: string;
-        type: string;
-        value: string;
-    }
+    };
 }
