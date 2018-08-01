@@ -15,8 +15,8 @@
         }
 
         getTranslatedMessage(key: string, ...params: string[]): string {
-            const msgItem = this._application.queries.ClientMessages.result.items[key];
-            const msg = msgItem ? msgItem.values.Value.value : this._serviceWorker.clientData.languages[this.userLanguage].messages[key];
+            const msgItem = this._application.getQuery("ClientMessages").result.getItem(key);
+            const msg = msgItem ? msgItem.getValue("Value") : this._serviceWorker.clientData.languages[this.userLanguage].messages[key];
 
             return msg ? StringEx.format.apply(null, [msg].concat(params)) : key;
         }

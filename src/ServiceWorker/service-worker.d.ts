@@ -61,6 +61,7 @@ declare namespace Vidyano {
     abstract class DataType {
         static isDateTimeType(type: string): boolean;
         static isNumericType(type: string): boolean;
+        static isBooleanType(type: string): boolean;
         private static _getDate;
         private static _getServiceTimeString;
         static fromServiceString(value: string, type: string): any;
@@ -345,7 +346,7 @@ declare namespace Vidyano.Service {
     };
 }
 declare namespace Vidyano {
-    type Store = "Requests" | "Queries" | "PersistentObjects" | "ActionClassesById";
+    type Store = "Requests" | "Queries" | "QueryResults" | "PersistentObjects" | "ActionClassesById";
     type RequestMapKey = "GetQuery" | "GetPersistentObject";
     type StoreGetClientDataRequest = {
         id: "GetClientData";
@@ -358,6 +359,12 @@ declare namespace Vidyano {
     type StoreQuery = {
         id: string;
         query: Service.Query;
+        newPersistentObject: Service.PersistentObject;
+    };
+    type StoreQueryResult = {
+        id: string;
+        result: Service.QueryResult;
+        deleted: Service.QueryResultItem[];
     };
     type StorePersistentObject = {
         id: string;
@@ -371,6 +378,7 @@ declare namespace Vidyano {
     type StoreNameMap = {
         "Requests": StoreGetClientDataRequest | StoreGetApplicationRequest;
         "Queries": StoreQuery;
+        "QueryResults": StoreQueryResult;
         "PersistentObjects": StorePersistentObject;
         "ActionClassesById": StoreActionClassById;
     };
@@ -393,11 +401,10 @@ declare namespace Vidyano {
     let version: string;
     type Fetcher<TPayload, TResult> = (payload?: TPayload) => Promise<TResult>;
     class ServiceWorker {
-        private serviceUri;
-        private _verbose;
+        private serviceUri?;
+        private _verbose?;
         private readonly _db;
         private _cacheName;
-        private _service;
         private _clientData;
         private _application;
         constructor(serviceUri?: string, _verbose?: boolean);
@@ -405,22 +412,18 @@ declare namespace Vidyano {
         readonly clientData: Service.ClientData;
         readonly application: Application;
         private authToken;
-        private _log(message);
-        private _onInstall(e);
-        private _onActivate(e);
-        private _onFetch(e);
-        private _createFetcher<TPayload, TResult>(originalRequest);
+        private _log;
+        private _onInstall;
+        private _onActivate;
+        private _onFetch;
+        private _createFetcher;
+        private _getOffline;
         protected onGetClientData(): Promise<Service.ClientData>;
         protected onCacheClientData(clientData: Service.ClientData): Promise<void>;
         protected onCacheApplication(application: Service.ApplicationResponse): Promise<void>;
         protected onGetApplication(): Promise<Service.ApplicationResponse>;
-        protected onCache(service: IService): Promise<void>;
         protected createRequest(data: any, request: Request): Request;
         protected createResponse(data: any, response?: Response): Response;
-    }
-    interface IService {
-        cachePersistentObject(parent: Service.PersistentObject, id: string, objectId?: string, isNew?: boolean): Promise<void>;
-        cacheQuery(id: string): Promise<void>;
     }
 }
 declare namespace Vidyano {
@@ -430,19 +433,16 @@ declare namespace Vidyano {
         private _serviceWorker;
         readonly db: IndexedDB;
         protected readonly serviceWorker: ServiceWorker;
-        private _isPersistentObject(arg);
-        private _isQuery(arg);
-        onCache<T extends Service.PersistentObject | Service.Query>(persistentObjectOrQuery: T): Promise<void>;
-        onCachePersistentObject(persistentObject: Service.PersistentObject): Promise<void>;
-        onCacheQuery(query: Service.Query): Promise<void>;
+        private _isPersistentObject;
+        private _isQuery;
         getOwnerQuery(objOrId: Service.PersistentObject | string): Promise<Service.Query>;
         onGetPersistentObject(parent: Service.PersistentObject, id: string, objectId?: string, isNew?: boolean): Promise<Service.PersistentObject>;
         onGetQuery(id: string): Promise<Query>;
         onExecuteQuery(query: Query): Promise<QueryResult>;
-        onSortQueryResult(result: Service.QueryResult): Service.QueryResult;
+        protected onTextSearch(textSearch: string, result: QueryResult): QueryResultItem[];
+        onSortQueryResult(result: QueryResult): QueryResultItem[];
         onDataTypeCompare(value1: any, value2?: any, datatype?: string): number;
         protected onFilter(query: Service.Query): QueryResultItem[];
-        onExecuteQueryFilterAction(action: string, query: Service.Query, parameters: Service.ExecuteActionParameters): Promise<PersistentObject>;
         onExecuteQueryAction(action: string, query: Query, selectedItems: QueryResultItem[], parameters: Service.ExecuteActionParameters): Promise<PersistentObject>;
         onExecutePersistentObjectAction(action: string, persistentObject: PersistentObject, parameters: Service.ExecuteActionParameters): Promise<PersistentObject>;
         onNew(query: Query): Promise<PersistentObject>;
@@ -482,29 +482,13 @@ declare namespace Vidyano {
         type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
         type Overwrite<T, U> = Omit<T, Extract<keyof T, keyof U>> & U;
         type Wrap<ServiceType, Writable extends keyof ServiceType, WrapperType> = Overwrite<Readonly<Omit<ServiceType, Writable>> & Pick<ServiceType, Writable>, WrapperType> & WrapperType;
-        type ByName<T> = {
-            [key: string]: T;
-            [key: number]: T;
-        };
-        class ByNameWrapper<T, U extends Wrapper<T>> implements ProxyHandler<U> {
-            private _target;
-            private _objects;
-            private _wrapper;
-            private _keyProperty;
-            private _wrapped;
-            private constructor();
-            get(target: U, p: PropertyKey, receiver: any): any;
-            private _unwrap();
-            static create<T, U extends object>(objects: T[], wrapper: Function, deepFreeze?: boolean, keyProperty?: string): ByName<U>;
-            static create<T, U extends object>(objects: T[], wrapper: (o: T) => U, keyProperty?: string): ByName<U>;
-        }
+        type WrapperTypes = PersistentObjectAttributeWrapper | PersistentObjectAttributeWrapper | PersistentObjectAttributeWithReferenceWrapper | QueryWrapper | QueryColumnWrapper | QueryResultWrapper | QueryResultItemWrapper | QueryResultItemValueWrapper;
         abstract class Wrapper<T> {
             private __wrappedProperties__;
             protected _unwrap(...children: string[]): T;
-            static _wrap<T>(obj: any, deepFreeze?: boolean): T;
-            static _wrap<T>(wrapper: Function, obj: any, deepFreeze?: boolean): T;
+            static _wrap<T>(wrapper: Function, object: any): T;
+            static _wrap<T>(wrapper: Function, objects: any[]): T[];
             static _unwrap<T extends Wrapper<U>, U>(obj: T): U;
-            private static _deepFreeze(obj);
         }
     }
 }
@@ -537,12 +521,13 @@ declare namespace Vidyano {
     namespace Wrappers {
         class PersistentObjectWrapper extends Wrapper<Service.PersistentObject> {
             private _obj;
-            private _parent;
+            private _parent?;
             private readonly _attributes;
             private readonly _queries;
             private constructor();
-            readonly queries: ByName<ReadOnlyQuery>;
-            readonly attributes: ByName<PersistentObjectAttribute>;
+            readonly queries: ReadOnlyQuery[];
+            getQuery(name: string): ReadOnlyQuery;
+            readonly attributes: PersistentObjectAttribute[];
             protected _unwrap(): Service.PersistentObject;
         }
     }
@@ -576,7 +561,8 @@ declare namespace Vidyano {
             private _item;
             private readonly _values;
             private constructor();
-            readonly values: ByName<QueryResultItemValue>;
+            readonly values: QueryResultItemValue[];
+            getValue(key: string): QueryResultItemValue;
             protected _unwrap(): Service.QueryResultItem;
         }
     }
@@ -587,9 +573,14 @@ declare namespace Vidyano {
     namespace Wrappers {
         class QueryResultWrapper extends Wrapper<Service.QueryResult> {
             private _result;
-            private readonly _items;
+            private readonly _columns;
+            private _items;
             private constructor();
-            readonly items: ByName<QueryResultItem>;
+            readonly columns: QueryColumn[];
+            getColumn(name: string): QueryColumn;
+            readonly items: QueryResultItem[];
+            getItem(id: string): QueryResultItem;
+            private _update;
             protected _unwrap(): Service.QueryResult;
         }
     }
@@ -604,7 +595,7 @@ declare namespace Vidyano {
             private readonly _persistentObject;
             private readonly _result;
             private constructor();
-            readonly columns: ByName<QueryColumn>;
+            readonly columns: QueryColumn[];
             readonly persistentObject: ReadOnlyPersistentObject;
             readonly result: QueryResult;
             protected _unwrap(): Service.Query;

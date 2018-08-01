@@ -57,48 +57,6 @@
             return (arg as Service.Query).persistentObject !== undefined;
         }
 
-        async onCache<T extends Service.PersistentObject | Service.Query>(persistentObjectOrQuery: T): Promise<void> {
-            if (this._isPersistentObject(persistentObjectOrQuery))
-                await this.onCachePersistentObject(persistentObjectOrQuery);
-            else if (this._isQuery(persistentObjectOrQuery))
-                await this.onCacheQuery(persistentObjectOrQuery);
-        }
-
-        async onCachePersistentObject(persistentObject: Service.PersistentObject): Promise<void> {
-            await this.db.save({
-                id: persistentObject.id,
-                persistentObject: persistentObject
-            }, "PersistentObjects");
-
-            await this.db.save({
-                id: persistentObject.id,
-                name: persistentObject.type
-            }, "ActionClassesById");
-        }
-
-        async onCacheQuery(query: Service.Query): Promise<void> {
-            await this.db.save({
-                id: query.id,
-                query: query
-            }, "Queries");
-
-            await this.db.save({
-                id: query.id,
-                name: query.persistentObject.type
-            }, "ActionClassesById");
-
-            await this.db.save({
-                id: query.persistentObject.id,
-                query: query.id,
-                persistentObject: query.persistentObject
-            }, "PersistentObjects");
-
-            await this.db.save({
-                id: query.persistentObject.id,
-                name: query.persistentObject.type
-            }, "ActionClassesById");
-        }
-
         async getOwnerQuery(objOrId: Service.PersistentObject | string): Promise<Service.Query> {
             if (typeof objOrId === "object")
                 objOrId = (objOrId as Service.PersistentObject).id;
@@ -166,56 +124,103 @@
             if (!query)
                 return null;
 
-            query.columns.forEach(c => c.canFilter = c.canListDistincts = c.canGroupBy = false);
-            query.filters = null;
-            query.disableBulkEdit = true;
+            if (query.autoQuery)
+                query.result = (await this.db.load(id, "QueryResults")).result;
 
-            if (this.onFilter === ServiceWorkerActions.prototype.onFilter) {
-                const filterIndex = query.actions.indexOf("Filter");
-                if (filterIndex >= 0)
-                    query.actions.splice(filterIndex, 1);
-            }
-
-            return Wrappers.QueryWrapper._wrap(query);
+            return Wrappers.Wrapper._wrap(Wrappers.QueryWrapper, query);
         }
 
         async onExecuteQuery(query: Query): Promise<QueryResult> {
-            //const cachedQuery = await this.onGetQuery(query.id);
+            const cachedQueryResult = await this.db.load(query.id, "QueryResults");
 
-            //const result: Service.QueryResult = {
-            //    columns: query.columns,
-            //    items: cachedQuery.result.items,
-            //    sortOptions: query.sortOptions,
-            //    charts: cachedQuery.result.charts
-            //};
+            cachedQueryResult.result.columns = query.columns;
+            cachedQueryResult.result.sortOptions = query.sortOptions;
+            const result = <QueryResult>Wrappers.Wrapper._wrap(Wrappers.QueryResultWrapper, cachedQueryResult.result);
 
-            //if (this.onFilter !== ServiceWorkerActions.prototype.onFilter)
-            //    result.items = this.onFilter(query);
+            if (query.textSearch)
+                result["_update"](this.onTextSearch(query.textSearch, result));
 
-            //return query.sortOptions !== cachedQuery.sortOptions ? this.onSortQueryResult(result) : result;
-            return null;
+            result["_update"](this.onSortQueryResult(result));
+
+            return result;
         }
 
-        onSortQueryResult(result: Service.QueryResult): Service.QueryResult {
-            const sortOptions: [Service.QueryColumn, number][] = result.sortOptions.split(";").map(option => option.trim()).map(option => {
+        protected onTextSearch(textSearch: string, result: QueryResult): QueryResultItem[] {
+            const items = result.items;
+            if (!textSearch)
+                return items;
+
+            const columns = result.columns;
+            const columnNames = columns.map(c => c.name);
+
+            // Replace labels with column names
+            columns.forEach(col => textSearch = textSearch.replace(new RegExp(col.label + ":", "ig"), col.name + ":"));
+
+            const hasPrefix = new RegExp("^(" + columnNames.join("|") + "):", "i");
+            const matches: [string, string, number, boolean][] = textSearch.match(/\S+/g).map(text => {
+                let name: string = null;
+                if (hasPrefix.test(text)) {
+                    const textParts = text.split(":");
+                    name = textParts[0].toLowerCase();
+                    text = textParts[1];
+                }
+
+                return <[string, string, number, boolean]>[name, text.toLowerCase(), parseInt(text), BooleanEx.parse(text)];
+            });
+
+            return items.filter(item => {
+                const values = item.values;
+                return values.some(itemValue => {
+                    const column = result.getColumn(itemValue.key);
+                    if (column.type == "Image" || column.type == "BinaryFile" || column.type == "Time" || column.type == "NullableTime")
+                        return false;
+
+                    const value = DataType.fromServiceString(itemValue.value, column.type);
+                    return matches.filter(m => m[0] == null || m[0] == column.name.toLowerCase()).some(match => {
+                        if (DataType.isNumericType(column.type)) {
+                            if (isNaN(match[2])) {
+                                // TODO: Check expression
+                                return false;
+                            }
+                            else
+                                return Math.abs(match[2] - value) < 1;
+                        }
+                        else if (DataType.isDateTimeType(column.type)) {
+                            // TODO
+                            return false;
+                        }
+                        else if (DataType.isBooleanType(column.type)) {
+                            return value == match[3];
+                        }
+                        else if (column.type === "KeyValueList")
+                            return false; // TODO
+
+                        return itemValue.value != null && itemValue.value.toLowerCase().indexOf(match[1]) != -1;
+                    });
+                });
+            });
+        }
+
+        onSortQueryResult(result: QueryResult): QueryResultItem[] {
+            const sortOptions: [QueryColumn, number][] = result.sortOptions.split(";").map(option => option.trim()).map(option => {
                 const optionParts = option.split(" ");
-                const column = result.columns.find(c => c.name.toUpperCase() === optionParts[0].toUpperCase());
+                const column = result.getColumn(optionParts[0]);
                 if (!column)
                     return null;
 
                 const sort = optionParts.length === 1 ? 1 : (<Service.SortDirection>optionParts[1] === "ASC" ? 1 : -1);
-                return <[Service.QueryColumn, number]>[column, sort];
+                return <[QueryColumn, number]>[column, sort];
             }).filter(so => so != null);
 
-            result.items = result.items.sort((i1, i2) => {
+            const items = result.items.sort((i1, i2) => {
                 for (let i = 0; i < sortOptions.length; i++) {
                     const s = sortOptions[i];
 
-                    const value1Index = i1.values.findIndex(v => v.key === s[0].name);
-                    const value1 = value1Index < 0 ? "" : (i1.values[value1Index].value || "");
+                    const valueItem1 = i1.getValue(s[0].name);
+                    const value1 = valueItem1 ? valueItem1.value : "";
 
-                    const value2Index = i2.values.findIndex(v => v.key === s[0].name);
-                    const value2 = value2Index < 0 ? "" : (i2.values[value2Index].value || "");
+                    const valueItem2 = i2.getValue(s[0].name);
+                    const value2 = valueItem2 ? valueItem2.value : "";
 
                     const result = this.onDataTypeCompare(value1, value2, s[0].type);
                     if (result)
@@ -225,7 +230,7 @@
                 return 0;
             });
 
-            return result;
+            return items;
         }
 
         onDataTypeCompare(value1: any, value2: any = "", datatype: string = ""): number {
@@ -236,10 +241,6 @@
         }
 
         protected onFilter(query: Service.Query): QueryResultItem[] {
-            throw "Not implemented";
-        }
-
-        async onExecuteQueryFilterAction(action: string, query: Service.Query, parameters: Service.ExecuteActionParameters): Promise<PersistentObject> {
             throw "Not implemented";
         }
 
@@ -262,17 +263,8 @@
         }
 
         async onNew(query: Query): Promise<PersistentObject> {
-            //const storeQuery = await this.db.load(query.id, "Queries");
-            //const storeQueryQ = storeQuery ? storeQuery.query : null;
-            //if (!query || !storeQueryQ)
-            //    return null;
-
-            //const newPo = storeQueryQ.persistentObject;
-            //newPo.actions = ["Edit"];
-            //newPo.isNew = true;
-            //newPo.breadcrumb = newPo.newBreadcrumb || `New ${newPo.label}`;
-            //return newPo;
-            return null;
+            const storeQuery = await this.db.load(query.id, "Queries");
+            return Wrappers.Wrapper._wrap(Wrappers.PersistentObjectWrapper, storeQuery.newPersistentObject);
         }
 
         async onRefresh(persistentObject: PersistentObject, parameters: Service.ExecuteActionRefreshParameters): Promise<PersistentObject> {
@@ -280,17 +272,18 @@
         }
 
         async onDelete(query: Query, selectedItems: QueryResultItem[]) {
-            //const storeQuery = await this.db.load(query.id, "Queries");
-            //query = storeQuery.query;
+            const storeResult = await this.db.load(query.id, "QueryResults");
+            const deleted = selectedItems.map(selected => {
+                const itemIndex = storeResult.result.items.findIndex(i => i.id === selected.id);
+                if (itemIndex < 0)
+                    return null;
 
-            //selectedItems.forEach(item => {
-            //    const i = query.result.items.findIndex(i => i.id === item.id);
-            //    if (i >= 0)
-            //        query.result.items.splice(i, 1);
-            //});
+                return storeResult.result.items.splice(itemIndex)[0];
+            }).filter(i => !!i);
 
-            //storeQuery.query = query;
-            //await this.db.save(storeQuery, "Queries");
+            Array.prototype.push.apply(storeResult.deleted, deleted);
+
+            await this.db.save(storeResult, "QueryResults");
         }
 
         async onSave(obj: PersistentObject): Promise<PersistentObject> {
@@ -338,39 +331,39 @@
         }
 
         async editQueryResultItemValues(query: Service.Query, persistentObject: Service.PersistentObject, changeType: ItemChangeType) {
-        //    let item = query.result.items.find(i => i.id === persistentObject.objectId);
-        //    for (let attribute of persistentObject.attributes.filter(a => a.isValueChanged)) {
-        //        if (!item && changeType === "New") {
-        //            item = {
-        //                id: attribute.objectId,
-        //                values: []
-        //            };
+            //    let item = query.result.items.find(i => i.id === persistentObject.objectId);
+            //    for (let attribute of persistentObject.attributes.filter(a => a.isValueChanged)) {
+            //        if (!item && changeType === "New") {
+            //            item = {
+            //                id: attribute.objectId,
+            //                values: []
+            //            };
 
-        //            query.result.items.push(item);
-        //            query.result.totalItems++;
-        //        }
+            //            query.result.items.push(item);
+            //            query.result.totalItems++;
+            //        }
 
-        //        if (!item)
-        //            throw "Unable to resolve item.";
+            //        if (!item)
+            //            throw "Unable to resolve item.";
 
-        //        let value = item.values.find(v => v.key === attribute.name);
-        //        if (!value) {
-        //            value = {
-        //                key: attribute.name,
-        //                value: attribute.value
-        //            };
+            //        let value = item.values.find(v => v.key === attribute.name);
+            //        if (!value) {
+            //            value = {
+            //                key: attribute.name,
+            //                value: attribute.value
+            //            };
 
-        //            item.values.push(value);
-        //        }
-        //        else
-        //            value.value = attribute.value;
+            //            item.values.push(value);
+            //        }
+            //        else
+            //            value.value = attribute.value;
 
-        //        const attributeMetaData = query.persistentObject.attributes.find(a => a.name === attribute.name);
-        //        if (attributeMetaData && attributeMetaData.type === "Reference" && attributeMetaData.lookup) {
-        //            value.persistentObjectId = attributeMetaData.lookup.persistentObject.id;
-        //            value.objectId = attribute.objectId;
-        //        }
-        //    }
+            //        const attributeMetaData = query.persistentObject.attributes.find(a => a.name === attribute.name);
+            //        if (attributeMetaData && attributeMetaData.type === "Reference" && attributeMetaData.lookup) {
+            //            value.persistentObjectId = attributeMetaData.lookup.persistentObject.id;
+            //            value.objectId = attribute.objectId;
+            //        }
+            //    }
         }
     }
 

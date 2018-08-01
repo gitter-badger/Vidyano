@@ -9,48 +9,80 @@
          */
         export type Wrap<ServiceType, Writable extends keyof ServiceType, WrapperType> = Overwrite<Readonly<Omit<ServiceType, Writable>> & Pick<ServiceType, Writable>, WrapperType> & WrapperType;
 
-        export type ByName<T> = {
-            [key: string]: T;
-            [key: number]: T;
-        };
+        export type WrapperTypes = PersistentObjectAttributeWrapper | PersistentObjectAttributeWrapper | PersistentObjectAttributeWithReferenceWrapper |
+            QueryWrapper | QueryColumnWrapper | QueryResultWrapper | QueryResultItemWrapper | QueryResultItemValueWrapper;
 
-        const ByNameWrapperSymbol = Symbol();
+        //const ByNameWrapperSymbol = Symbol();
 
-        export class ByNameWrapper<T, U extends Wrapper<T>> implements ProxyHandler<U> {
-            private _wrapped: ByName<U> = {};
+        //export class ByNameWrapper<T, U extends Wrapper<T>> implements ProxyHandler<U> {
+        //    private _array: U[];
+        //    private _wrapped: ByName<U> = {
+        //        toArray: this._toArray.bind(this)
+        //    };
 
-            private constructor(private _target: any, private _objects: T[], private _wrapper: (o: T) => U, private _keyProperty: string = "name") {
-            }
+        //    private constructor(private _objects: T[], private _wrapper: (o: T) => U, private _keyProperty: string = "name", private _caseSensitive: boolean = false) {
+        //    }
 
-            get(target: U, p: PropertyKey, receiver: any): any {
-                if (p === ByNameWrapperSymbol)
-                    return this;
+        //    get(target: U, p: PropertyKey, receiver: any): any {
+        //        if (typeof p === "string") {
+        //            if (p !== "toArray") {
+        //                if (!this._caseSensitive)
+        //                    p = p.toUpperCase();
 
-                if (!this._wrapped.hasOwnProperty(p)) {
-                    const obj = (typeof p === "string") ? this._objects.find(q => q[this._keyProperty] === p) : this._objects[p];
-                    this._wrapped[<string>p] = obj ? this._wrapper(obj) : null;
-                }
+        //                if (!this._wrapped.hasOwnProperty(p)) {
+        //                    const obj = this._objects.find(q => {
+        //                        const key = q[this._keyProperty] || "";
+        //                        return (!this._caseSensitive ? key.toUpperCase() : key) === p;
+        //                    });
 
-                return this._wrapped[<string>p];
-            }
+        //                    this._wrapped[<string>p] = obj ? this._wrapper(obj) : null;
+        //                }
 
-            private _unwrap(): T[] {
-                return this._objects.map(o => {
-                    const wrapped = this._wrapped[o[this._keyProperty]];
-                    if (!wrapped)
-                        return o;
+        //                return this._wrapped[<string>p];
+        //            }
+        //            else
+        //                return this._toArray.bind(this);
+        //        }
 
-                    return wrapped["_unwrap"]();
-                });
-            }
+        //        if (p === ByNameWrapperSymbol)
+        //            return this;
 
-            static create<T, U extends object>(objects: T[], wrapper: Function, deepFreeze?: boolean, keyProperty?: string): ByName<U>;
-            static create<T, U extends object>(objects: T[], wrapper: (o: T) => U, keyProperty?: string): ByName<U>;
-            static create<T, U extends object>(objects: T[], wrapper: ((o: T) => U) | Function, deepFreezeOrKeyProperty?: boolean | string, keyProperty?: string): ByName<U> {
-                const target = {};
-                return new Proxy(target, new ByNameWrapper(target, objects, typeof wrapper === "function" ? o => Wrapper._wrap(wrapper, o, <boolean>deepFreezeOrKeyProperty) : wrapper, keyProperty));
-            }
-        }
+        //        return undefined;
+        //    }
+
+        //    private _toArray(): U[] {
+        //        if (!this._array) {
+        //            this._array = this._objects.map(o => {
+        //                let wrappedO = this._wrapped[o[this._keyProperty]];
+        //                if (!wrappedO)
+        //                    this._wrapped[o[this._keyProperty]] = wrappedO = this._wrapper(o);
+
+        //                return <U>wrappedO;
+        //            })
+        //        }
+
+        //        return this._array;
+        //    }
+
+        //    private _unwrap(): T[] {
+        //        return this._objects.map(o => {
+        //            const wrapped = this._wrapped[o[this._keyProperty]];
+        //            if (!wrapped)
+        //                return o;
+
+        //            return wrapped["_unwrap"]();
+        //        });
+        //    }
+
+        //    static create<T, U extends object>(objects: T[], wrapper: Function, deepFreeze?: boolean, keyProperty?: string, caseSensitive: boolean = false): ByName<U> {
+        //        return new Proxy(<any>{}, new ByNameWrapper(objects, typeof wrapper === "function" ? o => Wrapper._wrap(wrapper, o, <boolean>deepFreeze) : wrapper, keyProperty, caseSensitive));
+        //    }
+
+        //    static update<T, U extends Wrapper<T>>(byName: ByNameWrapper<T, U>, newObjects: U[]) {
+        //        byName._objects.splice(0, byName._objects.length, newObjects.splice);
+
+        //    }
+        //}
 
         export abstract class Wrapper<T> {
             private __wrappedProperties__: (keyof T)[] = [];
@@ -69,15 +101,10 @@
                 for (let i = 0; i < children.length; i++) {
                     const prop = children[i];
                     const child = (<any>this)[prop];
-                    if (child instanceof Wrapper)
+                    if (Array.isArray(child))
+                        result[prop] = child.map(c => c._unwrap());
+                    else
                         result[prop] = child._unwrap();
-                    else {
-                        const byNameWrapper = child[ByNameWrapperSymbol];
-                        if (byNameWrapper instanceof ByNameWrapper)
-                            byNameWrapper["_unwrap"]();
-                        else
-                            throw `Unable to unwrap child "${prop}"`;
-                    }
                 }
 
                 return result as T;
@@ -86,51 +113,34 @@
             /*
              * For internal use only
              */
-            static _wrap<T>(obj: any, deepFreeze?: boolean): T;
-            static _wrap<T>(wrapper: Function, obj: any, deepFreeze?: boolean): T;
-            static _wrap<T>(wrapperOrObj: Function, objOrDeepFreeze?: any, deepFreeze?: boolean): Wrapper<T> {
+            static _wrap<T>(wrapper: Function, object: any): T;
+            static _wrap<T>(wrapper: Function, objects: any[]): T[];
+            static _wrap<T>(wrapper: Function, objects: any | any[] = []): Wrapper<T> | Wrapper<T>[] {
+                if (Array.isArray(objects))
+                    return objects.map(obj => Wrapper._wrap(wrapper, obj) as Wrapper<T>);
+
+                const object = objects;
                 let result: any;
-                let obj: T;
-                if (typeof wrapperOrObj === "function")
-                    result = new (<{ new(value?: any): Object }>wrapperOrObj.prototype.constructor)(obj = objOrDeepFreeze);
-                else {
-                    result = new (<{ new(value?: any): Object }>this.prototype.constructor)(obj = wrapperOrObj);
-                    deepFreeze = objOrDeepFreeze;
-                }
+                if (wrapper.prototype)
+                    result = new (<{ new(value?: any): Object }>wrapper.prototype.constructor)(object);
+                else
+                    result = new (<{ new(value?: any): Object }>wrapper(object))(object);
 
                 const props: (keyof T)[] = [];
-                for (let prop in obj) {
+                for (let prop in object) {
                     if (!result.__proto__.hasOwnProperty(prop)) {
-                        const value = obj[prop]
-                        result[prop] = value && typeof value === "object" ? Wrapper._deepFreeze(value) : value;
+                        const value = object[prop];
+                        result[prop] = value;
 
                         result.__wrappedProperties__.push(prop);
                     }
                 }
-
-                if (deepFreeze)
-                    Wrapper._deepFreeze(result);
 
                 return result;
             }
 
             static _unwrap<T extends Wrapper<U>, U>(obj: T): U {
                 return obj._unwrap();
-            }
-
-            private static _deepFreeze(obj: any) {
-                if (Object.isFrozen(obj))
-                    return obj;
-
-                const propNames = Object.getOwnPropertyNames(obj);
-
-                // Freeze properties before freezing self
-                for (let name of propNames) {
-                    const value = obj[name];
-                    obj[name] = value && typeof value === "object" ? Wrapper._deepFreeze(value) : value;
-                }
-
-                return Object.freeze(obj);
             }
         }
     }

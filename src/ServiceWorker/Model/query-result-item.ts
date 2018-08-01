@@ -6,16 +6,20 @@ namespace Vidyano {
 
     export namespace Wrappers {
         export class QueryResultItemWrapper extends Wrapper<Service.QueryResultItem> {
-            private readonly _values: ByName<Vidyano.QueryResultItemValue>;
+            private readonly _values: Vidyano.QueryResultItemValue[];
 
             private constructor(private _item: Service.QueryResultItem) {
                 super();
 
-                this._values = ByNameWrapper.create(this._item.values, QueryResultItemValueWrapper, true, "key");
+                this._values = Wrapper._wrap(QueryResultItemValueWrapper, this._item.values);
             }
 
-            get values(): ByName<QueryResultItemValue> {
+            get values(): QueryResultItemValue[] {
                 return this._values;
+            }
+
+            getValue(key: string): QueryResultItemValue {
+                return this.values.find(v => v.key === key);
             }
 
             protected _unwrap(): Service.QueryResultItem {

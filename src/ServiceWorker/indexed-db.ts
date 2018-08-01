@@ -1,5 +1,5 @@
 ﻿namespace Vidyano {
-    export type Store = "Requests" | "Queries" | "PersistentObjects" | "ActionClassesById";
+    export type Store = "Requests" | "Queries" | "QueryResults" | "PersistentObjects" | "ActionClassesById";
     export type RequestMapKey = "GetQuery" | "GetPersistentObject"
 
     export type StoreGetClientDataRequest = {
@@ -15,7 +15,14 @@
     export type StoreQuery = {
         id: string;
         query: Service.Query;
+        newPersistentObject: Service.PersistentObject;
     };
+
+    export type StoreQueryResult = {
+        id: string;
+        result: Service.QueryResult;
+        deleted: Service.QueryResultItem[];
+    }
 
     export type StorePersistentObject = {
         id: string;
@@ -31,6 +38,7 @@
     export type StoreNameMap = {
         "Requests": StoreGetClientDataRequest | StoreGetApplicationRequest;
         "Queries": StoreQuery;
+        "QueryResults": StoreQueryResult;
         "PersistentObjects": StorePersistentObject;
         "ActionClassesById": StoreActionClassById;
     };
@@ -39,6 +47,8 @@
         "GetClientData": StoreGetClientDataRequest;
         "GetApplication": StoreGetApplicationRequest;
     };
+
+    type ByKey<T> = { [key: string]: T; };
 
     export class IndexedDB {
         private _initializing: Promise<void>;
@@ -51,6 +61,7 @@
                     var db = <IDBDatabase>dboOpen.result;
                     db.createObjectStore("Requests", { keyPath: "id" });
                     db.createObjectStore("Queries", { keyPath: "id" });
+                    db.createObjectStore("QueryResults", { keyPath: "id" });
                     db.createObjectStore("PersistentObjects", { keyPath: "id" });
                     db.createObjectStore("ActionClassesById", { keyPath: "id" });
                 };

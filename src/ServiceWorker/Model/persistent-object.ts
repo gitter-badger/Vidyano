@@ -6,21 +6,25 @@ namespace Vidyano {
 
     export namespace Wrappers {
         export class PersistentObjectWrapper extends Wrapper<Service.PersistentObject> {
-            private readonly _attributes: ByName<PersistentObjectAttribute>;
-            private readonly _queries: ByName<ReadOnlyQuery>;
+            private readonly _attributes: PersistentObjectAttribute[];
+            private readonly _queries: ReadOnlyQuery[];
 
             private constructor(private _obj: Service.PersistentObject, private _parent?: QueryWrapper) {
                 super();
 
-                this._attributes = ByNameWrapper.create(this._obj.attributes, attr => Wrapper._wrap(attr.type !== "Reference" ? PersistentObjectAttributeWrapper : PersistentObjectAttributeWithReferenceWrapper, attr, !(_parent instanceof QueryWrapper)));
-                this._queries = ByNameWrapper.create(this._obj.queries, QueryWrapper, true);
+                this._attributes = Wrapper._wrap(attr => attr.type !== "Reference" ? PersistentObjectAttributeWrapper : PersistentObjectAttributeWithReferenceWrapper, this._obj.attributes);
+                this._queries = Wrapper._wrap(QueryWrapper, this._obj.queries);
             }
 
-            get queries(): ByName<ReadOnlyQuery> {
+            get queries(): ReadOnlyQuery[] {
                 return this._queries;
             }
 
-            get attributes(): ByName<PersistentObjectAttribute> {
+            getQuery(name: string): ReadOnlyQuery {
+                return this.queries.find(q => q.name === name);
+            }
+
+            get attributes(): PersistentObjectAttribute[] {
                 return this._attributes;
             }
 

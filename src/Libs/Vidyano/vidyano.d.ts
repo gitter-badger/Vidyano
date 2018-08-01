@@ -1009,6 +1009,7 @@ declare namespace Vidyano {
         private _sortOptions;
         private _queriedPages;
         private _filters;
+        private _allowTextSearch;
         private _canFilter;
         private _canRead;
         private _canReorder;
@@ -1041,6 +1042,7 @@ declare namespace Vidyano {
         selectAll: IQuerySelectAll;
         constructor(service: Service, query: Service.Query, parent?: PersistentObject, asLookup?: boolean, maxSelectedItems?: number);
         readonly isSystem: boolean;
+        readonly allowTextSearch: boolean;
         readonly filters: QueryFilters;
         readonly canFilter: boolean;
         private _setCanFilter;
@@ -1435,15 +1437,11 @@ declare namespace Vidyano {
     abstract class DataType {
         static isDateTimeType(type: string): boolean;
         static isNumericType(type: string): boolean;
+        static isBooleanType(type: string): boolean;
         private static _getDate;
         private static _getServiceTimeString;
         static fromServiceString(value: string, type: string): any;
         static toServiceString(value: any, type: string): string;
-    }
-}
-declare namespace Vidyano {
-    namespace ClientOperations {
-        function refreshForUpdate(hooks: ServiceHooks, path: string, replaceCurrent?: boolean): void;
     }
 }
 declare namespace Vidyano {
@@ -1478,5 +1476,10 @@ declare namespace Vidyano {
         readonly end: number;
         readonly items: QueryResultItem[];
         update(group: Service.QueryResultItemGroup, start: number, end: number): void;
+    }
+}
+declare namespace Vidyano {
+    namespace ClientOperations {
+        function refreshForUpdate(hooks: ServiceHooks, path: string, replaceCurrent?: boolean): void;
     }
 }

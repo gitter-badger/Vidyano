@@ -6,19 +6,21 @@ namespace Vidyano {
 
     export namespace Wrappers {
         export class QueryWrapper extends Wrapper<Service.Query> {
-            private readonly _columns: ByName<QueryColumn>;
+            private readonly _columns: QueryColumn[];
             private readonly _persistentObject: ReadOnlyPersistentObject;
             private readonly _result: QueryResult;
 
             private constructor(private _query: Service.Query) {
                 super();
 
-                this._columns = ByNameWrapper.create(this._query.columns, QueryColumnWrapper, true, "name");
-                this._persistentObject = Wrapper._wrap(PersistentObjectWrapper, this._query.persistentObject, true);
-                this._result = Wrapper._wrap(QueryResultWrapper, this._query.result);
+                this._columns = Wrapper._wrap(QueryColumnWrapper, this._query.columns);
+                this._persistentObject = Wrapper._wrap(PersistentObjectWrapper, this._query.persistentObject);
+
+                if (this._query.result)
+                    this._result = Wrapper._wrap(QueryResultWrapper, this._query.result);
             }
 
-            get columns(): ByName<QueryColumn> {
+            get columns(): QueryColumn[] {
                 return this._columns;
             }
 

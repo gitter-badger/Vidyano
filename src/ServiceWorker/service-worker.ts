@@ -14,7 +14,6 @@
     export class ServiceWorker {
         private readonly _db: IndexedDB;
         private _cacheName: string;
-        private _service: IService;
         private _clientData: Service.ClientData;
         private _application: Application;
 
@@ -123,7 +122,7 @@
                     return this.createResponse(response);
                 }
 
-                if (ServiceWorker.prototype.onCache !== this.onCache && e.request.method === "POST" && e.request.url.startsWith(this.serviceUri)) {
+                if (e.request.method === "POST" && e.request.url.startsWith(this.serviceUri)) {
                     if (e.request.url.endsWith("GetApplication")) {
                         const fetcher = await this._createFetcher<Service.GetApplicationRequest, Service.ApplicationResponse>(e.request);
                         let response = await fetcher.fetch(fetcher.payload);
@@ -173,17 +172,12 @@
                                 if (action[0] === "Query") {
                                     const queryAction = fetcher.payload as Service.ExecuteQueryActionRequest;
                                     const actionsClass = await ServiceWorkerActions.get(queryAction.query.persistentObject.type, this);
-                                    response.result = Wrappers.PersistentObjectWrapper._unwrap(await actionsClass.onExecuteQueryAction(action[1], Wrappers.QueryWrapper._wrap(queryAction.query), queryAction.selectedItems.map(i => Wrappers.QueryResultItemWrapper._wrap(i)), queryAction.parameters));
+                                    response.result = Wrappers.PersistentObjectWrapper._unwrap(await actionsClass.onExecuteQueryAction(action[1], Wrappers.Wrapper._wrap(Wrappers.QueryWrapper, queryAction.query), queryAction.selectedItems.map(i => Wrappers.Wrapper._wrap(Wrappers.QueryResultItemWrapper, i)), queryAction.parameters));
                                 }
                                 else if (action[0] === "PersistentObject") {
                                     const persistentObjectAction = fetcher.payload as Service.ExecutePersistentObjectActionRequest;
                                     const actionsClass = await ServiceWorkerActions.get(persistentObjectAction.parent.type, this);
-                                    response.result = Wrappers.Wrapper._unwrap(await actionsClass.onExecutePersistentObjectAction(action[1], Wrappers.PersistentObjectWrapper._wrap(persistentObjectAction.parent), persistentObjectAction.parameters));
-                                }
-                                else if (action[0] === "QueryFilter") {
-                                    const queryFilterAction = fetcher.payload as Service.ExecuteQueryFilterActionRequest;
-                                    const actionsClass = await ServiceWorkerActions.get(queryFilterAction.query.persistentObject.type, this);
-                                    response.result = Wrappers.PersistentObjectWrapper._unwrap(await actionsClass.onExecuteQueryFilterAction(action[1], queryFilterAction.query, queryFilterAction.parameters));
+                                    response.result = Wrappers.Wrapper._unwrap(await actionsClass.onExecutePersistentObjectAction(action[1], Wrappers.Wrapper._wrap(Wrappers.PersistentObjectWrapper, persistentObjectAction.parent), persistentObjectAction.parameters));
                                 }
                             }
                             else
@@ -194,9 +188,10 @@
                         else if (e.request.url.endsWith("ExecuteQuery")) {
                             const fetcher = await this._createFetcher<Service.ExecuteQueryRequest, Service.ExecuteQueryResponse>(e.request);
                             const response = await fetcher.fetch(fetcher.payload) || { authToken: this.authToken, result: undefined };
-                            if (!response.result) {
+                            // TODO: Remove true
+                            if (true || !response.result) {
                                 const actionsClass = await ServiceWorkerActions.get(fetcher.payload.query.persistentObject.type, this);
-                                response.result = Wrappers.Wrapper._unwrap(await actionsClass.onExecuteQuery(Wrappers.QueryWrapper._wrap(fetcher.payload.query)));
+                                response.result = Wrappers.Wrapper._unwrap(await actionsClass.onExecuteQuery(Wrappers.Wrapper._wrap(Wrappers.QueryWrapper, fetcher.payload.query)));
                             }
                             else
                                 this.authToken = response.authToken;
@@ -269,6 +264,78 @@
             return fetcher;
         }
 
+        private async _getOffline(id: string, authToken: string, userName: string) {
+            const payload: Service.GetPersistentObjectRequest = {
+                authToken: authToken,
+                userName: userName,
+                environment: "Web,ServiceWorker",
+                environmentVersion: "2",
+                clientVersion: "",
+                persistentObjectTypeId: id
+            };
+
+            const response = await fetch(new Request(`${this.serviceUri.trimEnd("/")}/GetPersistentObject`, {
+                body: JSON.stringify(payload),
+                cache: "no-cache",
+                headers: {
+                    "content-type": "application/json",
+                    "user-agent": navigator.userAgent
+                },
+                method: "POST",
+                referrer: self.location.toString()
+            }));
+
+            if (!response.headers.get("content-type").startsWith("application/json")) {
+                console.error(`Unable to get offline data.\n${response.text()}`);
+                return;
+            }
+
+            const responseData = <Service.GetPersistentObjectResponse>await response.json();
+            const offline = <Service.PersistentObject>responseData.result;
+
+            type Query = Service.Query & { newPersistentObject: Service.PersistentObject };
+            for (let i = 0; i < offline.queries.length; i++) {
+                const query = <Query>offline.queries[i];
+
+
+                if (query.result) {
+                    await this._db.save({
+                        id: query.id,
+                        result: query.result,
+                        deleted: []
+                    }, "QueryResults");
+
+                    delete query.result;
+                }
+
+                const newPersistentObject = query.newPersistentObject;
+                if (newPersistentObject)
+                    delete query.newPersistentObject;
+
+                await this._db.save({
+                    id: query.id,
+                    query: query,
+                    newPersistentObject: newPersistentObject
+                }, "Queries");
+
+                await this.db.save({
+                    id: query.id,
+                    name: query.persistentObject.type
+                }, "ActionClassesById");
+
+                await this.db.save({
+                    id: query.persistentObject.id,
+                    query: query.id,
+                    persistentObject: query.persistentObject
+                }, "PersistentObjects");
+
+                await this.db.save({
+                    id: query.persistentObject.id,
+                    name: query.persistentObject.type
+                }, "ActionClassesById");
+            }
+        }
+
         protected async onGetClientData(): Promise<Service.ClientData> {
             return (await this.db.load("GetClientData", "Requests")).response;
         }
@@ -290,14 +357,13 @@
                 response: application
             }, "Requests");
 
-            this.onCache(this._service = new Service(this, this.serviceUri, application.userName, application.authToken));
+            const offlineAttribute = application.application.attributes.find(a => a.name === "OfflineId");
+            if (offlineAttribute != null && offlineAttribute.value != null)
+                this._getOffline(offlineAttribute.value, application.authToken, application.userName);
         }
 
         protected async onGetApplication(): Promise<Service.ApplicationResponse> {
             return (await this.db.load("GetApplication", "Requests")).response;
-        }
-
-        protected async onCache(service: IService) {
         }
 
         protected createRequest(data: any, request: Request): Request {
@@ -337,101 +403,6 @@
                 status: response.status,
                 statusText: response.statusText
             } : null);
-        }
-    }
-
-    /// IService and Service implementation
-    export interface IService {
-        cachePersistentObject(parent: Service.PersistentObject, id: string, objectId?: string, isNew?: boolean): Promise<void>;
-        cacheQuery(id: string): Promise<void>;
-    }
-
-    class Service implements IService {
-        constructor(private _serviceWorker: ServiceWorker, readonly serviceUri: string, private _userName: string, private _authToken: string) {
-        }
-
-        private _createPayload(): any {
-            const payload: Service.Request = {
-                authToken: this._authToken,
-                userName: this._userName,
-                environment: "Web,ServiceWorker",
-                environmentVersion: "2",
-                clientVersion: ""
-            };
-
-            return payload;
-        }
-
-        private _createUri(method: string) {
-            let uri = this.serviceUri;
-            if (!uri.endsWith("/"))
-                uri += "/";
-
-            return uri + method;
-        }
-
-        private async _fetch(method: string, payload: any): Promise<any> {
-            let uri = this.serviceUri;
-            if (!uri.endsWith("/"))
-                uri += "/";
-
-            const response = await fetch(new Request(this._createUri(method), {
-                body: JSON.stringify(payload),
-                cache: "no-cache",
-                headers: {
-                    "content-type": "application/json",
-                    "user-agent": navigator.userAgent
-                },
-                method: "POST",
-                referrer: self.location.toString()
-            }));
-
-            if (!response.headers.get("content-type").startsWith("application/json"))
-                return response.clone().text();
-
-            const result = await response.clone().json();
-            if (method === "GetQuery" && result.query)
-                return result.query;
-            else if (method === "GetPersistentObject" && result.persistentObject)
-                return result.persistentObject;
-
-            return result;
-        }
-
-        async cachePersistentObject(parent: Service.PersistentObject, id: string, objectId?: string, isNew?: boolean): Promise<void> {
-            const payload = <Service.GetPersistentObjectRequest>this._createPayload();
-            payload.parent = parent;
-            payload.persistentObjectTypeId = id;
-
-            if (objectId)
-                payload.objectId = objectId;
-            if (isNew)
-                payload.isNew = isNew;
-
-            const po = <Service.PersistentObject>await this._fetch("GetPersistentObject", payload);
-            if (!po)
-                return;
-
-            const actionsClass = await ServiceWorkerActions.get(po.type, this._serviceWorker);
-            if (!actionsClass)
-                return;
-
-            await actionsClass.onCachePersistentObject(po);
-        }
-
-        async cacheQuery(id: string): Promise<void> {
-            const payload = <Service.GetQueryRequest>this._createPayload();
-            payload.id = id;
-
-            const query = <Service.Query>await this._fetch("GetQuery", payload);
-            if (!query || !query.persistentObject)
-                return;
-
-            const actionsClass = await ServiceWorkerActions.get(query.persistentObject.type, this._serviceWorker);
-            if (!actionsClass)
-                return;
-
-            await actionsClass.onCacheQuery(query);
         }
     }
 }
