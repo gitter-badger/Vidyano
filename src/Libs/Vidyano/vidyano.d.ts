@@ -1445,6 +1445,11 @@ declare namespace Vidyano {
     }
 }
 declare namespace Vidyano {
+    namespace ClientOperations {
+        function refreshForUpdate(hooks: ServiceHooks, path: string, replaceCurrent?: boolean): void;
+    }
+}
+declare namespace Vidyano {
     class Language extends Vidyano.Common.Observable<ServiceObject> implements Service.Language {
         private _language;
         private _culture;
@@ -1476,10 +1481,5 @@ declare namespace Vidyano {
         readonly end: number;
         readonly items: QueryResultItem[];
         update(group: Service.QueryResultItemGroup, start: number, end: number): void;
-    }
-}
-declare namespace Vidyano {
-    namespace ClientOperations {
-        function refreshForUpdate(hooks: ServiceHooks, path: string, replaceCurrent?: boolean): void;
     }
 }

@@ -248,7 +248,7 @@
             if (action === "New")
                 return this.onNew(query);
             else if (action === "Delete")
-                await this.onDelete(query, selectedItems);
+                return await this.onDelete(query, selectedItems);
 
             return null;
         }
@@ -271,19 +271,20 @@
             return persistentObject;
         }
 
-        async onDelete(query: Query, selectedItems: QueryResultItem[]) {
+        async onDelete(query: Query, selectedItems: QueryResultItem[]): Promise<PersistentObject> {
             const storeResult = await this.db.load(query.id, "QueryResults");
             const deleted = selectedItems.map(selected => {
                 const itemIndex = storeResult.result.items.findIndex(i => i.id === selected.id);
                 if (itemIndex < 0)
                     return null;
 
-                return storeResult.result.items.splice(itemIndex)[0];
+                return storeResult.result.items.splice(itemIndex, 1)[0];
             }).filter(i => !!i);
 
             Array.prototype.push.apply(storeResult.deleted, deleted);
-
             await this.db.save(storeResult, "QueryResults");
+
+            return null;
         }
 
         async onSave(obj: PersistentObject): Promise<PersistentObject> {
@@ -294,6 +295,7 @@
         }
 
         async saveNew(obj: PersistentObject): Promise<PersistentObject> {
+            const uwrapped = Wrappers.Wrapper._unwrap(obj);
             //obj.objectId = `SW-NEW-${Date.now()}`;
 
             //const storeObj = await this.db.load(obj.id, "PersistentObjects");

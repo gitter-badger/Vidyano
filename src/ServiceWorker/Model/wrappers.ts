@@ -140,6 +140,9 @@
             }
 
             static _unwrap<T extends Wrapper<U>, U>(obj: T): U {
+                if (!obj)
+                    return null;
+
                 return obj._unwrap();
             }
         }
