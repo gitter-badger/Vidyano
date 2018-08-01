@@ -92,6 +92,7 @@ namespace Vidyano {
         private _sortOptions: ISortOption[];
         private _queriedPages: Array<number> = [];
         private _filters: QueryFilters;
+        private _allowTextSearch: boolean;
         private _canFilter: boolean;
         private _canRead: boolean;
         private _canReorder: boolean;
@@ -136,6 +137,7 @@ namespace Vidyano {
             if (!this.autoQuery)
                 this.items = [];
 
+            this._allowTextSearch = query.allowTextSearch;
             this._canRead = !!query.canRead;
             this._canReorder = !!query.canReorder && !asLookup;
             this.isHidden = query.isHidden;
@@ -188,6 +190,10 @@ namespace Vidyano {
 
         get isSystem(): boolean {
             return this._isSystem;
+        }
+
+        get allowTextSearch(): boolean {
+            return this._allowTextSearch;
         }
 
         get filters(): QueryFilters {
