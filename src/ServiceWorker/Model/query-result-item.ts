@@ -11,7 +11,7 @@ namespace Vidyano {
             private constructor(private _item: Service.QueryResultItem) {
                 super();
 
-                this._values = Wrapper._wrap(QueryResultItemValueWrapper, this._item.values);
+                this._values = QueryResultItemValueWrapper._wrap(this._item.values);
             }
 
             get values(): QueryResultItemValue[] {
@@ -23,7 +23,11 @@ namespace Vidyano {
             }
 
             protected _unwrap(): Service.QueryResultItem {
-                return this._item;
+                return super._unwrap("values");
+            }
+
+            static _unwrap(obj: QueryResultItem): Service.QueryResultItem {
+                return obj._unwrap();
             }
         }
     }

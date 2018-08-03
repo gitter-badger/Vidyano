@@ -6,7 +6,7 @@
         readonly hasSensitive: boolean;
 
         constructor(private _serviceWorker: ServiceWorker, response: Service.ApplicationResponse) {
-            this._application = Wrappers.Wrapper._wrap(Wrappers.PersistentObjectWrapper, response.application);
+            this._application = Wrappers.PersistentObjectWrapper._wrap(response.application);
             this.userLanguage = response.userLanguage;
             this.userName = response.userName;
             this.hasSensitive = response.hasSensitive;

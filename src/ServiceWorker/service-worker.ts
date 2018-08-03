@@ -145,7 +145,7 @@
                             const response = await fetcher.fetch(fetcher.payload) || { authToken: this.authToken, query: undefined };
                             if (!response.query) {
                                 const actionsClass = await ServiceWorkerActions.get(fetcher.payload.id, this);
-                                response.query = Wrappers.Wrapper._unwrap(await actionsClass.onGetQuery(fetcher.payload.id));
+                                response.query = Wrappers.QueryWrapper._unwrap(await actionsClass.onGetQuery(fetcher.payload.id));
                             }
                             else
                                 this.authToken = response.authToken;
@@ -172,12 +172,12 @@
                                 if (action[0] === "Query") {
                                     const queryAction = fetcher.payload as Service.ExecuteQueryActionRequest;
                                     const actionsClass = await ServiceWorkerActions.get(queryAction.query.persistentObject.type, this);
-                                    response.result = Wrappers.PersistentObjectWrapper._unwrap(await actionsClass.onExecuteQueryAction(action[1], Wrappers.Wrapper._wrap(Wrappers.QueryWrapper, queryAction.query), queryAction.selectedItems.map(i => Wrappers.Wrapper._wrap(Wrappers.QueryResultItemWrapper, i)), queryAction.parameters));
+                                    response.result = Wrappers.PersistentObjectWrapper._unwrap(await actionsClass.onExecuteQueryAction(action[1], Wrappers.QueryWrapper._wrap(queryAction.query), queryAction.selectedItems.map(i => Wrappers.QueryResultItemWrapper._wrap(i)), queryAction.parameters));
                                 }
                                 else if (action[0] === "PersistentObject") {
                                     const persistentObjectAction = fetcher.payload as Service.ExecutePersistentObjectActionRequest;
                                     const actionsClass = await ServiceWorkerActions.get(persistentObjectAction.parent.type, this);
-                                    response.result = Wrappers.Wrapper._unwrap(await actionsClass.onExecutePersistentObjectAction(action[1], Wrappers.Wrapper._wrap(Wrappers.PersistentObjectWrapper, persistentObjectAction.parent), persistentObjectAction.parameters));
+                                    response.result = Wrappers.PersistentObjectWrapper._unwrap(await actionsClass.onExecutePersistentObjectAction(action[1], Wrappers.PersistentObjectWrapper._wrap(persistentObjectAction.parent), persistentObjectAction.parameters));
                                 }
                             }
                             else
@@ -188,10 +188,9 @@
                         else if (e.request.url.endsWith("ExecuteQuery")) {
                             const fetcher = await this._createFetcher<Service.ExecuteQueryRequest, Service.ExecuteQueryResponse>(e.request);
                             const response = await fetcher.fetch(fetcher.payload) || { authToken: this.authToken, result: undefined };
-                            // TODO: Remove true
-                            if (true || !response.result) {
+                            if (!response.result) {
                                 const actionsClass = await ServiceWorkerActions.get(fetcher.payload.query.persistentObject.type, this);
-                                response.result = Wrappers.Wrapper._unwrap(await actionsClass.onExecuteQuery(Wrappers.Wrapper._wrap(Wrappers.QueryWrapper, fetcher.payload.query)));
+                                response.result = Wrappers.QueryResultWrapper._unwrap(await actionsClass.onExecuteQuery(Wrappers.QueryWrapper._wrap(fetcher.payload.query)));
                             }
                             else
                                 this.authToken = response.authToken;

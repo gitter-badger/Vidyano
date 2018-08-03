@@ -127,7 +127,7 @@
             if (query.autoQuery)
                 query.result = (await this.db.load(id, "QueryResults")).result;
 
-            return Wrappers.Wrapper._wrap(Wrappers.QueryWrapper, query);
+            return Wrappers.QueryWrapper._wrap(query);
         }
 
         async onExecuteQuery(query: Query): Promise<QueryResult> {
@@ -135,7 +135,7 @@
 
             cachedQueryResult.result.columns = query.columns;
             cachedQueryResult.result.sortOptions = query.sortOptions;
-            const result = <QueryResult>Wrappers.Wrapper._wrap(Wrappers.QueryResultWrapper, cachedQueryResult.result);
+            const result = <QueryResult>Wrappers.QueryResultWrapper._wrap(cachedQueryResult.result);
 
             if (query.textSearch)
                 result["_update"](this.onTextSearch(query.textSearch, result));
@@ -264,7 +264,7 @@
 
         async onNew(query: Query): Promise<PersistentObject> {
             const storeQuery = await this.db.load(query.id, "Queries");
-            return Wrappers.Wrapper._wrap(Wrappers.PersistentObjectWrapper, storeQuery.newPersistentObject);
+            return Wrappers.PersistentObjectWrapper._wrap(storeQuery.newPersistentObject);
         }
 
         async onRefresh(persistentObject: PersistentObject, parameters: Service.ExecuteActionRefreshParameters): Promise<PersistentObject> {
@@ -295,7 +295,7 @@
         }
 
         async saveNew(obj: PersistentObject): Promise<PersistentObject> {
-            const uwrapped = Wrappers.Wrapper._unwrap(obj);
+            const uwrapped = Wrappers.PersistentObjectWrapper._unwrap(obj);
             //obj.objectId = `SW-NEW-${Date.now()}`;
 
             //const storeObj = await this.db.load(obj.id, "PersistentObjects");

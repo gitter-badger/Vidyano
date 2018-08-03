@@ -13,7 +13,7 @@ namespace Vidyano {
                 super();
 
                 this._attributes = Wrapper._wrap(attr => attr.type !== "Reference" ? PersistentObjectAttributeWrapper : PersistentObjectAttributeWithReferenceWrapper, this._obj.attributes);
-                this._queries = Wrapper._wrap(QueryWrapper, this._obj.queries);
+                this._queries = QueryWrapper._wrap(this._obj.queries);
             }
 
             get queries(): ReadOnlyQuery[] {
@@ -28,8 +28,16 @@ namespace Vidyano {
                 return this._attributes;
             }
 
+            getAttribute(name: string): PersistentObjectAttribute {
+                return this.attributes.find(a => a.name === name);
+            }
+
             protected _unwrap(): Service.PersistentObject {
-                return this._obj;
+                return super._unwrap("queries", "attributes");
+            }
+
+            static _unwrap(obj: PersistentObject): Service.PersistentObject {
+                return obj._unwrap();
             }
         }
     }

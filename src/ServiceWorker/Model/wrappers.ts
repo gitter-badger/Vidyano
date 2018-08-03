@@ -30,9 +30,9 @@
                     const prop = children[i];
                     const child = (<any>this)[prop];
                     if (Array.isArray(child))
-                        result[prop] = child.map(c => c._unwrap());
+                        result[prop] = child.map(c => c instanceof Wrapper ? c._unwrap() : c);
                     else
-                        result[prop] = child._unwrap();
+                        result[prop] = child instanceof Wrapper ? child._unwrap() : child;
                 }
 
                 return result as T;
@@ -41,9 +41,14 @@
             /*
              * For internal use only
              */
-            static _wrap<T>(wrapper: Function, object: any): T;
-            static _wrap<T>(wrapper: Function, objects: any[]): T[];
-            static _wrap<T>(wrapper: Function, objects: any | any[] = []): Wrapper<T> | Wrapper<T>[] {
+            static _wrap<T>(object: any): T;
+            static _wrap<T>(objects: any[]): T;
+            static _wrap<T, U>(wrapperFunction: (obj: U) => Function, objects: U[]): T;
+            static _wrap<T>(objectsOrWrapper: Function | WrapperTypes | any | any[], objects?: any | any[]): Wrapper<T> | Wrapper<T>[] {
+                const wrapper = objects != null ? objectsOrWrapper : this.prototype.constructor;
+                if (!objects)
+                    objects = objectsOrWrapper;
+
                 if (Array.isArray(objects))
                     return objects.map(obj => Wrapper._wrap(wrapper, obj) as Wrapper<T>);
 
@@ -65,13 +70,6 @@
                 }
 
                 return result;
-            }
-
-            static _unwrap<T extends Wrapper<U>, U>(obj: T): U {
-                if (!obj)
-                    return null;
-
-                return obj._unwrap();
             }
         }
     }

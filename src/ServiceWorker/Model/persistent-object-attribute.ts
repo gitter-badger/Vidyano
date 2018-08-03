@@ -24,7 +24,7 @@ namespace Vidyano {
             }
 
             get value(): any {
-                return this._attr;
+                return this._attr.value;
             }
 
             set value(value: any) {
@@ -32,8 +32,12 @@ namespace Vidyano {
                 this._isValueChanged = true;
             }
 
-            protected _unwrap(): Service.PersistentObjectAttribute {
-                return this._attr;
+            protected _unwrap(...children: string[]): Service.PersistentObjectAttribute {
+                return super._unwrap(...children.concat(["isValueChanged", "value"]));
+            }
+
+            static _unwrap(obj: PersistentObjectAttribute): Service.PersistentObjectAttribute {
+                return obj._unwrap();
             }
         }
 
@@ -52,7 +56,11 @@ namespace Vidyano {
             }
 
             protected _unwrap(): Service.PersistentObjectAttributeWithReference {
-                return this._attrWithReference;
+                return <Service.PersistentObjectAttributeWithReference>super._unwrap("objectId");
+            }
+
+            static _unwrap(obj: PersistentObjectAttributeWithReference): Service.PersistentObjectAttributeWithReference {
+                return obj._unwrap();
             }
         }
     }

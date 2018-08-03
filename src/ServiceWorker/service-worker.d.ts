@@ -486,9 +486,9 @@ declare namespace Vidyano {
         abstract class Wrapper<T> {
             private __wrappedProperties__;
             protected _unwrap(...children: string[]): T;
-            static _wrap<T>(wrapper: Function, object: any): T;
-            static _wrap<T>(wrapper: Function, objects: any[]): T[];
-            static _unwrap<T extends Wrapper<U>, U>(obj: T): U;
+            static _wrap<T>(object: any): T;
+            static _wrap<T>(objects: any[]): T;
+            static _wrap<T, U>(wrapperFunction: (obj: U) => Function, objects: U[]): T;
         }
     }
 }
@@ -505,13 +505,15 @@ declare namespace Vidyano {
             readonly isValueChanged: boolean;
             protected _isValueChanged: boolean;
             value: any;
-            protected _unwrap(): Service.PersistentObjectAttribute;
+            protected _unwrap(...children: string[]): Service.PersistentObjectAttribute;
+            static _unwrap(obj: PersistentObjectAttribute): Service.PersistentObjectAttribute;
         }
         class PersistentObjectAttributeWithReferenceWrapper extends PersistentObjectAttributeWrapper {
             private _attrWithReference;
             private constructor();
             objectId: string;
             protected _unwrap(): Service.PersistentObjectAttributeWithReference;
+            static _unwrap(obj: PersistentObjectAttributeWithReference): Service.PersistentObjectAttributeWithReference;
         }
     }
 }
@@ -528,7 +530,9 @@ declare namespace Vidyano {
             readonly queries: ReadOnlyQuery[];
             getQuery(name: string): ReadOnlyQuery;
             readonly attributes: PersistentObjectAttribute[];
+            getAttribute(name: string): PersistentObjectAttribute;
             protected _unwrap(): Service.PersistentObject;
+            static _unwrap(obj: PersistentObject): Service.PersistentObject;
         }
     }
 }
@@ -539,7 +543,7 @@ declare namespace Vidyano {
         class QueryColumnWrapper extends Wrapper<Service.QueryColumn> {
             private _column;
             private constructor();
-            protected _unwrap(): Service.QueryColumn;
+            static _unwrap(obj: QueryColumn): Service.QueryColumn;
         }
     }
 }
@@ -549,7 +553,7 @@ declare namespace Vidyano {
         class QueryResultItemValueWrapper extends Wrapper<Service.QueryResultItemValue> {
             private _value;
             private constructor();
-            protected _unwrap(): Service.QueryResultItemValue;
+            static _unwrap(obj: QueryResultItemValue): Service.QueryResultItemValue;
         }
     }
 }
@@ -564,6 +568,7 @@ declare namespace Vidyano {
             readonly values: QueryResultItemValue[];
             getValue(key: string): QueryResultItemValue;
             protected _unwrap(): Service.QueryResultItem;
+            static _unwrap(obj: QueryResultItem): Service.QueryResultItem;
         }
     }
 }
@@ -582,6 +587,7 @@ declare namespace Vidyano {
             getItem(id: string): QueryResultItem;
             private _update;
             protected _unwrap(): Service.QueryResult;
+            static _unwrap(obj: QueryResult): Service.QueryResult;
         }
     }
 }
@@ -599,6 +605,7 @@ declare namespace Vidyano {
             readonly persistentObject: ReadOnlyPersistentObject;
             readonly result: QueryResult;
             protected _unwrap(): Service.Query;
+            static _unwrap(obj: Query): Service.Query;
         }
     }
 }

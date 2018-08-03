@@ -9,8 +9,8 @@ namespace Vidyano {
                 super();
             }
 
-            protected _unwrap(): Service.QueryResultItemValue {
-                return this._value;
+            static _unwrap(obj: QueryResultItemValue): Service.QueryResultItemValue {
+                return obj._unwrap();
             }
         }
     }

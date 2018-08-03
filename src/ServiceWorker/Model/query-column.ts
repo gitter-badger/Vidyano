@@ -10,8 +10,8 @@ namespace Vidyano {
                 super();
             }
 
-            protected _unwrap(): Service.QueryColumn {
-                return this._column;
+            static _unwrap(obj: QueryColumn): Service.QueryColumn {
+                return obj._unwrap();
             }
         }
     }
