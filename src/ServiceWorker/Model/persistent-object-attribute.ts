@@ -1,10 +1,23 @@
 ﻿/// <reference path="wrappers.ts" />
 
 namespace Vidyano {
-    export type PersistentObjectAttribute = Wrappers.Wrap<Service.PersistentObjectAttribute, "label" | "group" | "offset" | "tab" | "visibility", Wrappers.PersistentObjectAttributeWrapper>;
+    const _PersistentObjectAttributeWritableProperties = {
+        "label": 1,
+        "group": 1,
+        "isValueChanged": 1,
+        "offset": 1,
+        "tab": 1,
+        "visibility": 1
+    };
+    const PersistentObjectAttributeWritableProperties = Object.keys(_PersistentObjectAttributeWritableProperties) as (keyof typeof _PersistentObjectAttributeWritableProperties)[];
+
+    export type PersistentObjectAttribute = Wrappers.Wrap<Service.PersistentObjectAttribute, typeof PersistentObjectAttributeWritableProperties[number], Wrappers.PersistentObjectAttributeWrapper>;
     export type ReadOnlyPersistentObjectAttribute = Readonly<PersistentObjectAttribute>;
 
-    export type PersistentObjectAttributeWithReference = Wrappers.Wrap<Service.PersistentObjectAttributeWithReference, "label" | "group" | "offset" | "tab" | "visibility", Wrappers.PersistentObjectAttributeWithReferenceWrapper>;
+    const _PersistentObjectAttributeWithReferenceWritableProperties = { ..._PersistentObjectAttributeWritableProperties };
+    const PersistentObjectAttributeWithReferenceWritableProperties = Object.keys(_PersistentObjectAttributeWritableProperties) as (keyof typeof _PersistentObjectAttributeWritableProperties)[];
+
+    export type PersistentObjectAttributeWithReference = Wrappers.Wrap<Service.PersistentObjectAttributeWithReference, typeof PersistentObjectAttributeWithReferenceWritableProperties[number], Wrappers.PersistentObjectAttributeWithReferenceWrapper>;
     export type ReadOnlyPersistentObjectAttributeWithReference = Readonly<PersistentObjectAttributeWithReference>;
 
     export namespace Wrappers {
@@ -15,29 +28,21 @@ namespace Vidyano {
                 super();
             }
 
-            get isValueChanged(): boolean {
-                return this._value !== this._attr.value;
-            }
-
-            protected set _isValueChanged(isValueChanged: boolean) {
-                this._attr.isValueChanged = isValueChanged;
-            }
-
             get value(): any {
                 return this._attr.value;
             }
 
             set value(value: any) {
                 this._attr.value = this._value = value;
-                this._isValueChanged = true;
+                this._attr.isValueChanged = true;
             }
 
-            protected _unwrap(...children: string[]): Service.PersistentObjectAttribute {
-                return super._unwrap(...children.concat(["isValueChanged", "value"]));
+            protected _unwrap(writableProperties: string[] = [], ...children: string[]): Service.PersistentObjectAttribute {
+                return super._unwrap(writableProperties.concat(PersistentObjectAttributeWritableProperties), ...children.concat(["isValueChanged", "value"]));
             }
 
             static _unwrap(obj: PersistentObjectAttribute): Service.PersistentObjectAttribute {
-                return obj._unwrap();
+                return obj ? obj._unwrap() : null;
             }
         }
 
@@ -52,15 +57,15 @@ namespace Vidyano {
 
             set objectId(objectId: string) {
                 this._attrWithReference.objectId = objectId;
-                this._isValueChanged = true;
+                this._attrWithReference.isValueChanged = true;
             }
 
             protected _unwrap(): Service.PersistentObjectAttributeWithReference {
-                return <Service.PersistentObjectAttributeWithReference>super._unwrap("objectId");
+                return <Service.PersistentObjectAttributeWithReference>super._unwrap(PersistentObjectAttributeWithReferenceWritableProperties, "objectId");
             }
 
             static _unwrap(obj: PersistentObjectAttributeWithReference): Service.PersistentObjectAttributeWithReference {
-                return obj._unwrap();
+                return obj ? obj._unwrap() : null;
             }
         }
     }

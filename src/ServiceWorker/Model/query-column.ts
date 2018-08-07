@@ -1,7 +1,14 @@
 ﻿/// <reference path="wrappers.ts" />
 
 namespace Vidyano {
-    export type QueryColumn = Wrappers.Wrap<Service.QueryColumn, "canSort" | "label" | "offset", Wrappers.QueryColumnWrapper>;
+    const _QueryColumnWritableProperties = {
+        "canSort": 1,
+        "label": 1,
+        "offset": 1
+    };
+    const QueryColumnWritableProperties = Object.keys(_QueryColumnWritableProperties) as (keyof typeof _QueryColumnWritableProperties)[];
+
+    export type QueryColumn = Wrappers.Wrap<Service.QueryColumn, typeof QueryColumnWritableProperties[number], Wrappers.QueryColumnWrapper>;
     export type ReadOnlyQueryColumn = Readonly<QueryColumn>;
 
     export namespace Wrappers {
@@ -11,7 +18,7 @@ namespace Vidyano {
             }
 
             static _unwrap(obj: QueryColumn): Service.QueryColumn {
-                return obj._unwrap();
+                return obj ? obj._unwrap(QueryColumnWritableProperties) : null;
             }
         }
     }

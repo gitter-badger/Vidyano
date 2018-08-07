@@ -120,6 +120,7 @@ declare namespace Vidyano.Service {
         notificationType: NotificationType;
         notificationDuration: number;
         objectId: string;
+        ownerQueryId: string;
         queries: Query[];
         queryLayoutMode: string;
         securityToken: never;
@@ -156,6 +157,8 @@ declare namespace Vidyano.Service {
         actionLabels?: KeyValueString;
         actions: string[];
         allowTextSearch: boolean;
+        allSelected: boolean;
+        allSelectedInversed: boolean;
         autoQuery: boolean;
         canRead: boolean;
         columns: QueryColumn[];

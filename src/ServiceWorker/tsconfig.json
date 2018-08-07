@@ -16,6 +16,7 @@
     "../Libs/Typings/Vidyano.Common/vidyano.common.d.ts",
     "../Libs/Typings/bignumber.js/bignumber.d.ts",
     "../Libs/Vidyano/cultures.ts",
+    "../Libs/idb/idb.d.ts",
     "data-type.ts",
     "service.ts",
     "indexed-db.ts",

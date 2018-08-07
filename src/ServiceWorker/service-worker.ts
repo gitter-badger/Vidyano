@@ -12,14 +12,12 @@
     }
 
     export class ServiceWorker {
-        private readonly _db: IndexedDB;
+        private _db: IndexedDB;
         private _cacheName: string;
         private _clientData: Service.ClientData;
         private _application: Application;
 
         constructor(private serviceUri?: string, private _verbose?: boolean) {
-            this._db = new IndexedDB();
-
             if (!serviceUri)
                 this.serviceUri = location.href.split("service-worker.js")[0];
 
@@ -84,8 +82,10 @@
 
             self.importScripts(
                 `${WEB2_BASE}Libs/bignumber.js/bignumber.min.js`,
-                `${WEB2_BASE}Libs/Vidyano/vidyano.common.js`);
+                `${WEB2_BASE}Libs/Vidyano/vidyano.common.js`,
+                `${WEB2_BASE}Libs/idb/idb.js`);
 
+            this._db = new IndexedDB();
             await (self as ServiceWorkerGlobalScope).skipWaiting();
 
             this._log("Installed ServiceWorker.");
@@ -135,10 +135,10 @@
                     }
                     else {
                         if (!this._clientData)
-                            this._clientData = (await this.db.load("GetClientData", "Requests")).response;
+                            this._clientData = (await this.db.load("Requests", "GetClientData")).response;
 
                         if (!this._application)
-                            this._application = new Application(this, (await this.db.load("GetApplication", "Requests")).response);
+                            this._application = new Application(this, (await this.db.load("Requests", "GetApplication")).response);
 
                         if (e.request.url.endsWith("GetQuery")) {
                             const fetcher = await this._createFetcher<Service.GetQueryRequest, Service.GetQueryResponse>(e.request);
@@ -172,7 +172,21 @@
                                 if (action[0] === "Query") {
                                     const queryAction = fetcher.payload as Service.ExecuteQueryActionRequest;
                                     const actionsClass = await ServiceWorkerActions.get(queryAction.query.persistentObject.type, this);
-                                    response.result = Wrappers.PersistentObjectWrapper._unwrap(await actionsClass.onExecuteQueryAction(action[1], Wrappers.QueryWrapper._wrap(queryAction.query), queryAction.selectedItems.map(i => Wrappers.QueryResultItemWrapper._wrap(i)), queryAction.parameters));
+
+                                    let selectedItems = queryAction.selectedItems || [];
+                                    if (queryAction.query.allSelected) {
+                                        const allItems = await this.db.loadAll("QueryResults", "ByQueryId", queryAction.query.id);
+                                        const incomingIds = selectedItems.map(i => i.id);
+
+                                        if (queryAction.query.allSelectedInversed)
+                                            selectedItems = allItems.filter(i => incomingIds.indexOf(i.id) < 0);
+                                        else
+                                            selectedItems = allItems;
+
+                                        queryAction.query.allSelected = queryAction.query.allSelectedInversed = undefined;
+                                    }
+
+                                    response.result = Wrappers.PersistentObjectWrapper._unwrap(await actionsClass.onExecuteQueryAction(action[1], Wrappers.QueryWrapper._wrap(queryAction.query), selectedItems.map(i => Wrappers.QueryResultItemWrapper._wrap(i)), queryAction.parameters));
                                 }
                                 else if (action[0] === "PersistentObject") {
                                     const persistentObjectAction = fetcher.payload as Service.ExecutePersistentObjectActionRequest;
@@ -292,58 +306,49 @@
             const responseData = <Service.GetPersistentObjectResponse>await response.json();
             const offline = <Service.PersistentObject>responseData.result;
 
-            type Query = Service.Query & { newPersistentObject: Service.PersistentObject };
             for (let i = 0; i < offline.queries.length; i++) {
-                const query = <Query>offline.queries[i];
-
+                const query = offline.queries[i];
 
                 if (query.result) {
-                    await this._db.save({
-                        id: query.id,
-                        result: query.result,
-                        deleted: []
-                    }, "QueryResults");
+                    const items = query.result.items;
+                    await this._db.saveAll("QueryResults", items.map(i => {
+                        return {
+                            ...i,
+                            queryId: query.id
+                        };
+                    }));
 
-                    delete query.result;
+                    query.result.items = [];
                 }
 
-                const newPersistentObject = query.newPersistentObject;
-                if (newPersistentObject)
-                    delete query.newPersistentObject;
+                await this._db.save("Queries", query);
 
-                await this._db.save({
-                    id: query.id,
-                    query: query,
-                    newPersistentObject: newPersistentObject
-                }, "Queries");
-
-                await this.db.save({
+                await this.db.save("ActionClassesById", {
                     id: query.id,
                     name: query.persistentObject.type
-                }, "ActionClassesById");
+                });
 
-                await this.db.save({
-                    id: query.persistentObject.id,
-                    query: query.id,
-                    persistentObject: query.persistentObject
-                }, "PersistentObjects");
+                await this.db.save("PersistentObjects", {
+                    ...query.persistentObject,
+                    queryId: query.id
+                });
 
-                await this.db.save({
+                await this.db.save("ActionClassesById", {
                     id: query.persistentObject.id,
                     name: query.persistentObject.type
-                }, "ActionClassesById");
+                });
             }
         }
 
         protected async onGetClientData(): Promise<Service.ClientData> {
-            return (await this.db.load("GetClientData", "Requests")).response;
+            return (await this.db.load("Requests", "GetClientData")).response;
         }
 
         protected async onCacheClientData(clientData: Service.ClientData) {
-            await this.db.save({
+            await this.db.save("Requests", {
                 id: "GetClientData",
                 response: clientData
-            }, "Requests");
+            });
         }
 
         protected async onCacheApplication(application: Service.ApplicationResponse) {
@@ -351,10 +356,10 @@
             application.application.attributes.filter(a => a.name === "AnalyticsKey" || a.name === "InstantSearchDelay").forEach(a => a.value = undefined);
             application.application.attributes.filter(a => a.name === "CanProfile").forEach(a => a.value = "False");
 
-            await this.db.save({
+            await this.db.save("Requests", {
                 id: "GetApplication",
                 response: application
-            }, "Requests");
+            });
 
             const offlineAttribute = application.application.attributes.find(a => a.name === "OfflineId");
             if (offlineAttribute != null && offlineAttribute.value != null)
@@ -362,7 +367,7 @@
         }
 
         protected async onGetApplication(): Promise<Service.ApplicationResponse> {
-            return (await this.db.load("GetApplication", "Requests")).response;
+            return (await this.db.load("Requests", "GetApplication")).response;
         }
 
         protected createRequest(data: any, request: Request): Request {

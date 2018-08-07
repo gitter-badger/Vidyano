@@ -15,6 +15,7 @@ namespace Vidyano {
         "Libs/codemirror/mode/xml/xml.js",
         "Libs/d3/d3.min.js",
         "Libs/es6-promise/es6-promise.js",
+        "Libs/idb/idb.js",
         "Libs/iron-a11y-keys/iron-a11y-keys.html",
         "Libs/iron-a11y-keys-behavior/iron-a11y-keys-behavior.html",
         "Libs/iron-collapse/iron-collapse.html",

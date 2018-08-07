@@ -98,6 +98,12 @@ module.exports = function (grunt) {
                 dest: "src/Libs/tslib/",
                 expand: true
             },
+            idb: {
+                cwd: "node_modules/idb/lib",
+                src: "idb.**",
+                dest: "src/Libs/idb/",
+                expand: true
+            },
             dist: {
                 cwd: "src",
                 src: "**",
@@ -199,6 +205,7 @@ module.exports = function (grunt) {
         "bower:install",
         "sass",
         "copy:tslib",
+        "copy:idb",
         "ts:vidyano",
         "ts:webcomponents",
         "ts:serviceworker_files_generator",
@@ -210,6 +217,7 @@ module.exports = function (grunt) {
         "bower:install",
         "sass",
         "copy:tslib",
+        "copy:idb",
         "ts:vidyano",
         "ts:webcomponents",
         "ts:serviceworker_files_generator",
@@ -231,6 +239,7 @@ module.exports = function (grunt) {
         "bower:install",
         "sass",
         "copy:tslib",
+        "copy:idb",
         "ts",
         "clean",
         "copy:dist",

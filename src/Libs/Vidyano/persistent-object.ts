@@ -333,6 +333,9 @@ namespace Vidyano {
         toServiceObject(skipParent: boolean = false): any {
             const result = this.copyProperties(["id", "type", "objectId", "isNew", "isHidden", "bulkObjectIds", "securityToken", "isSystem"]);
 
+            if (this.ownerQuery)
+                result.ownerQueryId = this.ownerQuery.id;
+
             if (this.parent && !skipParent)
                 result.parent = this.parent.toServiceObject();
             if (this.attributes)

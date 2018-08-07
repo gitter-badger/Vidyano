@@ -1,7 +1,16 @@
 ﻿/// <reference path="wrappers.ts" />
 
 namespace Vidyano {
-    export type PersistentObject = Wrappers.Wrap<Service.PersistentObject, "breadcrumb" | "label" | "notification" | "notificationType" | "notificationDuration", Wrappers.PersistentObjectWrapper>;
+    const _PersistentObjectWritableProperties = {
+        "breadcrumb": 1,
+        "label": 1,
+        "notification": 1,
+        "notificationType": 1,
+        "notificationDuration": 1
+    };
+    const PersistentObjectWritableProperties = Object.keys(_PersistentObjectWritableProperties) as (keyof typeof _PersistentObjectWritableProperties)[];
+
+    export type PersistentObject = Wrappers.Wrap<Service.PersistentObject, typeof PersistentObjectWritableProperties[number], Wrappers.PersistentObjectWrapper>;
     export type ReadOnlyPersistentObject = Readonly<PersistentObject>;
 
     export namespace Wrappers {
@@ -12,8 +21,8 @@ namespace Vidyano {
             private constructor(private _obj: Service.PersistentObject, private _parent?: QueryWrapper) {
                 super();
 
-                this._attributes = Wrapper._wrap(attr => attr.type !== "Reference" ? PersistentObjectAttributeWrapper : PersistentObjectAttributeWithReferenceWrapper, this._obj.attributes);
-                this._queries = QueryWrapper._wrap(this._obj.queries);
+                this._attributes = Wrapper._wrap(attr => attr.type !== "Reference" ? PersistentObjectAttributeWrapper : PersistentObjectAttributeWithReferenceWrapper, this._obj.attributes || []);
+                this._queries = QueryWrapper._wrap(this._obj.queries || []);
             }
 
             get queries(): ReadOnlyQuery[] {
@@ -33,11 +42,11 @@ namespace Vidyano {
             }
 
             protected _unwrap(): Service.PersistentObject {
-                return super._unwrap("queries", "attributes");
+                return super._unwrap(PersistentObjectWritableProperties, "queries", "attributes");
             }
 
             static _unwrap(obj: PersistentObject): Service.PersistentObject {
-                return obj._unwrap();
+                return obj ? obj._unwrap() : null;
             }
         }
     }

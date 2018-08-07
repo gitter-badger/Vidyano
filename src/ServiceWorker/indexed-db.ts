@@ -13,22 +13,16 @@
     }
 
     export type StoreQuery = {
-        id: string;
-        query: Service.Query;
-        newPersistentObject: Service.PersistentObject;
-    };
+        newPersistentObject?: Service.PersistentObject;
+    } & Service.Query;
 
-    export type StoreQueryResult = {
-        id: string;
-        result: Service.QueryResult;
-        deleted: Service.QueryResultItem[];
-    }
+    export type StoreQueryResultItem = {
+        queryId: string;
+    } & Service.QueryResultItem;
 
     export type StorePersistentObject = {
-        id: string;
-        query?: string;
-        persistentObject: Service.PersistentObject;
-    };
+        queryId: string;
+    } & Service.PersistentObject;
 
     export type StoreActionClassById = {
         id: string;
@@ -38,7 +32,7 @@
     export type StoreNameMap = {
         "Requests": StoreGetClientDataRequest | StoreGetApplicationRequest;
         "Queries": StoreQuery;
-        "QueryResults": StoreQueryResult;
+        "QueryResults": StoreQueryResultItem;
         "PersistentObjects": StorePersistentObject;
         "ActionClassesById": StoreActionClassById;
     };
@@ -52,54 +46,76 @@
 
     export class IndexedDB {
         private _initializing: Promise<void>;
-        private _db: IDBDatabase;
+        private _db: Idb.DB;
 
         constructor() {
-            this._initializing = new Promise<void>(resolve => {
-                const dboOpen = indexedDB.open("vidyano.offline", 1);
-                dboOpen.onupgradeneeded = (version: IDBVersionChangeEvent) => {
-                    var db = <IDBDatabase>dboOpen.result;
-                    db.createObjectStore("Requests", { keyPath: "id" });
-                    db.createObjectStore("Queries", { keyPath: "id" });
-                    db.createObjectStore("QueryResults", { keyPath: "id" });
-                    db.createObjectStore("PersistentObjects", { keyPath: "id" });
-                    db.createObjectStore("ActionClassesById", { keyPath: "id" });
-                };
+            this._initializing = new Promise<void>(async resolve => {
+                this._db = await idb.open("vidyano.offline", 1, upgrade => {
+                    upgrade.createObjectStore("Requests", { keyPath: "id" });
+                    const queries = upgrade.createObjectStore("Queries", { keyPath: "id" });
+                    queries.createIndex("ByPersistentObjectId", "query.persistentObject.id");
 
-                dboOpen.onsuccess = () => {
-                    this._db = <IDBDatabase>dboOpen.result;
-                    resolve();
-                };
+                    const queryResults = upgrade.createObjectStore("QueryResults", { keyPath: ["queryId", "id"] });
+                    queryResults.createIndex("ByQueryId", "queryId");
+
+                    upgrade.createObjectStore("PersistentObjects", { keyPath: "id" });
+                    upgrade.createObjectStore("ActionClassesById", { keyPath: "id" });
+                });
+
+                resolve();
             });
         }
 
-        get db(): IDBDatabase {
+        get db(): Idb.DB {
             return this._db;
         }
 
-        async save<K extends keyof StoreNameMap, I extends keyof RequestsStoreNameMap>(entry: RequestsStoreNameMap[I], store: "Requests"): Promise<void>;
-        async save<K extends keyof StoreNameMap>(entry: StoreNameMap[K], store: K): Promise<void>;
-        async save<K extends keyof StoreNameMap>(entry: StoreNameMap[K], store: K): Promise<void> {
+        async save<K extends keyof StoreNameMap, I extends keyof RequestsStoreNameMap>(store: "Requests", entry: RequestsStoreNameMap[I]): Promise<void>;
+        async save<K extends keyof StoreNameMap>(store: K, entry: StoreNameMap[K]): Promise<void>;
+        async save<K extends keyof StoreNameMap>(storeName: K, entry: StoreNameMap[K]): Promise<void> {
             await this._initializing;
 
-            const tx = this.db.transaction(store, "readwrite");
-            const requests = tx.objectStore(store);
-            requests.put(entry);
+            const tx = this.db.transaction(storeName, "readwrite");
+            const store = tx.objectStore(storeName);
+
+            await store.put(entry);
+            await tx.complete;
         }
 
-        async load<K extends keyof StoreNameMap, I extends keyof RequestsStoreNameMap>(key: I, store: "Requests"): Promise<RequestsStoreNameMap[I]>;
-        async load<K extends keyof StoreNameMap>(key: string, store: K): Promise<StoreNameMap[K]>;
-        async load<K extends keyof StoreNameMap>(key: string, store: K): Promise<StoreNameMap[K]> {
+        async saveAll<K extends keyof StoreNameMap>(storeName: K, entries: StoreNameMap[K][]): Promise<void> {
             await this._initializing;
 
-            const tx = this.db.transaction(store, "readwrite");
-            const requests = tx.objectStore(store);
+            const tx = this.db.transaction(storeName, "readwrite");
+            const store = tx.objectStore(storeName);
 
-            return await new Promise<any>((resolve, reject) => {
-                const getData = requests.get(key);
-                getData.onsuccess = () => resolve(getData.result);
-                getData.onerror = () => resolve(null);
-            });
+
+            for (let i = 0; i < entries.length; i++)
+                await store.put(entries[i]);
+
+            await tx.complete;
+        }
+
+        async load<K extends keyof StoreNameMap, I extends keyof RequestsStoreNameMap>(store: "Requests", key: I): Promise<RequestsStoreNameMap[I]>;
+        async load<K extends keyof StoreNameMap>(store: K, key: string | string[]): Promise<StoreNameMap[K]>;
+        async load<K extends keyof StoreNameMap>(storeName: K, key: string | string[]): Promise<StoreNameMap[K]> {
+            await this._initializing;
+
+            const tx = this.db.transaction(storeName, "readwrite");
+            const store = tx.objectStore(storeName);
+
+            return await store.get(key);
+        }
+
+        async loadAll<K extends keyof StoreNameMap>(storeName: K, indexName?: string, key?: string): Promise<StoreNameMap[K][]> {
+            await this._initializing;
+
+            const tx = this.db.transaction(storeName, "readwrite");
+            const store = tx.objectStore(storeName);
+
+            if (indexName)
+                return await store.index(indexName).getAll(key);
+
+            return await store.getAll(key);
         }
     }
 }

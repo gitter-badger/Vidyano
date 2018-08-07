@@ -10,7 +10,7 @@ namespace Vidyano {
             }
 
             static _unwrap(obj: QueryResultItemValue): Service.QueryResultItemValue {
-                return obj._unwrap();
+                return obj ? obj._unwrap() : null;
             }
         }
     }

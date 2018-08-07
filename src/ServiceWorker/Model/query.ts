@@ -1,7 +1,20 @@
 ﻿/// <reference path="wrappers.ts" />
 
 namespace Vidyano {
-    export type Query = Wrappers.Wrap<Service.Query, "actionLabels" | "allowTextSearch" | "label" | "enableSelectAll" | "notification" | "notificationType" | "notificationDuration" | "sortOptions" | "textSearch", Wrappers.QueryWrapper>;
+    const _QueryWritableProperties = {
+        "actionLabels": 1,
+        "allowTextSearch": 1,
+        "label": 1,
+        "enableSelectAll": 1,
+        "notification": 1,
+        "notificationType": 1,
+        "notificationDuration": 1,
+        "sortOptions": 1,
+        "textSearch": 1
+    };
+    const QueryWritableProperties = Object.keys(_QueryWritableProperties) as (keyof typeof _QueryWritableProperties)[];
+
+    export type Query = Wrappers.Wrap<Service.Query, typeof QueryWritableProperties[number], Wrappers.QueryWrapper>;
     export type ReadOnlyQuery = Readonly<Query>;
 
     export namespace Wrappers {
@@ -13,7 +26,7 @@ namespace Vidyano {
             private constructor(private _query: Service.Query) {
                 super();
 
-                this._columns = QueryColumnWrapper._wrap(this._query.columns);
+                this._columns = QueryColumnWrapper._wrap(this._query.columns || []);
                 this._persistentObject = PersistentObjectWrapper._wrap(this._query.persistentObject);
 
                 if (this._query.result)
@@ -33,11 +46,11 @@ namespace Vidyano {
             }
 
             protected _unwrap(): Service.Query {
-                return super._unwrap("columns", "persistentObject", "result");
+                return super._unwrap(QueryWritableProperties, "columns", "persistentObject", "result");
             }
 
             static _unwrap(obj: Query): Service.Query {
-                return obj._unwrap();
+                return obj ? obj._unwrap() : null;
             }
         }
     }

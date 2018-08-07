@@ -1,7 +1,15 @@
 ﻿/// <reference path="wrappers.ts" />
 
 namespace Vidyano {
-    export type QueryResult = Wrappers.Wrap<Service.QueryResult, "notification" | "notificationType" | "notificationDuration" | "sortOptions", Wrappers.QueryResultWrapper>;
+    const _QueryResultWritableProperties = {
+        "notification": 1,
+        "notificationType": 1,
+        "notificationDuration": 1,
+        "sortOptions": 1
+    };
+    const QueryResultWritableProperties = Object.keys(_QueryResultWritableProperties) as (keyof typeof _QueryResultWritableProperties)[];
+
+    export type QueryResult = Wrappers.Wrap<Service.QueryResult, typeof QueryResultWritableProperties[number], Wrappers.QueryResultWrapper>;
     export type ReadOnlyQueryResult = Readonly<QueryResult>;
 
     export namespace Wrappers {
@@ -12,8 +20,8 @@ namespace Vidyano {
             private constructor(private _result: Service.QueryResult) {
                 super();
 
-                this._columns = QueryColumnWrapper._wrap(this._result.columns);
-                this._items = QueryResultItemWrapper._wrap(this._result.items);
+                this._columns = QueryColumnWrapper._wrap(this._result.columns || []);
+                this._items = QueryResultItemWrapper._wrap(this._result.items || []);
             }
 
             get columns(): QueryColumn[] {
@@ -28,20 +36,20 @@ namespace Vidyano {
                 return this._items;
             }
 
+            set items(items: QueryResultItem[]) {
+                this._items = items;
+            }
+
             getItem(id: string): QueryResultItem {
                 return this.items.find(i => i.id === id);
             }
 
-            private _update(items: QueryResultItem[]) {
-                this._items = items;
-            }
-
             protected _unwrap(): Service.QueryResult {
-                return super._unwrap("columns", "items");
+                return super._unwrap(QueryResultWritableProperties, "columns", "items");
             }
 
             static _unwrap(obj: QueryResult): Service.QueryResult {
-                return obj._unwrap();
+                return obj ? obj._unwrap() : null;
             }
         }
     }

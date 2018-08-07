@@ -18,11 +18,12 @@
             /*
              * For internal use only
              */
-            protected _unwrap(...children: string[]): T {
+            protected _unwrap(writableProperties: string[] = [], ...children: string[]): T {
                 const result: any = {};
 
-                for (let i = 0; i < this.__wrappedProperties__.length; i++) {
-                    const prop = this.__wrappedProperties__[i];
+                const properties = Array.from(new Set(writableProperties.concat(<string[]>this.__wrappedProperties__)));
+                for (let i = 0; i < properties.length; i++) {
+                    const prop = properties[i];
                     result[prop] = (<any>this)[prop];
                 }
 
