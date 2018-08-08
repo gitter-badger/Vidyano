@@ -6,7 +6,8 @@ namespace Vidyano {
         "label": 1,
         "notification": 1,
         "notificationType": 1,
-        "notificationDuration": 1
+        "notificationDuration": 1,
+        "stateBehavior": 1
     };
     const PersistentObjectWritableProperties = Object.keys(_PersistentObjectWritableProperties) as (keyof typeof _PersistentObjectWritableProperties)[];
 

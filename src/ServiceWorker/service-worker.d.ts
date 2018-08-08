@@ -349,7 +349,7 @@ declare namespace Vidyano.Service {
     };
 }
 declare namespace Vidyano {
-    type Store = "Requests" | "Queries" | "QueryResults" | "PersistentObjects" | "ActionClassesById";
+    type Store = "Requests" | "Queries" | "QueryResults" | "PersistentObjects" | "ActionClassesById" | "Changes";
     type RequestMapKey = "GetQuery" | "GetPersistentObject";
     type StoreGetClientDataRequest = {
         id: "GetClientData";
@@ -372,12 +372,18 @@ declare namespace Vidyano {
         id: string;
         name: string;
     };
+    type StoreChange = {
+        id: string;
+        type: "New" | "Update" | "Delete";
+        objectId?: string;
+    };
     type StoreNameMap = {
         "Requests": StoreGetClientDataRequest | StoreGetApplicationRequest;
         "Queries": StoreQuery;
         "QueryResults": StoreQueryResultItem;
         "PersistentObjects": StorePersistentObject;
         "ActionClassesById": StoreActionClassById;
+        "Changes": StoreChange;
     };
     type RequestsStoreNameMap = {
         "GetClientData": StoreGetClientDataRequest;
@@ -393,7 +399,9 @@ declare namespace Vidyano {
         saveAll<K extends keyof StoreNameMap>(storeName: K, entries: StoreNameMap[K][]): Promise<void>;
         load<K extends keyof StoreNameMap, I extends keyof RequestsStoreNameMap>(store: "Requests", key: I): Promise<RequestsStoreNameMap[I]>;
         load<K extends keyof StoreNameMap>(store: K, key: string | string[]): Promise<StoreNameMap[K]>;
-        loadAll<K extends keyof StoreNameMap>(storeName: K, indexName?: string, key?: string): Promise<StoreNameMap[K][]>;
+        loadAll<K extends keyof StoreNameMap>(storeName: K, indexName?: string, key?: any): Promise<StoreNameMap[K][]>;
+        deleteAll<K extends keyof StoreNameMap>(storeName: K, condition: (item: StoreNameMap[K]) => boolean): Promise<number>;
+        deleteAll<K extends keyof StoreNameMap>(storeName: K, index: string, indexKey: IDBValidKey, condition: (item: StoreNameMap[K]) => boolean): Promise<number>;
     }
 }
 declare namespace Vidyano {
@@ -432,7 +440,7 @@ declare namespace Vidyano {
         private _serviceWorker;
         private readonly db;
         protected readonly serviceWorker: ServiceWorker;
-        onGetPersistentObject(parent: Service.PersistentObject, id: string, objectId?: string, isNew?: boolean): Promise<Service.PersistentObject>;
+        onGetPersistentObject(parent: Service.PersistentObject, id: string, objectId?: string, isNew?: boolean): Promise<PersistentObject>;
         onGetQuery(id: string): Promise<Query>;
         onExecuteQuery(query: Query): Promise<QueryResult>;
         protected onTextSearch(textSearch: string, result: QueryResult): QueryResultItem[];
@@ -514,7 +522,7 @@ declare namespace Vidyano {
     }
 }
 declare namespace Vidyano {
-    const PersistentObjectWritableProperties: ("label" | "notification" | "notificationType" | "notificationDuration" | "breadcrumb")[];
+    const PersistentObjectWritableProperties: ("label" | "notification" | "notificationType" | "notificationDuration" | "breadcrumb" | "stateBehavior")[];
     type PersistentObject = Wrappers.Wrap<Service.PersistentObject, typeof PersistentObjectWritableProperties[number], Wrappers.PersistentObjectWrapper>;
     type ReadOnlyPersistentObject = Readonly<PersistentObject>;
     namespace Wrappers {

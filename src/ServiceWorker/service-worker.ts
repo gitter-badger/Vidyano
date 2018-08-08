@@ -157,7 +157,7 @@
                             const response = await fetcher.fetch(fetcher.payload) || { authToken: this.authToken, result: undefined };
                             if (!response.result) {
                                 const actionsClass = await ServiceWorkerActions.get(fetcher.payload.persistentObjectTypeId, this);
-                                response.result = await actionsClass.onGetPersistentObject(fetcher.payload.parent, fetcher.payload.persistentObjectTypeId, fetcher.payload.objectId, fetcher.payload.isNew);
+                                response.result = Wrappers.PersistentObjectWrapper._unwrap(await actionsClass.onGetPersistentObject(fetcher.payload.parent, fetcher.payload.persistentObjectTypeId, fetcher.payload.objectId, fetcher.payload.isNew));
                             }
                             else
                                 this.authToken = response.authToken;
@@ -175,7 +175,7 @@
 
                                     let selectedItems = queryAction.selectedItems || [];
                                     if (queryAction.query.allSelected) {
-                                        const allItems = await this.db.loadAll("QueryResults", "ByQueryId", queryAction.query.id);
+                                        const allItems = await this.db.loadAll("QueryResults", "ByQueryId", queryAction.query.id, i => !i.isDeleted);
                                         const incomingIds = selectedItems.map(i => i.id);
 
                                         if (queryAction.query.allSelectedInversed)
@@ -314,7 +314,8 @@
                     await this._db.saveAll("QueryResults", items.map(i => {
                         return {
                             ...i,
-                            queryId: query.id
+                            queryId: query.id,
+                            isDeleted: "false"
                         };
                     }));
 

@@ -1,5 +1,5 @@
 ﻿namespace Vidyano {
-    export type Store = "Requests" | "Queries" | "QueryResults" | "PersistentObjects" | "ActionClassesById";
+    export type Store = "Requests" | "Queries" | "QueryResults" | "PersistentObjects" | "ActionClassesById" | "Changes";
     export type RequestMapKey = "GetQuery" | "GetPersistentObject"
 
     export type StoreGetClientDataRequest = {
@@ -29,12 +29,19 @@
         name: string;
     };
 
+    export type StoreChange = {
+        id: string;
+        type: "New" | "Update" | "Delete";
+        objectId?: string;
+    };
+
     export type StoreNameMap = {
         "Requests": StoreGetClientDataRequest | StoreGetApplicationRequest;
         "Queries": StoreQuery;
         "QueryResults": StoreQueryResultItem;
         "PersistentObjects": StorePersistentObject;
         "ActionClassesById": StoreActionClassById;
+        "Changes": StoreChange;
     };
 
     export type RequestsStoreNameMap = {
@@ -60,6 +67,8 @@
 
                     upgrade.createObjectStore("PersistentObjects", { keyPath: "id" });
                     upgrade.createObjectStore("ActionClassesById", { keyPath: "id" });
+
+                    upgrade.createObjectStore("Changes", { keyPath: "id", autoIncrement: true });
                 });
 
                 resolve();
@@ -106,7 +115,7 @@
             return await store.get(key);
         }
 
-        async loadAll<K extends keyof StoreNameMap>(storeName: K, indexName?: string, key?: string): Promise<StoreNameMap[K][]> {
+        async loadAll<K extends keyof StoreNameMap>(storeName: K, indexName?: string, key?: any): Promise<StoreNameMap[K][]> {
             await this._initializing;
 
             const tx = this.db.transaction(storeName, "readwrite");
@@ -116,6 +125,35 @@
                 return await store.index(indexName).getAll(key);
 
             return await store.getAll(key);
+        }
+
+        async deleteAll<K extends keyof StoreNameMap>(storeName: K, condition: (item: StoreNameMap[K]) => boolean): Promise<number>;
+        async deleteAll<K extends keyof StoreNameMap>(storeName: K, index: string, indexKey: IDBValidKey, condition: (item: StoreNameMap[K]) => boolean): Promise<number>;
+        async deleteAll<K extends keyof StoreNameMap>(storeName: K, indexOrCondition: string | ((item: StoreNameMap[K]) => boolean), indexKey?: IDBValidKey, condition?: (item: StoreNameMap[K]) => boolean): Promise<number> {
+            await this._initializing;
+
+            const tx = this.db.transaction(storeName, "readwrite");
+            const store = tx.objectStore(storeName);
+            let cursor: Idb.Cursor<any, any>;
+
+            if (!indexKey) {
+                condition = <(item: StoreNameMap[K]) => boolean>indexOrCondition;
+                cursor = await store.openKeyCursor();
+            }
+            else
+                cursor = await store.index(<string>indexOrCondition).openCursor(indexKey);
+
+            let nDeleted = 0;
+            while (cursor) {
+                if (condition(cursor.value)) {
+                    await cursor.delete();
+                    nDeleted++;
+                }
+
+                cursor = await cursor.continue();
+            }
+
+            return nDeleted;
         }
     }
 }

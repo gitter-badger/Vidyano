@@ -49,7 +49,7 @@
             return this._serviceWorker;
         }
 
-        async onGetPersistentObject(parent: Service.PersistentObject, id: string, objectId?: string, isNew?: boolean): Promise<Service.PersistentObject> {
+        async onGetPersistentObject(parent: Service.PersistentObject, id: string, objectId?: string, isNew?: boolean): Promise<PersistentObject> {
             const po = await this.db.load("PersistentObjects", id);
             const resultItem = await this.db.load("QueryResults", [po.queryId, objectId]);
             if (!resultItem)
@@ -80,7 +80,7 @@
                 po.breadcrumb = po.breadcrumb.replace(m[0], attribute.value);
             } while (true);
 
-            return po;
+            return Wrappers.PersistentObjectWrapper._wrap(po);
         }
 
         async onGetQuery(id: string): Promise<Query> {
@@ -114,9 +114,9 @@
             const result = <QueryResult>Wrappers.QueryResultWrapper._wrap(storedQuery.result);
 
             if (query.textSearch)
-                query.result.items = this.onTextSearch(query.textSearch, result);
+                result.items = this.onTextSearch(query.textSearch, result);
 
-            query.result.items = this.onSortQueryResult(result);
+            result.items = this.onSortQueryResult(result);
 
             return result;
         }
@@ -223,6 +223,12 @@
         async onExecuteQueryAction(action: string, query: Query, selectedItems: QueryResultItem[], parameters: Service.ExecuteActionParameters): Promise<PersistentObject> {
             if (action === "New")
                 return this.onNew(query);
+            else if (action === "BulkEdit") {
+                const po = await this.onGetPersistentObject(null, query.persistentObject.id, selectedItems[0].id);
+                po.stateBehavior = "StayInEdit";
+
+                return po;
+            }
             else if (action === "Delete")
                 return await this.onDelete(query, selectedItems);
 
@@ -248,18 +254,8 @@
         }
 
         async onDelete(query: Query, selectedItems: QueryResultItem[]): Promise<PersistentObject> {
-            debugger;
-            //const storeResult = await this.db.load("QueryResults", query.id);
-            //const deleted = selectedItems.map(selected => {
-            //    const itemIndex = storeResult.result.items.findIndex(i => i.id === selected.id);
-            //    if (itemIndex < 0)
-            //        return null;
-
-            //    return storeResult.result.items.splice(itemIndex, 1)[0];
-            //}).filter(i => !!i);
-
-            //Array.prototype.push.apply(storeResult.deleted, deleted);
-            //await this.db.save(storeResult, "QueryResults");
+            const keys = selectedItems.map(item => item.id);
+            this.db.deleteAll("QueryResults", "ByQueryId", query.id, item => keys.indexOf(item.id) >= 0);
 
             return null;
         }
@@ -307,7 +303,8 @@
                     values: []
                 };
             }
-            else
+
+            if (!item)
                 throw "Unable to resolve item.";
 
             let query: Service.Query;
