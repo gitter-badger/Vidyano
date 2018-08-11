@@ -49,6 +49,7 @@ declare namespace Vidyano.Service {
         RefreshedPersistentObjectAttributeId: string;
     } & ExecuteActionParameters;
     type ExecuteQueryActionRequest = {
+        parent: PersistentObject;
         query: Query;
         selectedItems: QueryResultItem[];
     } & ExecuteActionRequest;
@@ -63,6 +64,7 @@ declare namespace Vidyano.Service {
     } & Response;
     type ExecuteQueryRequest = {
         query: Query;
+        parent: PersistentObject;
     } & Request;
     type ExecuteQueryResponse = {
         result: QueryResult;
@@ -120,7 +122,6 @@ declare namespace Vidyano.Service {
         notificationType: NotificationType;
         notificationDuration: number;
         objectId: string;
-        ownerQueryId: string;
         queries: Query[];
         queryLayoutMode: string;
         securityToken: never;

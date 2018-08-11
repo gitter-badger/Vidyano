@@ -2,7 +2,9 @@
 
 namespace Vidyano {
     const _PersistentObjectWritableProperties = {
+        "actions": 1,
         "breadcrumb": 1,
+        "isNew": 1,
         "label": 1,
         "notification": 1,
         "notificationType": 1,
@@ -22,7 +24,7 @@ namespace Vidyano {
             private constructor(private _obj: Service.PersistentObject, private _parent?: QueryWrapper) {
                 super();
 
-                this._attributes = Wrapper._wrap(attr => attr.type !== "Reference" ? PersistentObjectAttributeWrapper : PersistentObjectAttributeWithReferenceWrapper, this._obj.attributes || []);
+                this._attributes = (this._obj.attributes || []).map(attr => attr.type !== "Reference" ? PersistentObjectAttributeWrapper._wrap(attr) : PersistentObjectAttributeWithReferenceWrapper._wrap(<Service.PersistentObjectAttributeWithReference>attr));
                 this._queries = QueryWrapper._wrap(this._obj.queries || []);
             }
 

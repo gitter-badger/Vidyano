@@ -9,9 +9,6 @@
          */
         export type Wrap<ServiceType, Writable extends keyof ServiceType, WrapperType> = Overwrite<Readonly<Omit<ServiceType, Writable>> & Pick<ServiceType, Writable>, WrapperType> & WrapperType;
 
-        export type WrapperTypes = PersistentObjectAttributeWrapper | PersistentObjectAttributeWrapper | PersistentObjectAttributeWithReferenceWrapper |
-            QueryWrapper | QueryColumnWrapper | QueryResultWrapper | QueryResultItemWrapper | QueryResultItemValueWrapper;
-
         export abstract class Wrapper<T> {
             private __wrappedProperties__: (keyof T)[] = [];
 
@@ -42,35 +39,27 @@
             /*
              * For internal use only
              */
-            static _wrap<T>(object: any): T;
-            static _wrap<T>(objects: any[]): T;
-            static _wrap<T, U>(wrapperFunction: (obj: U) => Function, objects: U[]): T;
-            static _wrap<T>(objectsOrWrapper: Function | WrapperTypes | any | any[], objects?: any | any[]): Wrapper<T> | Wrapper<T>[] {
-                const wrapper = objects != null ? objectsOrWrapper : this.prototype.constructor;
-                if (!objects)
-                    objects = objectsOrWrapper;
+            static _wrap<T, U>(object: U, ...args: any[]): T;
+            static _wrap<T, U>(objects: U[], ...args: any[]): T[];
+            static _wrap<T, U>(objects: U | U[], ...args: any[]): T | T[] {
+                const array = Array.isArray(objects);
+                const results = (array ? <U[]>objects : [<U>objects]).map(object => {
+                    const result = <any>new (<{ new(value?: any): Object }>this.prototype.constructor)(...[object].concat(args));
 
-                if (Array.isArray(objects))
-                    return objects.map(obj => Wrapper._wrap(wrapper, obj) as Wrapper<T>);
+                    const props: (keyof T)[] = [];
+                    for (let prop in object) {
+                        if (!result.__proto__.hasOwnProperty(prop)) {
+                            const value = object[prop];
+                            result[prop] = value;
 
-                const object = objects;
-                let result: any;
-                if (wrapper.prototype)
-                    result = new (<{ new(value?: any): Object }>wrapper.prototype.constructor)(object);
-                else
-                    result = new (<{ new(value?: any): Object }>wrapper(object))(object);
-
-                const props: (keyof T)[] = [];
-                for (let prop in object) {
-                    if (!result.__proto__.hasOwnProperty(prop)) {
-                        const value = object[prop];
-                        result[prop] = value;
-
-                        result.__wrappedProperties__.push(prop);
+                            result.__wrappedProperties__.push(prop);
+                        }
                     }
-                }
 
-                return result;
+                    return result;
+                });
+
+                return array ? results : results[0];
             }
         }
     }

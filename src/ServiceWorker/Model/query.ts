@@ -23,7 +23,7 @@ namespace Vidyano {
             private readonly _persistentObject: ReadOnlyPersistentObject;
             private readonly _result: QueryResult;
 
-            private constructor(private _query: Service.Query) {
+            private constructor(private _query: Service.Query, private _transaction: Idb.Transaction) {
                 super();
 
                 this._columns = QueryColumnWrapper._wrap(this._query.columns || []);

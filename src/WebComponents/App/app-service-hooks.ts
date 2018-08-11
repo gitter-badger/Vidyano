@@ -2,6 +2,10 @@
     export class AppServiceHooks extends Vidyano.ServiceHooks {
         constructor(public app: App) {
             super();
+
+            navigator.serviceWorker.addEventListener("message", event => {
+                this.app.showAlert(event.data, "Notice", 3000);
+            });
         }
 
         private _initializeGoogleAnalytics() {

@@ -14,7 +14,7 @@ namespace Vidyano {
 
     export namespace Wrappers {
         export class QueryResultWrapper extends Wrapper<Service.QueryResult> {
-            private readonly _columns: QueryColumn[];
+            private _columns: QueryColumn[];
             private _items: QueryResultItem[];
 
             private constructor(private _result: Service.QueryResult) {
@@ -26,6 +26,10 @@ namespace Vidyano {
 
             get columns(): QueryColumn[] {
                 return this._columns;
+            }
+
+            set columns(columns: QueryColumn[]) {
+                this._columns = columns;
             }
 
             getColumn(name: string): QueryColumn {
@@ -42,6 +46,12 @@ namespace Vidyano {
 
             getItem(id: string): QueryResultItem {
                 return this.items.find(i => i.id === id);
+            }
+
+            static fromQuery(query: Query | ReadOnlyQuery): QueryResult {
+                return QueryResultWrapper._wrap({
+                    columns: query.columns.map(c => QueryColumnWrapper._unwrap(c))
+                });
             }
 
             protected _unwrap(): Service.QueryResult {

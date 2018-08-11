@@ -135,10 +135,10 @@
                     }
                     else {
                         if (!this._clientData)
-                            this._clientData = (await this.db.load("Requests", "GetClientData")).response;
+                            this._clientData = (await this.db.getRequest("GetClientData")).response;
 
                         if (!this._application)
-                            this._application = new Application(this, (await this.db.load("Requests", "GetApplication")).response);
+                            this._application = new Application(this, (await this.db.getRequest("GetApplication")).response);
 
                         if (e.request.url.endsWith("GetQuery")) {
                             const fetcher = await this._createFetcher<Service.GetQueryRequest, Service.GetQueryResponse>(e.request);
@@ -157,7 +157,8 @@
                             const response = await fetcher.fetch(fetcher.payload) || { authToken: this.authToken, result: undefined };
                             if (!response.result) {
                                 const actionsClass = await ServiceWorkerActions.get(fetcher.payload.persistentObjectTypeId, this);
-                                response.result = Wrappers.PersistentObjectWrapper._unwrap(await actionsClass.onGetPersistentObject(fetcher.payload.parent, fetcher.payload.persistentObjectTypeId, fetcher.payload.objectId, fetcher.payload.isNew));
+                                const parent = fetcher.payload.parent ? Wrappers.PersistentObjectWrapper._wrap(fetcher.payload.parent) : null;
+                                response.result = Wrappers.PersistentObjectWrapper._unwrap(await actionsClass.onGetPersistentObject(<ReadOnlyPersistentObject>parent, fetcher.payload.persistentObjectTypeId, fetcher.payload.objectId, fetcher.payload.isNew));
                             }
                             else
                                 this.authToken = response.authToken;
@@ -175,7 +176,7 @@
 
                                     let selectedItems = queryAction.selectedItems || [];
                                     if (queryAction.query.allSelected) {
-                                        const allItems = await this.db.loadAll("QueryResults", "ByQueryId", queryAction.query.id, i => !i.isDeleted);
+                                        const allItems = await this.db.loadAll("QueryResults", "ByQueryId", queryAction.query.id);
                                         const incomingIds = selectedItems.map(i => i.id);
 
                                         if (queryAction.query.allSelectedInversed)
@@ -204,7 +205,8 @@
                             const response = await fetcher.fetch(fetcher.payload) || { authToken: this.authToken, result: undefined };
                             if (!response.result) {
                                 const actionsClass = await ServiceWorkerActions.get(fetcher.payload.query.persistentObject.type, this);
-                                response.result = Wrappers.QueryResultWrapper._unwrap(await actionsClass.onExecuteQuery(Wrappers.QueryWrapper._wrap(fetcher.payload.query)));
+                                const parent: ReadOnlyPersistentObject = fetcher.payload.parent ? Wrappers.PersistentObjectWrapper._wrap(fetcher.payload.parent) : null;
+                                response.result = Wrappers.QueryResultWrapper._unwrap(await actionsClass.onExecuteQuery(parent, Wrappers.QueryWrapper._wrap(fetcher.payload.query)));
                             }
                             else
                                 this.authToken = response.authToken;
@@ -277,7 +279,20 @@
             return fetcher;
         }
 
+        private async send(message: string) {
+            const clients = await ((self as ServiceWorkerGlobalScope).clients).matchAll();
+            await Promise.all(clients.map(client => {
+                const channel = new MessageChannel();
+                client.postMessage(message, [channel.port2]);
+            }));
+        }
+
         private async _getOffline(id: string, authToken: string, userName: string) {
+            this.db.clear("Queries");
+            this.db.clear("QueryResults");
+            this.db.clear("ActionClassesById");
+            this.db.clear("Changes");
+
             const payload: Service.GetPersistentObjectRequest = {
                 authToken: authToken,
                 userName: userName,
@@ -306,16 +321,33 @@
             const responseData = <Service.GetPersistentObjectResponse>await response.json();
             const offline = <Service.PersistentObject>responseData.result;
 
+            await this.saveOfflineQueries(offline.queries);
+
             for (let i = 0; i < offline.queries.length; i++) {
-                const query = offline.queries[i];
+                const rootquery = offline.queries[i];
+                await this.saveOfflineQueries(rootquery.persistentObject.queries);
+            }
+
+            this.send("Application offline data loaded successfully.");
+        }
+
+        private async saveOfflineQueries(queries: Service.Query[]) {
+            if (!queries || !queries.length)
+                return;
+
+            for (let i = 0; i < queries.length; i++) {
+                const query = queries[i];
+
+                if (await this.db.exists("Queries", query.id))
+                    continue;
 
                 if (query.result) {
                     const items = query.result.items;
-                    await this._db.saveAll("QueryResults", items.map(i => {
+                    await this._db.addAll("QueryResults", items.map(i => {
                         return {
                             ...i,
                             queryId: query.id,
-                            isDeleted: "false"
+                            persistentObjectId: query.persistentObject.id
                         };
                     }));
 
@@ -324,14 +356,11 @@
 
                 await this._db.save("Queries", query);
 
+                await this._db.save("PersistentObjects", query.persistentObject);
+
                 await this.db.save("ActionClassesById", {
                     id: query.id,
                     name: query.persistentObject.type
-                });
-
-                await this.db.save("PersistentObjects", {
-                    ...query.persistentObject,
-                    queryId: query.id
                 });
 
                 await this.db.save("ActionClassesById", {
@@ -342,7 +371,7 @@
         }
 
         protected async onGetClientData(): Promise<Service.ClientData> {
-            return (await this.db.load("Requests", "GetClientData")).response;
+            return (await this.db.getRequest("GetClientData")).response;
         }
 
         protected async onCacheClientData(clientData: Service.ClientData) {
@@ -368,7 +397,7 @@
         }
 
         protected async onGetApplication(): Promise<Service.ApplicationResponse> {
-            return (await this.db.load("Requests", "GetApplication")).response;
+            return (await this.db.getRequest("GetApplication")).response;
         }
 
         protected createRequest(data: any, request: Request): Request {

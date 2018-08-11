@@ -114,6 +114,7 @@ declare namespace Vidyano.Service {
         RefreshedPersistentObjectAttributeId: string;
     } & ExecuteActionParameters;
     type ExecuteQueryActionRequest = {
+        parent: PersistentObject;
         query: Query;
         selectedItems: QueryResultItem[];
     } & ExecuteActionRequest;
@@ -128,6 +129,7 @@ declare namespace Vidyano.Service {
     } & Response;
     type ExecuteQueryRequest = {
         query: Query;
+        parent: PersistentObject;
     } & Request;
     type ExecuteQueryResponse = {
         result: QueryResult;
@@ -185,7 +187,6 @@ declare namespace Vidyano.Service {
         notificationType: NotificationType;
         notificationDuration: number;
         objectId: string;
-        ownerQueryId: string;
         queries: Query[];
         queryLayoutMode: string;
         securityToken: never;
@@ -364,10 +365,9 @@ declare namespace Vidyano {
     } & Service.Query;
     type StoreQueryResultItem = {
         queryId: string;
+        persistentObjectId: string;
     } & Service.QueryResultItem;
-    type StorePersistentObject = {
-        queryId: string;
-    } & Service.PersistentObject;
+    type StorePersistentObject = Service.PersistentObject;
     type StoreActionClassById = {
         id: string;
         name: string;
@@ -394,14 +394,23 @@ declare namespace Vidyano {
         private _db;
         constructor();
         readonly db: Idb.DB;
+        clear<K extends keyof StoreNameMap>(storeName: K): Promise<void>;
+        exists<K extends keyof StoreNameMap>(storeName: K, key: string | string[]): Promise<boolean>;
         save<K extends keyof StoreNameMap, I extends keyof RequestsStoreNameMap>(store: "Requests", entry: RequestsStoreNameMap[I]): Promise<void>;
         save<K extends keyof StoreNameMap>(store: K, entry: StoreNameMap[K]): Promise<void>;
+        addAll<K extends keyof StoreNameMap>(storeName: K, entries: StoreNameMap[K][]): Promise<void>;
         saveAll<K extends keyof StoreNameMap>(storeName: K, entries: StoreNameMap[K][]): Promise<void>;
-        load<K extends keyof StoreNameMap, I extends keyof RequestsStoreNameMap>(store: "Requests", key: I): Promise<RequestsStoreNameMap[I]>;
-        load<K extends keyof StoreNameMap>(store: K, key: string | string[]): Promise<StoreNameMap[K]>;
+        private load;
         loadAll<K extends keyof StoreNameMap>(storeName: K, indexName?: string, key?: any): Promise<StoreNameMap[K][]>;
         deleteAll<K extends keyof StoreNameMap>(storeName: K, condition: (item: StoreNameMap[K]) => boolean): Promise<number>;
         deleteAll<K extends keyof StoreNameMap>(storeName: K, index: string, indexKey: IDBValidKey, condition: (item: StoreNameMap[K]) => boolean): Promise<number>;
+        getActionClass(name: string): Promise<StoreActionClassById>;
+        getRequest<K extends keyof RequestsStoreNameMap>(id: K): Promise<RequestsStoreNameMap[K]>;
+        getQuery(id: string, results?: "always" | "ifAutoQuery"): Promise<Query>;
+        getQueryResults(id: string, parentPeristentObjectId?: string, parentObjectId?: string, keyColumn?: string): Promise<QueryResultItem[]>;
+        getWritableQuery(id: string, transaction?: Idb.Transaction): Promise<Query>;
+        getPersistentObject(id: string, objectId?: string): Promise<PersistentObject>;
+        getNewPersistentObject(query: Query): Promise<PersistentObject>;
     }
 }
 declare namespace Vidyano {
@@ -424,7 +433,9 @@ declare namespace Vidyano {
         private _onActivate;
         private _onFetch;
         private _createFetcher;
+        private send;
         private _getOffline;
+        private saveOfflineQueries;
         protected onGetClientData(): Promise<Service.ClientData>;
         protected onCacheClientData(clientData: Service.ClientData): Promise<void>;
         protected onCacheApplication(application: Service.ApplicationResponse): Promise<void>;
@@ -437,12 +448,11 @@ declare namespace Vidyano {
     class ServiceWorkerActions {
         private static _types;
         static get<T>(name: string, serviceWorker: ServiceWorker): Promise<ServiceWorkerActions>;
-        private _serviceWorker;
+        private readonly _db;
         private readonly db;
-        protected readonly serviceWorker: ServiceWorker;
-        onGetPersistentObject(parent: Service.PersistentObject, id: string, objectId?: string, isNew?: boolean): Promise<PersistentObject>;
+        onGetPersistentObject(parent: ReadOnlyPersistentObject, id: string, objectId?: string, isNew?: boolean): Promise<PersistentObject>;
         onGetQuery(id: string): Promise<Query>;
-        onExecuteQuery(query: Query): Promise<QueryResult>;
+        onExecuteQuery(parent: ReadOnlyPersistentObject, query: ReadOnlyQuery): Promise<QueryResult>;
         protected onTextSearch(textSearch: string, result: QueryResult): QueryResultItem[];
         onSortQueryResult(result: QueryResult): QueryResultItem[];
         onDataTypeCompare(value1: any, value2?: any, datatype?: string): number;
@@ -486,21 +496,19 @@ declare namespace Vidyano {
         type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
         type Overwrite<T, U> = Omit<T, Extract<keyof T, keyof U>> & U;
         type Wrap<ServiceType, Writable extends keyof ServiceType, WrapperType> = Overwrite<Readonly<Omit<ServiceType, Writable>> & Pick<ServiceType, Writable>, WrapperType> & WrapperType;
-        type WrapperTypes = PersistentObjectAttributeWrapper | PersistentObjectAttributeWrapper | PersistentObjectAttributeWithReferenceWrapper | QueryWrapper | QueryColumnWrapper | QueryResultWrapper | QueryResultItemWrapper | QueryResultItemValueWrapper;
         abstract class Wrapper<T> {
             private __wrappedProperties__;
             protected _unwrap(writableProperties?: string[], ...children: string[]): T;
-            static _wrap<T>(object: any): T;
-            static _wrap<T>(objects: any[]): T;
-            static _wrap<T, U>(wrapperFunction: (obj: U) => Function, objects: U[]): T;
+            static _wrap<T, U>(object: U, ...args: any[]): T;
+            static _wrap<T, U>(objects: U[], ...args: any[]): T[];
         }
     }
 }
 declare namespace Vidyano {
-    const PersistentObjectAttributeWritableProperties: ("label" | "offset" | "group" | "isValueChanged" | "tab" | "visibility")[];
+    const PersistentObjectAttributeWritableProperties: ("label" | "group" | "isValueChanged" | "offset" | "tab" | "visibility")[];
     type PersistentObjectAttribute = Wrappers.Wrap<Service.PersistentObjectAttribute, typeof PersistentObjectAttributeWritableProperties[number], Wrappers.PersistentObjectAttributeWrapper>;
     type ReadOnlyPersistentObjectAttribute = Readonly<PersistentObjectAttribute>;
-    const PersistentObjectAttributeWithReferenceWritableProperties: ("label" | "offset" | "group" | "isValueChanged" | "tab" | "visibility")[];
+    const PersistentObjectAttributeWithReferenceWritableProperties: ("label" | "group" | "isValueChanged" | "offset" | "tab" | "visibility")[];
     type PersistentObjectAttributeWithReference = Wrappers.Wrap<Service.PersistentObjectAttributeWithReference, typeof PersistentObjectAttributeWithReferenceWritableProperties[number], Wrappers.PersistentObjectAttributeWithReferenceWrapper>;
     type ReadOnlyPersistentObjectAttributeWithReference = Readonly<PersistentObjectAttributeWithReference>;
     namespace Wrappers {
@@ -522,7 +530,7 @@ declare namespace Vidyano {
     }
 }
 declare namespace Vidyano {
-    const PersistentObjectWritableProperties: ("label" | "notification" | "notificationType" | "notificationDuration" | "breadcrumb" | "stateBehavior")[];
+    const PersistentObjectWritableProperties: ("label" | "notification" | "notificationType" | "notificationDuration" | "actions" | "breadcrumb" | "isNew" | "stateBehavior")[];
     type PersistentObject = Wrappers.Wrap<Service.PersistentObject, typeof PersistentObjectWritableProperties[number], Wrappers.PersistentObjectWrapper>;
     type ReadOnlyPersistentObject = Readonly<PersistentObject>;
     namespace Wrappers {
@@ -542,7 +550,7 @@ declare namespace Vidyano {
     }
 }
 declare namespace Vidyano {
-    const QueryColumnWritableProperties: ("label" | "canSort" | "offset")[];
+    const QueryColumnWritableProperties: ("label" | "offset" | "canSort")[];
     type QueryColumn = Wrappers.Wrap<Service.QueryColumn, typeof QueryColumnWritableProperties[number], Wrappers.QueryColumnWrapper>;
     type ReadOnlyQueryColumn = Readonly<QueryColumn>;
     namespace Wrappers {
@@ -585,13 +593,14 @@ declare namespace Vidyano {
     namespace Wrappers {
         class QueryResultWrapper extends Wrapper<Service.QueryResult> {
             private _result;
-            private readonly _columns;
+            private _columns;
             private _items;
             private constructor();
-            readonly columns: QueryColumn[];
+            columns: QueryColumn[];
             getColumn(name: string): QueryColumn;
             items: QueryResultItem[];
             getItem(id: string): QueryResultItem;
+            static fromQuery(query: Query | ReadOnlyQuery): QueryResult;
             protected _unwrap(): Service.QueryResult;
             static _unwrap(obj: QueryResult): Service.QueryResult;
         }
@@ -604,6 +613,7 @@ declare namespace Vidyano {
     namespace Wrappers {
         class QueryWrapper extends Wrapper<Service.Query> {
             private _query;
+            private _transaction;
             private readonly _columns;
             private readonly _persistentObject;
             private readonly _result;
