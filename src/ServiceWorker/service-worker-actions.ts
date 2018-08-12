@@ -87,7 +87,7 @@
             const storedQuery = await this.db.getQuery(query.id);
             const result = storedQuery.result || Wrappers.QueryResultWrapper.fromQuery(query);
             result.sortOptions = query.sortOptions;
-            result.items = await this.db.getQueryResults(query.id, parent ? parent.id : undefined, parent ? parent.objectId : undefined, "Customer");
+            result.items = await this.db.getQueryResults(query.id, parent ? parent.id : undefined, parent ? parent.objectId : undefined);
             
             if (query.textSearch)
                 result.items = this.onTextSearch(query.textSearch, result);

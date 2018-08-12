@@ -190,6 +190,7 @@ declare namespace Vidyano.Service {
         label: string;
         name: string;
         offset: number;
+        persistentObjectId: string;
         type: string;
     };
     type QueryResult = {
@@ -216,7 +217,6 @@ declare namespace Vidyano.Service {
         key: string;
         value: string;
         objectId?: string;
-        persistentObjectId?: string;
         typeHints?: KeyValueString;
     };
     type QueryGroupingInfo = {

@@ -255,6 +255,7 @@ declare namespace Vidyano.Service {
         label: string;
         name: string;
         offset: number;
+        persistentObjectId: string;
         type: string;
     };
     type QueryResult = {
@@ -281,7 +282,6 @@ declare namespace Vidyano.Service {
         key: string;
         value: string;
         objectId?: string;
-        persistentObjectId?: string;
         typeHints?: KeyValueString;
     };
     type QueryGroupingInfo = {
@@ -407,7 +407,7 @@ declare namespace Vidyano {
         getActionClass(name: string): Promise<StoreActionClassById>;
         getRequest<K extends keyof RequestsStoreNameMap>(id: K): Promise<RequestsStoreNameMap[K]>;
         getQuery(id: string, results?: "always" | "ifAutoQuery"): Promise<Query>;
-        getQueryResults(id: string, parentPeristentObjectId?: string, parentObjectId?: string, keyColumn?: string): Promise<QueryResultItem[]>;
+        getQueryResults(id: string, parentPeristentObjectId?: string, parentObjectId?: string): Promise<QueryResultItem[]>;
         getWritableQuery(id: string, transaction?: Idb.Transaction): Promise<Query>;
         getPersistentObject(id: string, objectId?: string): Promise<PersistentObject>;
         getNewPersistentObject(query: Query): Promise<PersistentObject>;

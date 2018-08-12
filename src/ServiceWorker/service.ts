@@ -207,6 +207,7 @@ namespace Vidyano.Service {
         label: string;
         name: string;
         offset: number;
+        persistentObjectId: string;
         type: string;
     };
 

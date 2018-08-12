@@ -201,24 +201,29 @@
             return Wrappers.QueryWrapper._wrap(query);
         }
 
-        async getQueryResults(id: string, parentPeristentObjectId?: string, parentObjectId?: string, keyColumn?: string): Promise<QueryResultItem[]> {
+        async getQueryResults(id: string, parentPeristentObjectId?: string, parentObjectId?: string, ): Promise<QueryResultItem[]> {
             const tx = await this.db.transaction(["Queries", "QueryResults", "PersistentObjects"], "readonly");
             let items: Service.QueryResultItem[];
             if (!parentPeristentObjectId) {
                 items = <Service.QueryResultItem[]>await tx.objectStore("QueryResults").index("ByQueryId").getAll(id);
             }
             else {
-                items = [];
-
                 const parentPersistentObject = <StorePersistentObject>await tx.objectStore("PersistentObjects").get(parentPeristentObjectId);
                 const detailQuery = <StoreQuery>await tx.objectStore("Queries").get(id);
                 const detailSourceQuery = <StoreQuery>await tx.objectStore("Queries").index("ByPersistentObjectId").get(detailQuery.persistentObject.id);
 
+                const keyColumn = detailSourceQuery.columns.find(c => c.type === "Reference" && c.persistentObjectId === parentPeristentObjectId);
+                if (!keyColumn) {
+                    console.error(`Unable to resolve reference column for detail query "${detailQuery.name}"`);
+                    return [];
+                }
+
+                items = [];
                 let detailItemsCursor = await tx.objectStore("QueryResults").index("ByQueryId").openCursor(detailSourceQuery.id);
                 let i = 0;
                 while (detailItemsCursor) {
                     const detailItem = <Service.QueryResultItem>detailItemsCursor.value;
-                    const keyValue = detailItem.values.find(v => v.key === keyColumn);
+                    const keyValue = detailItem.values.find(v => v.key === keyColumn.name);
                     if (keyValue && keyValue.objectId === parentObjectId)
                         items.push(detailItem);
 
