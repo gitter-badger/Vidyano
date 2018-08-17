@@ -97,7 +97,7 @@
             return result;
         }
 
-        protected onTextSearch(textSearch: string, result: QueryResult): QueryResultItem[] {
+        onTextSearch(textSearch: string, result: QueryResult): QueryResultItem[] {
             const items = result.items;
             if (!textSearch)
                 return items;
