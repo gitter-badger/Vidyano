@@ -327,75 +327,66 @@
         }
 
         async savePersistentObject(persistentObject: PersistentObject): Promise<PersistentObject> {
-            //if (persistentObject.isNew) {
-            //    const obj = Wrappers.PersistentObjectWrapper._unwrap(persistentObject);
-            //    obj.objectId = `SW-NEW-${Date.now()}`;
+            if (persistentObject.isNew) {
+                const obj = Wrappers.PersistentObjectWrapper._unwrap(persistentObject);
+                obj.objectId = `SW-NEW-${Date.now()}`;
 
-            //    const item = await this.editQueryResultItemValues(obj, "New");
+                const item = await this.editQueryResultItemValues(obj, "New");
 
-            //    await this.add("QueryResults", {
-            //        ...item,
-            //        persistentObjectId: obj.id
-            //    });
+                await this.add("QueryResults", {
+                    ...item,
+                    persistentObjectId: obj.id
+                });
 
-            //    obj.attributes.forEach(attr => attr.isValueChanged = false);
-            //    obj.isNew = false;
-            //}
-            //else {
-            //    const item = await this.editQueryResultItemValues(obj, "New");
-            //    await this.context.save("QueryResults", {
-            //        ...item,
-            //        queryId: obj.ownerQuery.id
-            //    });
+                obj.attributes.forEach(attr => attr.isValueChanged = false);
+                obj.isNew = false;
+            }
+            else {
+                const item = await this.editQueryResultItemValues(persistentObject, "Edit");
+                await this.save("QueryResults", {
+                    ...item,
+                    persistentObjectId: persistentObject.id
+                });
 
-            //    obj.attributes.forEach(attr => attr.isValueChanged = false);
-            //}
+                persistentObject.attributes.forEach(attr => attr.isValueChanged = false);
+            }
 
             return persistentObject;
         }
 
-        private async editQueryResultItemValues(persistentObject: Service.PersistentObject, changeType: ItemChangeType) {
-            //let item = <Service.QueryResultItem>await this.db.load("QueryResults", [queryId, persistentObject.objectId]);
-            //if (!item && changeType === "New") {
-            //    item = {
-            //        id: persistentObject.objectId,
-            //        values: []
-            //    };
-            //}
+        private async editQueryResultItemValues(persistentObject: Service.PersistentObject, changeType: ItemChangeType): Promise<Service.QueryResultItem> {
+            let item: Service.QueryResultItem;
+            if (changeType === "New") {
+                item = {
+                    id: persistentObject.objectId,
+                    values: []
+                };
+            }
+            else
+                item = <Service.QueryResultItem>await this.load("QueryResults", [persistentObject.id, persistentObject.objectId]);
 
-            //if (!item)
-            //    throw "Unable to resolve item.";
+            if (!item)
+                throw "Unable to resolve item.";
 
-            //let query: Service.Query;
-            //for (let attribute of persistentObject.attributes.filter(a => a.isValueChanged)) {
-            //    let value = item.values.find(v => v.key === attribute.name);
-            //    if (!value) {
-            //        value = {
-            //            key: attribute.name,
-            //            value: attribute.value
-            //        };
+            let query: Service.Query;
+            for (let attribute of persistentObject.attributes.filter(a => a.isValueChanged)) {
+                let value = item.values.find(v => v.key === attribute.name);
+                if (!value) {
+                    value = {
+                        key: attribute.name,
+                        value: attribute.value
+                    };
 
-            //        item.values.push(value);
-            //    }
-            //    else
-            //        value.value = attribute.value;
+                    item.values.push(value);
+                }
+                else
+                    value.value = attribute.value;
 
-            //    if (attribute.type === "Reference") {
-            //        if (!query) {
-            //            query = await this.db.load("Queries", queryId);
-            //            throw "Unable to resolve query.";
-            //        }
+                if (attribute.type === "Reference")
+                    value.objectId = (<Service.PersistentObjectAttributeWithReference>attribute).objectId;
+            }
 
-            //        const attributeMetaData = <Service.PersistentObjectAttributeWithReference>query.persistentObject.attributes.find(a => a.name === attribute.name);
-            //        if (!attributeMetaData)
-            //            throw "Unable to resolve attribute.";
-
-            //        value.persistentObjectId = attributeMetaData.lookup.persistentObject.id;
-            //        value.objectId = (<Service.PersistentObjectAttributeWithReference>attribute).objectId;
-            //    }
-            //}
-
-            //return item;
+            return item;
         }
     }
 

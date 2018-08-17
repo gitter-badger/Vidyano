@@ -464,10 +464,9 @@ declare namespace Vidyano {
 }
 declare namespace Vidyano {
     class ServiceWorkerActions {
-        private _context;
         private static _types;
         static get<T>(name: string, serviceWorker: ServiceWorker): Promise<ServiceWorkerActions>;
-        private constructor();
+        private _context;
         readonly context: IIndexedDBContext;
         onGetPersistentObject(parent: ReadOnlyPersistentObject, id: string, objectId?: string, isNew?: boolean): Promise<PersistentObject>;
         onGetQuery(id: string): Promise<Query>;

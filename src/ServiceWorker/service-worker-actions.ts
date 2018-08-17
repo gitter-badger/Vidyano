@@ -33,14 +33,13 @@
                 }
             }
 
-            const instance = new (actionsClass || ServiceWorkerActions)(await serviceWorker.db.createContext());
-            instance._db = serviceWorker.db;
+            const instance = new (actionsClass || ServiceWorkerActions)();
+            instance._context = await serviceWorker.db.createContext();
 
             return instance;
         }
 
-        private constructor(private _context: IIndexedDBContext) {
-        }
+        private _context: IIndexedDBContext;
 
         get context(): IIndexedDBContext {
             return this._context;
