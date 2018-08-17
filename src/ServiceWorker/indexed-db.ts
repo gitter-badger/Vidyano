@@ -289,7 +289,11 @@
                 }
             }
 
-            return items.map(i => Wrappers.QueryResultItemWrapper._wrap(i));
+            const columns = new Map(query.columns.map(c => <[string, boolean]>[c.name, true]));
+            return items.map(i => {
+                i.values = i.values.filter(v => columns.has(v.key));
+                return Wrappers.QueryResultItemWrapper._wrap(i);
+            });
         }
 
         async delete(query: Query, items: QueryResultItem[]) {
