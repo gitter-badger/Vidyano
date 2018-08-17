@@ -237,7 +237,6 @@ namespace Vidyano.Service {
         key: string;
         value: string;
         objectId?: string;
-        persistentObjectId?: string;
         typeHints?: KeyValueString;
     };
 

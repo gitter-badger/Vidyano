@@ -44,9 +44,12 @@
             static _wrap<T, U>(objects: U | U[], ...args: any[]): T | T[] {
                 const array = Array.isArray(objects);
                 const results = (array ? <U[]>objects : [<U>objects]).map(object => {
-                    const result = <any>new (<{ new(value?: any): Object }>this.prototype.constructor)(...[object].concat(args));
+                    if (object instanceof Wrapper)
+                        return object;
 
+                    const result = <any>new (<{ new(value?: any): Object }>this.prototype.constructor)(...[object].concat(args));
                     const props: (keyof T)[] = [];
+
                     for (let prop in object) {
                         if (!result.__proto__.hasOwnProperty(prop)) {
                             const value = object[prop];

@@ -21,7 +21,7 @@ namespace Vidyano {
             private readonly _attributes: PersistentObjectAttribute[];
             private readonly _queries: ReadOnlyQuery[];
 
-            private constructor(private _obj: Service.PersistentObject, private _parent?: QueryWrapper) {
+            private constructor(private _obj: Service.PersistentObject, private _db: IndexedDB) {
                 super();
 
                 this._attributes = (this._obj.attributes || []).map(attr => attr.type !== "Reference" ? PersistentObjectAttributeWrapper._wrap(attr) : PersistentObjectAttributeWithReferenceWrapper._wrap(<Service.PersistentObjectAttributeWithReference>attr));
@@ -42,6 +42,18 @@ namespace Vidyano {
 
             getAttribute(name: string): PersistentObjectAttribute {
                 return this.attributes.find(a => a.name === name);
+            }
+
+            save() {
+
+            }
+
+            //static new() {
+
+            //}
+
+            static load(id: string, objectId: string) {
+
             }
 
             protected _unwrap(): Service.PersistentObject {

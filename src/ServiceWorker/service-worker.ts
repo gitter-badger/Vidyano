@@ -1,4 +1,4 @@
-﻿namespace Vidyano {
+namespace Vidyano {
     export let version = "latest";
     const CACHE_NAME = `vidyano.web2.${version}`;
     const WEB2_BASE = "WEB2_BASE";
@@ -173,10 +173,12 @@
                                 if (action[0] === "Query") {
                                     const queryAction = fetcher.payload as Service.ExecuteQueryActionRequest;
                                     const actionsClass = await ServiceWorkerActions.get(queryAction.query.persistentObject.type, this);
+                                    const query = <ReadOnlyQuery>Wrappers.QueryWrapper._wrap(queryAction.query);
+                                    const parent = queryAction.parent ? <PersistentObject>Wrappers.PersistentObjectWrapper._wrap(queryAction.parent) : null;
 
                                     let selectedItems = queryAction.selectedItems || [];
                                     if (queryAction.query.allSelected) {
-                                        const allItems = await this.db.loadAll("QueryResults", "ByQueryId", queryAction.query.id);
+                                        const allItems = await actionsClass.context.getQueryResults(query, parent);
                                         const incomingIds = selectedItems.map(i => i.id);
 
                                         if (queryAction.query.allSelectedInversed)
@@ -187,7 +189,7 @@
                                         queryAction.query.allSelected = queryAction.query.allSelectedInversed = undefined;
                                     }
 
-                                    response.result = Wrappers.PersistentObjectWrapper._unwrap(await actionsClass.onExecuteQueryAction(action[1], Wrappers.QueryWrapper._wrap(queryAction.query), selectedItems.map(i => Wrappers.QueryResultItemWrapper._wrap(i)), queryAction.parameters));
+                                    response.result = Wrappers.PersistentObjectWrapper._unwrap(await actionsClass.onExecuteQueryAction(action[1], query, selectedItems.map(i => Wrappers.QueryResultItemWrapper._wrap(i), parent), queryAction.parameters));
                                 }
                                 else if (action[0] === "PersistentObject") {
                                     const persistentObjectAction = fetcher.payload as Service.ExecutePersistentObjectActionRequest;
@@ -206,7 +208,7 @@
                             if (!response.result) {
                                 const actionsClass = await ServiceWorkerActions.get(fetcher.payload.query.persistentObject.type, this);
                                 const parent: ReadOnlyPersistentObject = fetcher.payload.parent ? Wrappers.PersistentObjectWrapper._wrap(fetcher.payload.parent) : null;
-                                response.result = Wrappers.QueryResultWrapper._unwrap(await actionsClass.onExecuteQuery(parent, Wrappers.QueryWrapper._wrap(fetcher.payload.query)));
+                                response.result = Wrappers.QueryResultWrapper._unwrap(await actionsClass.onExecuteQuery(Wrappers.QueryWrapper._wrap(fetcher.payload.query), parent));
                             }
                             else
                                 this.authToken = response.authToken;
@@ -288,11 +290,6 @@
         }
 
         private async _getOffline(id: string, authToken: string, userName: string) {
-            this.db.clear("Queries");
-            this.db.clear("QueryResults");
-            this.db.clear("ActionClassesById");
-            this.db.clear("Changes");
-
             const payload: Service.GetPersistentObjectRequest = {
                 authToken: authToken,
                 userName: userName,
@@ -319,55 +316,9 @@
             }
 
             const responseData = <Service.GetPersistentObjectResponse>await response.json();
-            const offline = <Service.PersistentObject>responseData.result;
-
-            await this.saveOfflineQueries(offline.queries);
-
-            for (let i = 0; i < offline.queries.length; i++) {
-                const rootquery = offline.queries[i];
-                await this.saveOfflineQueries(rootquery.persistentObject.queries);
-            }
+            await this.db.saveOffline(<Service.PersistentObject>responseData.result);
 
             this.send("Application offline data loaded successfully.");
-        }
-
-        private async saveOfflineQueries(queries: Service.Query[]) {
-            if (!queries || !queries.length)
-                return;
-
-            for (let i = 0; i < queries.length; i++) {
-                const query = queries[i];
-
-                if (await this.db.exists("Queries", query.id))
-                    continue;
-
-                if (query.result) {
-                    const items = query.result.items;
-                    await this._db.addAll("QueryResults", items.map(i => {
-                        return {
-                            ...i,
-                            queryId: query.id,
-                            persistentObjectId: query.persistentObject.id
-                        };
-                    }));
-
-                    query.result.items = [];
-                }
-
-                await this._db.save("Queries", query);
-
-                await this._db.save("PersistentObjects", query.persistentObject);
-
-                await this.db.save("ActionClassesById", {
-                    id: query.id,
-                    name: query.persistentObject.type
-                });
-
-                await this.db.save("ActionClassesById", {
-                    id: query.persistentObject.id,
-                    name: query.persistentObject.type
-                });
-            }
         }
 
         protected async onGetClientData(): Promise<Service.ClientData> {
@@ -375,7 +326,8 @@
         }
 
         protected async onCacheClientData(clientData: Service.ClientData) {
-            await this.db.save("Requests", {
+            const context = await this.db.createContext();
+            await context.save("Requests", {
                 id: "GetClientData",
                 response: clientData
             });
@@ -386,7 +338,8 @@
             application.application.attributes.filter(a => a.name === "AnalyticsKey" || a.name === "InstantSearchDelay").forEach(a => a.value = undefined);
             application.application.attributes.filter(a => a.name === "CanProfile").forEach(a => a.value = "False");
 
-            await this.db.save("Requests", {
+            const context = await this.db.createContext();
+            await context.save("Requests", {
                 id: "GetApplication",
                 response: application
             });
