@@ -79,6 +79,7 @@ namespace Vidyano {
                 this._db = await idb.open("vidyano.offline", 1, upgrade => {
                     upgrade.createObjectStore("Requests", { keyPath: "id" });
                     const queries = upgrade.createObjectStore("Queries", { keyPath: "id" });
+                    queries.createIndex("WithResults", "hasResults");
                     queries.createIndex("ByPersistentObjectId", "persistentObject.id");
                     queries.createIndex("ByPersistentObjectIdWithResults", ["persistentObject.id", "hasResults"]);
 
@@ -299,8 +300,48 @@ namespace Vidyano {
             });
         }
 
-        async delete(query: Query, items: QueryResultItem[]) {
-            // TODO: Check if object has pending relationships
+        async delete(query: Query, items: QueryResultItem[], cascadeDelete?: boolean) {
+            const resultQueries = <StoreQuery[]>await this._transaction.objectStore("Queries").index("WithResults").getAll("true");
+            const relations = resultQueries.map(q => {
+                let relatedAttributes = <Service.PersistentObjectAttributeWithReference[]>q.persistentObject.attributes.filter(a => a.type === "Reference");
+                relatedAttributes = relatedAttributes.filter(a => a.lookup.persistentObject.id === query.persistentObject.id);
+                return !relatedAttributes.length ? null : {
+                    query: q,
+                    attributes: relatedAttributes,
+                    items: []
+                };
+            }).filter(q => !!q);
+
+            for (let i = 0; i < relations.length; i++) {
+                const relation = relations[i];
+
+                let cursor = await this._transaction.objectStore("QueryResults").index("ByPersistentObjectId").openCursor(relation.query.persistentObject.id);
+                while (cursor) {
+                    const sourceItem = <StoreQueryResultItem>cursor.value;
+
+                    for (let j = 0; j < items.length; j++) {
+                        const selectedItem = items[j];
+
+                        for (let k = 0; k < relation.attributes.length; k++) {
+                            const attribute = relation.attributes[k];
+
+                            const value = sourceItem.values.find(v => v.key === attribute.name && v.objectId === sourceItem.id);
+                            if (!value)
+                                continue;
+
+                            if (!attribute.isRequired)
+                                value.value = value.objectId = null;
+                            else {
+                                this._transaction.abort();
+                                throw "Foreign key violation detected.";
+                            }
+                        }
+                    }
+
+                    cursor = await cursor.continue();
+                }
+            }
+
             // TODO: Add change entry
             const keys = items.map(item => item.id);
             this.deleteAll("QueryResults", "ByPersistentObjectId", query.persistentObject.id, item => keys.indexOf(item.id) >= 0);
