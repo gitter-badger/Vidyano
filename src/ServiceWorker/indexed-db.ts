@@ -343,7 +343,7 @@ namespace Vidyano {
                                     actionsClasses.set(relation.query.persistentObject.type, actionsClass);
                                 }
 
-                                if (!(await actionsClass.onCascadeDelete(wrappedSourceItem, selectedItem, relation.query))) {
+                                if (!(await actionsClass.onCascadeDelete(wrappedSourceItem, relation.query, selectedItem, query))) {
                                     this._transaction.abort();
                                     throw "Foreign key violation detected.";
                                 }

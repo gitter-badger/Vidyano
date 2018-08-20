@@ -230,7 +230,7 @@
             await this.context.delete(query, selectedItems);
         }
 
-        async onCascadeDelete(relatedItem: QueryResultItem, item: QueryResultItem, query: ReadOnlyQuery): Promise<boolean> {
+        async onCascadeDelete(item: Vidyano.QueryResultItem, query: Vidyano.ReadOnlyQuery, relatedItem: Vidyano.QueryResultItem, relatedQuery: Vidyano.ReadOnlyQuery): Promise<boolean> {
             return false;
         }
 

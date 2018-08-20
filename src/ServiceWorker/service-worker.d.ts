@@ -410,7 +410,7 @@ declare namespace Vidyano {
         onNew(query: ReadOnlyQuery): Promise<PersistentObject>;
         onRefresh(persistentObject: PersistentObject, parameters: Service.ExecuteActionRefreshParameters): Promise<PersistentObject>;
         onDelete(query: ReadOnlyQuery, selectedItems: QueryResultItem[]): Promise<void>;
-        onCascadeDelete(relatedItem: QueryResultItem, item: QueryResultItem, query: ReadOnlyQuery): Promise<boolean>;
+        onCascadeDelete(item: Vidyano.QueryResultItem, query: Vidyano.ReadOnlyQuery, relatedItem: Vidyano.QueryResultItem, relatedQuery: Vidyano.ReadOnlyQuery): Promise<boolean>;
         onSave(obj: PersistentObject): Promise<PersistentObject>;
         saveNew(newObj: PersistentObject): Promise<PersistentObject>;
         saveExisting(obj: PersistentObject): Promise<PersistentObject>;
