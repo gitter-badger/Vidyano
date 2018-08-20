@@ -66,16 +66,6 @@
                 po.breadcrumb = po.breadcrumb.replace(m[0], attribute.value);
             } while (true);
 
-            const referenceAttributes = po.attributes.filter(a => a.isReference);
-            for (let i = 0; i < referenceAttributes.length; i++) {
-                const attr = <PersistentObjectAttributeWithReference>referenceAttributes[i];
-                if (attr.isReadOnly || !attr.lookup)
-                    continue;
-
-                if (!(await this.context.hasSourceQuery(attr.lookup.persistentObject.id)))
-                    attr.isReadOnly = true;
-            }
-
             return Wrappers.PersistentObjectWrapper._wrap(po);
         }
 

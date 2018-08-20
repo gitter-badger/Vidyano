@@ -44,18 +44,6 @@ namespace Vidyano {
                 return this.attributes.find(a => a.name === name);
             }
 
-            save() {
-
-            }
-
-            //static new() {
-
-            //}
-
-            static load(id: string, objectId: string) {
-
-            }
-
             protected _unwrap(): Service.PersistentObject {
                 return super._unwrap(PersistentObjectWritableProperties, "queries", "attributes");
             }

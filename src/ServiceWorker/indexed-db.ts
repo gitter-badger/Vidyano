@@ -62,7 +62,6 @@ namespace Vidyano {
 
     export interface IIndexedDBContext {
         delete(query: ReadOnlyQuery, items: QueryResultItem[]);
-        hasSourceQuery(persistentObjectId: string): Promise<boolean>;
         getQuery(id: string): Promise<Query>;
         getQueryResults(query: ReadOnlyQuery, parent: ReadOnlyPersistentObject): Promise<QueryResultItem[]>;
         getPersistentObject(id: string, objectId?: string): Promise<PersistentObject>;
@@ -256,10 +255,6 @@ namespace Vidyano {
             return nDeleted;
         }
 
-        async hasSourceQuery(persistentObjectId: string): Promise<boolean> {
-            return await this._transaction.objectStore("Queries").index("ByPersistentObjectIdWithResults").get([persistentObjectId, "true"]);
-        }
-
         async getQuery(id: string, results?: "always" | "ifAutoQuery"): Promise<Query> {
             const query = await this.load("Queries", id);
             if (!query)
@@ -329,6 +324,24 @@ namespace Vidyano {
 
                 attr.value = value.value;
             });
+
+            for (let i = 0; i < po.attributes.length; i++) {
+                const attr = po.attributes[i];
+                const value = item.values.find(v => v.key === attr.name);
+                if (value != null)
+                    attr.value = value.value;
+
+                if (attr.type === "Reference" && !attr.isReadOnly) {
+                    const refAttr = <Service.PersistentObjectAttributeWithReference>attr;
+                    if (refAttr.lookup) {
+                        const lookupSourceQuery = await this._transaction.objectStore("Queries").index("ByPersistentObjectIdWithResults").get([refAttr.lookup.persistentObject.id, "true"]);
+                        if (!lookupSourceQuery)
+                            attr.isReadOnly = true;
+                    }
+                    else
+                        attr.isReadOnly = true;
+                }
+            }
 
             return Wrappers.PersistentObjectWrapper._wrap(po);
         }
