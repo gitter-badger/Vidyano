@@ -1,4 +1,4 @@
-﻿namespace Vidyano {
+namespace Vidyano {
     export type Store = "Requests" | "Queries" | "QueryResults" | "ActionClassesById" | "Changes";
     export type RequestMapKey = "GetQuery" | "GetPersistentObject"
 
@@ -62,7 +62,8 @@
 
     export interface IIndexedDBContext {
         delete(query: ReadOnlyQuery, items: QueryResultItem[]);
-        getQuery(id: string, results?: "always" | "ifAutoQuery"): Promise<Query>;
+        hasSourceQuery(persistentObjectId: string): Promise<boolean>;
+        getQuery(id: string): Promise<Query>;
         getQueryResults(query: ReadOnlyQuery, parent: ReadOnlyPersistentObject): Promise<QueryResultItem[]>;
         getPersistentObject(id: string, objectId?: string): Promise<PersistentObject>;
         getNewPersistentObject(query: ReadOnlyQuery): Promise<PersistentObject>;
@@ -255,8 +256,15 @@
             return nDeleted;
         }
 
+        async hasSourceQuery(persistentObjectId: string): Promise<boolean> {
+            return await this._transaction.objectStore("Queries").index("ByPersistentObjectIdWithResults").get([persistentObjectId, "true"]);
+        }
+
         async getQuery(id: string, results?: "always" | "ifAutoQuery"): Promise<Query> {
             const query = await this.load("Queries", id);
+            if (!query)
+                return null;
+
             if (query.result && (results === "always" || (query.autoQuery && results === "ifAutoQuery")))
                 query.result.items = await this.getQueryResults(Wrappers.QueryWrapper._wrap(query));
 

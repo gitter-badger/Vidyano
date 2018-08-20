@@ -363,7 +363,8 @@ declare namespace Vidyano {
     }
     interface IIndexedDBContext {
         delete(query: ReadOnlyQuery, items: QueryResultItem[]): any;
-        getQuery(id: string, results?: "always" | "ifAutoQuery"): Promise<Query>;
+        hasSourceQuery(persistentObjectId: string): Promise<boolean>;
+        getQuery(id: string): Promise<Query>;
         getQueryResults(query: ReadOnlyQuery, parent: ReadOnlyPersistentObject): Promise<QueryResultItem[]>;
         getPersistentObject(id: string, objectId?: string): Promise<PersistentObject>;
         getNewPersistentObject(query: ReadOnlyQuery): Promise<PersistentObject>;
@@ -525,6 +526,8 @@ declare namespace Vidyano {
             private _value;
             protected constructor(_attr: Service.PersistentObjectAttribute);
             value: any;
+            isReadOnly: boolean;
+            readonly isReference: boolean;
             protected _unwrap(writableProperties?: string[], ...children: string[]): Service.PersistentObjectAttribute;
             static _unwrap(obj: PersistentObjectAttribute): Service.PersistentObjectAttribute;
         }
@@ -532,6 +535,7 @@ declare namespace Vidyano {
             private _attrWithReference;
             private constructor();
             objectId: string;
+            readonly isReference: boolean;
             protected _unwrap(): Service.PersistentObjectAttributeWithReference;
             static _unwrap(obj: PersistentObjectAttributeWithReference): Service.PersistentObjectAttributeWithReference;
         }
@@ -626,7 +630,7 @@ declare namespace Vidyano {
             private _transaction;
             private readonly _columns;
             private readonly _persistentObject;
-            private readonly _result;
+            private _result;
             private constructor();
             readonly columns: QueryColumn[];
             readonly persistentObject: ReadOnlyPersistentObject;

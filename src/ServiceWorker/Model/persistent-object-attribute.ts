@@ -37,8 +37,23 @@ namespace Vidyano {
                 this._attr.isValueChanged = true;
             }
 
+            get isReadOnly(): boolean {
+                return this._attr.isReadOnly;
+            }
+
+            set isReadOnly(readOnly: boolean) {
+                if (readOnly)
+                    this._attr.isReadOnly = readOnly;
+                else
+                    console.error("Read-only cannot be disabled.");
+            }
+
+            get isReference(): boolean {
+                return false;
+            }
+
             protected _unwrap(writableProperties: string[] = [], ...children: string[]): Service.PersistentObjectAttribute {
-                return super._unwrap(writableProperties.concat(PersistentObjectAttributeWritableProperties), ...children.concat(["isValueChanged", "value"]));
+                return super._unwrap(writableProperties.concat(PersistentObjectAttributeWritableProperties), ...children.concat(["isValueChanged", "isReadOnly", "value"]));
             }
 
             static _unwrap(obj: PersistentObjectAttribute): Service.PersistentObjectAttribute {
@@ -58,6 +73,10 @@ namespace Vidyano {
             set objectId(objectId: string) {
                 this._attrWithReference.objectId = objectId;
                 this._attrWithReference.isValueChanged = true;
+            }
+
+            get isReference(): boolean {
+                return true;
             }
 
             protected _unwrap(): Service.PersistentObjectAttributeWithReference {

@@ -66,26 +66,34 @@
                 po.breadcrumb = po.breadcrumb.replace(m[0], attribute.value);
             } while (true);
 
+            const referenceAttributes = po.attributes.filter(a => a.isReference);
+            for (let i = 0; i < referenceAttributes.length; i++) {
+                const attr = <PersistentObjectAttributeWithReference>referenceAttributes[i];
+                if (attr.isReadOnly || !attr.lookup)
+                    continue;
+
+                if (!(await this.context.hasSourceQuery(attr.lookup.persistentObject.id)))
+                    attr.isReadOnly = true;
+            }
+
             return Wrappers.PersistentObjectWrapper._wrap(po);
         }
 
         async onGetQuery(id: string): Promise<Query> {
-            const storedQuery = await this.context.getQuery(id, "ifAutoQuery");
-
+            const storedQuery = await this.context.getQuery(id);
             const query = <Query>Wrappers.QueryWrapper._wrap(storedQuery);
-            query.enableSelectAll = true;
 
-            if (query.textSearch)
-                query.result.items = this.onTextSearch(query.textSearch, query.result);
-
-            query.result.items = this.onSortQueryResult(query.result);
+            if (query.autoQuery) {
+                const result = await this.onExecuteQuery(query, null);
+                query.result.items = result.items;
+            }
 
             return query;
         }
 
         async onExecuteQuery(query: ReadOnlyQuery, parent: ReadOnlyPersistentObject): Promise<QueryResult> {
             const storedQuery = await this.context.getQuery(query.id);
-            const result = storedQuery.result || Wrappers.QueryResultWrapper.fromQuery(query);
+            const result = storedQuery.result;
             result.sortOptions = query.sortOptions;
             result.items = await this.context.getQueryResults(query, parent);
             

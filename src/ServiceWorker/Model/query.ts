@@ -21,16 +21,13 @@ namespace Vidyano {
         export class QueryWrapper extends Wrapper<Service.Query> {
             private readonly _columns: QueryColumn[];
             private readonly _persistentObject: ReadOnlyPersistentObject;
-            private readonly _result: QueryResult;
+            private _result: QueryResult;
 
             private constructor(private _query: Service.Query, private _transaction: Idb.Transaction) {
                 super();
 
                 this._columns = QueryColumnWrapper._wrap(this._query.columns || []);
                 this._persistentObject = PersistentObjectWrapper._wrap(this._query.persistentObject);
-
-                if (this._query.result)
-                    this._result = QueryResultWrapper._wrap(this._query.result);
             }
 
             get columns(): QueryColumn[] {
@@ -42,7 +39,7 @@ namespace Vidyano {
             }
 
             get result(): QueryResult {
-                return this._result;
+                return this._result || (this._result = this._query.result ? QueryResultWrapper._wrap(this._query.result) : QueryResultWrapper.fromQuery(<Query><any>this));
             }
 
             protected _unwrap(): Service.Query {
