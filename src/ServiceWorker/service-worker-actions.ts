@@ -1,9 +1,9 @@
 ﻿namespace Vidyano {
     export class ServiceWorkerActions {
         private static _types = new Map<string, any>();
-        static async get<T>(name: string, serviceWorker: ServiceWorker): Promise<ServiceWorkerActions> {
+        static async get<T>(name: string, db: IndexedDB): Promise<ServiceWorkerActions> {
             if (!(/^\w+$/.test(name))) {
-                const classNameRecord = await serviceWorker.db.getActionClass(name);
+                const classNameRecord = await db.getActionClass(name);
                 if (!classNameRecord)
                     return null;
 
@@ -16,7 +16,7 @@
                     actionsClass = eval.call(null, `ServiceWorker${name}Actions`);
                 }
                 catch (e) {
-                    const className = await serviceWorker.db.getActionClass(name);
+                    const className = await db.getActionClass(name);
                     if (className) {
                         try {
                             actionsClass = eval.call(null, `ServiceWorker${className}Actions`);
@@ -34,7 +34,7 @@
             }
 
             const instance = new (actionsClass || ServiceWorkerActions)();
-            instance._context = await serviceWorker.db.createContext();
+            instance._context = await db.createContext();
 
             return instance;
         }
@@ -226,8 +226,12 @@
             return persistentObject;
         }
 
-        onDelete(query: ReadOnlyQuery, selectedItems: QueryResultItem[]): Promise<void> {
-            return this.context.delete(query, selectedItems);
+        async onDelete(query: ReadOnlyQuery, selectedItems: QueryResultItem[]): Promise<void> {
+            await this.context.delete(query, selectedItems);
+        }
+
+        async onCascadeDelete(relatedItem: QueryResultItem, item: QueryResultItem, query: ReadOnlyQuery): Promise<boolean> {
+            return false;
         }
 
         onSave(obj: PersistentObject): Promise<PersistentObject> {

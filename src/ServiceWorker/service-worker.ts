@@ -144,7 +144,7 @@ namespace Vidyano {
                             const fetcher = await this._createFetcher<Service.GetQueryRequest, Service.GetQueryResponse>(e.request);
                             const response = await fetcher.fetch(fetcher.payload) || { authToken: this.authToken, query: undefined };
                             if (!response.query) {
-                                const actionsClass = await ServiceWorkerActions.get(fetcher.payload.id, this);
+                                const actionsClass = await ServiceWorkerActions.get(fetcher.payload.id, this.db);
                                 response.query = Wrappers.QueryWrapper._unwrap(await actionsClass.onGetQuery(fetcher.payload.id));
                             }
                             else
@@ -156,7 +156,7 @@ namespace Vidyano {
                             const fetcher = await this._createFetcher<Service.GetPersistentObjectRequest, Service.GetPersistentObjectResponse>(e.request);
                             const response = await fetcher.fetch(fetcher.payload) || { authToken: this.authToken, result: undefined };
                             if (!response.result) {
-                                const actionsClass = await ServiceWorkerActions.get(fetcher.payload.persistentObjectTypeId, this);
+                                const actionsClass = await ServiceWorkerActions.get(fetcher.payload.persistentObjectTypeId, this.db);
                                 const parent = fetcher.payload.parent ? Wrappers.PersistentObjectWrapper._wrap(fetcher.payload.parent) : null;
                                 response.result = Wrappers.PersistentObjectWrapper._unwrap(await actionsClass.onGetPersistentObject(<ReadOnlyPersistentObject>parent, fetcher.payload.persistentObjectTypeId, fetcher.payload.objectId, fetcher.payload.isNew));
                             }
@@ -172,7 +172,7 @@ namespace Vidyano {
                                 const action = fetcher.payload.action.split(".");
                                 if (action[0] === "Query") {
                                     const queryAction = fetcher.payload as Service.ExecuteQueryActionRequest;
-                                    const actionsClass = await ServiceWorkerActions.get(queryAction.query.persistentObject.type, this);
+                                    const actionsClass = await ServiceWorkerActions.get(queryAction.query.persistentObject.type, this.db);
                                     const query = <ReadOnlyQuery>Wrappers.QueryWrapper._wrap(queryAction.query);
                                     const parent = queryAction.parent ? <PersistentObject>Wrappers.PersistentObjectWrapper._wrap(queryAction.parent) : null;
 
@@ -193,7 +193,7 @@ namespace Vidyano {
                                 }
                                 else if (action[0] === "PersistentObject") {
                                     const persistentObjectAction = fetcher.payload as Service.ExecutePersistentObjectActionRequest;
-                                    const actionsClass = await ServiceWorkerActions.get(persistentObjectAction.parent.type, this);
+                                    const actionsClass = await ServiceWorkerActions.get(persistentObjectAction.parent.type, this.db);
                                     response.result = Wrappers.PersistentObjectWrapper._unwrap(await actionsClass.onExecutePersistentObjectAction(action[1], Wrappers.PersistentObjectWrapper._wrap(persistentObjectAction.parent), persistentObjectAction.parameters));
                                 }
                             }
@@ -206,7 +206,7 @@ namespace Vidyano {
                             const fetcher = await this._createFetcher<Service.ExecuteQueryRequest, Service.ExecuteQueryResponse>(e.request);
                             const response = await fetcher.fetch(fetcher.payload) || { authToken: this.authToken, result: undefined };
                             if (!response.result) {
-                                const actionsClass = await ServiceWorkerActions.get(fetcher.payload.query.persistentObject.type, this);
+                                const actionsClass = await ServiceWorkerActions.get(fetcher.payload.query.persistentObject.type, this.db);
                                 const parent: ReadOnlyPersistentObject = fetcher.payload.parent ? Wrappers.PersistentObjectWrapper._wrap(fetcher.payload.parent) : null;
                                 response.result = Wrappers.QueryResultWrapper._unwrap(await actionsClass.onExecuteQuery(Wrappers.QueryWrapper._wrap(fetcher.payload.query), parent));
                             }

@@ -105,7 +105,7 @@ namespace Vidyano {
         async createContext(): Promise<IndexedDBContext> {
             await this._initializing;
 
-            return new IndexedDBContext(this.db.transaction(["Requests", "Queries", "QueryResults", "ActionClassesById", "Changes"], "readwrite"));
+            return new IndexedDBContext(this);
         }
 
         async saveOffline(offline: Service.PersistentObject) {
@@ -172,7 +172,10 @@ namespace Vidyano {
     }
 
     class IndexedDBContext implements IIndexedDBContext, IndexedDBTransaction {
-        constructor(private _transaction: Idb.Transaction) {
+        private readonly _transaction: Idb.Transaction;
+
+        constructor(private _db: IndexedDB) {
+            this._transaction = _db.db.transaction(["Requests", "Queries", "QueryResults", "ActionClassesById", "Changes"], "readwrite");
         }
 
         async clear<K extends keyof StoreNameMap>(storeName: K): Promise<void> {
@@ -300,17 +303,18 @@ namespace Vidyano {
             });
         }
 
-        async delete(query: Query, items: QueryResultItem[], cascadeDelete?: boolean) {
+        async delete(query: Query, items: QueryResultItem[]) {
             const resultQueries = <StoreQuery[]>await this._transaction.objectStore("Queries").index("WithResults").getAll("true");
             const relations = resultQueries.map(q => {
                 let relatedAttributes = <Service.PersistentObjectAttributeWithReference[]>q.persistentObject.attributes.filter(a => a.type === "Reference");
                 relatedAttributes = relatedAttributes.filter(a => a.lookup.persistentObject.id === query.persistentObject.id);
                 return !relatedAttributes.length ? null : {
-                    query: q,
-                    attributes: relatedAttributes,
-                    items: []
+                    query: <Query>Wrappers.QueryWrapper._wrap(q),
+                    attributes: relatedAttributes
                 };
             }).filter(q => !!q);
+
+            const actionsClasses = new Map<string, ServiceWorkerActions>();
 
             for (let i = 0; i < relations.length; i++) {
                 const relation = relations[i];
@@ -318,6 +322,7 @@ namespace Vidyano {
                 let cursor = await this._transaction.objectStore("QueryResults").index("ByPersistentObjectId").openCursor(relation.query.persistentObject.id);
                 while (cursor) {
                     const sourceItem = <StoreQueryResultItem>cursor.value;
+                    const wrappedSourceItem = <QueryResultItem>Wrappers.QueryResultItemWrapper._wrap(sourceItem);
 
                     for (let j = 0; j < items.length; j++) {
                         const selectedItem = items[j];
@@ -325,15 +330,25 @@ namespace Vidyano {
                         for (let k = 0; k < relation.attributes.length; k++) {
                             const attribute = relation.attributes[k];
 
-                            const value = sourceItem.values.find(v => v.key === attribute.name && v.objectId === sourceItem.id);
+                            const value = sourceItem.values.find(v => v.key === attribute.name && v.objectId === selectedItem.id);
                             if (!value)
                                 continue;
 
                             if (!attribute.isRequired)
                                 value.value = value.objectId = null;
                             else {
-                                this._transaction.abort();
-                                throw "Foreign key violation detected.";
+                                let actionsClass = actionsClasses.get(relation.query.persistentObject.type);
+                                if (!actionsClass) {
+                                    actionsClass = await ServiceWorkerActions.get(relation.query.persistentObject.type, this._db);
+                                    actionsClasses.set(relation.query.persistentObject.type, actionsClass);
+                                }
+
+                                if (!(await actionsClass.onCascadeDelete(wrappedSourceItem, selectedItem, relation.query))) {
+                                    this._transaction.abort();
+                                    throw "Foreign key violation detected.";
+                                }
+                                else
+                                    break;
                             }
                         }
                     }

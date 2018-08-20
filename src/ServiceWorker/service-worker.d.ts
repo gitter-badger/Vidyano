@@ -395,7 +395,7 @@ declare namespace Vidyano {
 declare namespace Vidyano {
     class ServiceWorkerActions {
         private static _types;
-        static get<T>(name: string, serviceWorker: ServiceWorker): Promise<ServiceWorkerActions>;
+        static get<T>(name: string, db: IndexedDB): Promise<ServiceWorkerActions>;
         private _context;
         readonly context: IIndexedDBContext;
         onGetPersistentObject(parent: ReadOnlyPersistentObject, id: string, objectId?: string, isNew?: boolean): Promise<PersistentObject>;
@@ -410,6 +410,7 @@ declare namespace Vidyano {
         onNew(query: ReadOnlyQuery): Promise<PersistentObject>;
         onRefresh(persistentObject: PersistentObject, parameters: Service.ExecuteActionRefreshParameters): Promise<PersistentObject>;
         onDelete(query: ReadOnlyQuery, selectedItems: QueryResultItem[]): Promise<void>;
+        onCascadeDelete(relatedItem: QueryResultItem, item: QueryResultItem, query: ReadOnlyQuery): Promise<boolean>;
         onSave(obj: PersistentObject): Promise<PersistentObject>;
         saveNew(newObj: PersistentObject): Promise<PersistentObject>;
         saveExisting(obj: PersistentObject): Promise<PersistentObject>;
@@ -513,10 +514,10 @@ declare namespace Vidyano {
     }
 }
 declare namespace Vidyano {
-    const PersistentObjectAttributeWritableProperties: ("label" | "offset" | "group" | "isValueChanged" | "tab" | "visibility")[];
+    const PersistentObjectAttributeWritableProperties: ("label" | "group" | "isValueChanged" | "offset" | "tab" | "visibility")[];
     type PersistentObjectAttribute = Wrappers.Wrap<Service.PersistentObjectAttribute, typeof PersistentObjectAttributeWritableProperties[number], Wrappers.PersistentObjectAttributeWrapper>;
     type ReadOnlyPersistentObjectAttribute = Readonly<PersistentObjectAttribute>;
-    const PersistentObjectAttributeWithReferenceWritableProperties: ("label" | "offset" | "group" | "isValueChanged" | "tab" | "visibility")[];
+    const PersistentObjectAttributeWithReferenceWritableProperties: ("label" | "group" | "isValueChanged" | "offset" | "tab" | "visibility")[];
     type PersistentObjectAttributeWithReference = Wrappers.Wrap<Service.PersistentObjectAttributeWithReference, typeof PersistentObjectAttributeWithReferenceWritableProperties[number], Wrappers.PersistentObjectAttributeWithReferenceWrapper>;
     type ReadOnlyPersistentObjectAttributeWithReference = Readonly<PersistentObjectAttributeWithReference>;
     namespace Wrappers {
@@ -561,7 +562,7 @@ declare namespace Vidyano {
     }
 }
 declare namespace Vidyano {
-    const QueryColumnWritableProperties: ("label" | "canSort" | "offset")[];
+    const QueryColumnWritableProperties: ("label" | "offset" | "canSort")[];
     type QueryColumn = Wrappers.Wrap<Service.QueryColumn, typeof QueryColumnWritableProperties[number], Wrappers.QueryColumnWrapper>;
     type ReadOnlyQueryColumn = Readonly<QueryColumn>;
     namespace Wrappers {
