@@ -13,7 +13,8 @@ declare namespace Vidyano.Service {
         environmentVersion: string;
     };
     type Response = {
-        authToken: string;
+        authToken?: string;
+        exception?: string;
     };
     type GetApplicationRequest = {
         password?: string;

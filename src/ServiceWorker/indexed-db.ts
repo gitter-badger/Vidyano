@@ -176,6 +176,12 @@ namespace Vidyano {
 
         constructor(private _db: IndexedDB) {
             this._transaction = _db.db.transaction(["Requests", "Queries", "QueryResults", "ActionClassesById", "Changes"], "readwrite");
+            this._transaction.complete.catch(e => {
+                if (!e) // Abort also requires the transaction complete catch
+                    return;
+
+                console.error(e);
+            });
         }
 
         async clear<K extends keyof StoreNameMap>(storeName: K): Promise<void> {
@@ -345,7 +351,7 @@ namespace Vidyano {
 
                                 if (!(await actionsClass.onCascadeDelete(wrappedSourceItem, relation.query, selectedItem, query))) {
                                     this._transaction.abort();
-                                    throw "Foreign key violation detected.";
+                                    throw "Could not delete some entities because they are still referenced in the database.";
                                 }
                                 else
                                     break;

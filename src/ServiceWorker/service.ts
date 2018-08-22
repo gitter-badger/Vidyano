@@ -15,7 +15,8 @@ namespace Vidyano.Service {
     };
 
     export type Response = {
-        authToken: string;
+        authToken?: string;
+        exception?: string;
     };
 
     export type GetApplicationRequest = {

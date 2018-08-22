@@ -142,75 +142,95 @@ namespace Vidyano {
 
                         if (e.request.url.endsWith("GetQuery")) {
                             const fetcher = await this._createFetcher<Service.GetQueryRequest, Service.GetQueryResponse>(e.request);
-                            const response = await fetcher.fetch(fetcher.payload) || { authToken: this.authToken, query: undefined };
-                            if (!response.query) {
-                                const actionsClass = await ServiceWorkerActions.get(fetcher.payload.id, this.db);
-                                response.query = Wrappers.QueryWrapper._unwrap(await actionsClass.onGetQuery(fetcher.payload.id));
+                            const response = await fetcher.fetch(fetcher.payload) || { authToken: this.authToken, query: undefined, exception: undefined };
+                            if (!response.query && !response.exception) {
+                                try {
+                                    const actionsClass = await ServiceWorkerActions.get(fetcher.payload.id, this.db);
+                                    response.query = Wrappers.QueryWrapper._unwrap(await actionsClass.onGetQuery(fetcher.payload.id));
+                                }
+                                catch (e) {
+                                    response.exception = e;
+                                }
                             }
-                            else
+                            else if (response.authToken)
                                 this.authToken = response.authToken;
 
                             return this.createResponse(response);
                         }
                         else if (e.request.url.endsWith("GetPersistentObject")) {
                             const fetcher = await this._createFetcher<Service.GetPersistentObjectRequest, Service.GetPersistentObjectResponse>(e.request);
-                            const response = await fetcher.fetch(fetcher.payload) || { authToken: this.authToken, result: undefined };
-                            if (!response.result) {
-                                const actionsClass = await ServiceWorkerActions.get(fetcher.payload.persistentObjectTypeId, this.db);
-                                const parent = fetcher.payload.parent ? Wrappers.PersistentObjectWrapper._wrap(fetcher.payload.parent) : null;
-                                response.result = Wrappers.PersistentObjectWrapper._unwrap(await actionsClass.onGetPersistentObject(<ReadOnlyPersistentObject>parent, fetcher.payload.persistentObjectTypeId, fetcher.payload.objectId, fetcher.payload.isNew));
+                            const response = await fetcher.fetch(fetcher.payload) || { authToken: this.authToken, result: undefined, exception: undefined };
+                            if (!response.result && !response.exception) {
+                                try {
+                                    const actionsClass = await ServiceWorkerActions.get(fetcher.payload.persistentObjectTypeId, this.db);
+                                    const parent = fetcher.payload.parent ? Wrappers.PersistentObjectWrapper._wrap(fetcher.payload.parent) : null;
+                                    response.result = Wrappers.PersistentObjectWrapper._unwrap(await actionsClass.onGetPersistentObject(<ReadOnlyPersistentObject>parent, fetcher.payload.persistentObjectTypeId, fetcher.payload.objectId, fetcher.payload.isNew));
+                                }
+                                catch (e) {
+                                    response.exception = e;
+                                }
                             }
-                            else
+                            else if (response.authToken)
                                 this.authToken = response.authToken;
 
                             return this.createResponse(response);
                         }
                         else if (e.request.url.endsWith("ExecuteAction")) {
                             const fetcher = await this._createFetcher<Service.ExecuteActionRequest, Service.ExecuteActionResponse>(e.request);
-                            const response = await fetcher.fetch(fetcher.payload) || { authToken: this.authToken, result: undefined };
-                            if (!response.result) {
-                                const action = fetcher.payload.action.split(".");
-                                if (action[0] === "Query") {
-                                    const queryAction = fetcher.payload as Service.ExecuteQueryActionRequest;
-                                    const actionsClass = await ServiceWorkerActions.get(queryAction.query.persistentObject.type, this.db);
-                                    const query = <ReadOnlyQuery>Wrappers.QueryWrapper._wrap(queryAction.query);
-                                    const parent = queryAction.parent ? <PersistentObject>Wrappers.PersistentObjectWrapper._wrap(queryAction.parent) : null;
+                            const response = await fetcher.fetch(fetcher.payload) || { authToken: this.authToken, result: undefined, exception: undefined };
+                            if (!response.result && !response.exception) {
+                                try {
+                                    const action = fetcher.payload.action.split(".");
+                                    if (action[0] === "Query") {
+                                        const queryAction = fetcher.payload as Service.ExecuteQueryActionRequest;
+                                        const actionsClass = await ServiceWorkerActions.get(queryAction.query.persistentObject.type, this.db);
+                                        const query = <ReadOnlyQuery>Wrappers.QueryWrapper._wrap(queryAction.query);
+                                        const parent = queryAction.parent ? <PersistentObject>Wrappers.PersistentObjectWrapper._wrap(queryAction.parent) : null;
 
-                                    let selectedItems = queryAction.selectedItems || [];
-                                    if (queryAction.query.allSelected) {
-                                        const allItems = await actionsClass.context.getQueryResults(query, parent);
-                                        const incomingIds = selectedItems.map(i => i.id);
+                                        let selectedItems = queryAction.selectedItems || [];
+                                        if (queryAction.query.allSelected) {
+                                            const allItems = await actionsClass.context.getQueryResults(query, parent);
+                                            const incomingIds = selectedItems.map(i => i.id);
 
-                                        if (queryAction.query.allSelectedInversed)
-                                            selectedItems = allItems.filter(i => incomingIds.indexOf(i.id) < 0);
-                                        else
-                                            selectedItems = allItems;
+                                            if (queryAction.query.allSelectedInversed)
+                                                selectedItems = allItems.filter(i => incomingIds.indexOf(i.id) < 0);
+                                            else
+                                                selectedItems = allItems;
 
-                                        queryAction.query.allSelected = queryAction.query.allSelectedInversed = undefined;
+                                            queryAction.query.allSelected = queryAction.query.allSelectedInversed = undefined;
+                                        }
+
+                                        response.result = Wrappers.PersistentObjectWrapper._unwrap(await actionsClass.onExecuteQueryAction(action[1], query, selectedItems.map(i => Wrappers.QueryResultItemWrapper._wrap(i), parent), queryAction.parameters));
                                     }
-
-                                    response.result = Wrappers.PersistentObjectWrapper._unwrap(await actionsClass.onExecuteQueryAction(action[1], query, selectedItems.map(i => Wrappers.QueryResultItemWrapper._wrap(i), parent), queryAction.parameters));
+                                    else if (action[0] === "PersistentObject") {
+                                        const persistentObjectAction = fetcher.payload as Service.ExecutePersistentObjectActionRequest;
+                                        const actionsClass = await ServiceWorkerActions.get(persistentObjectAction.parent.type, this.db);
+                                        response.result = Wrappers.PersistentObjectWrapper._unwrap(await actionsClass.onExecutePersistentObjectAction(action[1], Wrappers.PersistentObjectWrapper._wrap(persistentObjectAction.parent), persistentObjectAction.parameters));
+                                    }
                                 }
-                                else if (action[0] === "PersistentObject") {
-                                    const persistentObjectAction = fetcher.payload as Service.ExecutePersistentObjectActionRequest;
-                                    const actionsClass = await ServiceWorkerActions.get(persistentObjectAction.parent.type, this.db);
-                                    response.result = Wrappers.PersistentObjectWrapper._unwrap(await actionsClass.onExecutePersistentObjectAction(action[1], Wrappers.PersistentObjectWrapper._wrap(persistentObjectAction.parent), persistentObjectAction.parameters));
+                                catch (e) {
+                                    response.exception = e;
                                 }
                             }
-                            else
+                            else if (response.authToken)
                                 this.authToken = response.authToken;
 
                             return this.createResponse(response);
                         }
                         else if (e.request.url.endsWith("ExecuteQuery")) {
                             const fetcher = await this._createFetcher<Service.ExecuteQueryRequest, Service.ExecuteQueryResponse>(e.request);
-                            const response = await fetcher.fetch(fetcher.payload) || { authToken: this.authToken, result: undefined };
-                            if (!response.result) {
-                                const actionsClass = await ServiceWorkerActions.get(fetcher.payload.query.persistentObject.type, this.db);
-                                const parent: ReadOnlyPersistentObject = fetcher.payload.parent ? Wrappers.PersistentObjectWrapper._wrap(fetcher.payload.parent) : null;
-                                response.result = Wrappers.QueryResultWrapper._unwrap(await actionsClass.onExecuteQuery(Wrappers.QueryWrapper._wrap(fetcher.payload.query), parent));
+                            const response = await fetcher.fetch(fetcher.payload) || { authToken: this.authToken, result: undefined, exception: undefined };
+                            if (!response.result && !response.exception) {
+                                try {
+                                    const actionsClass = await ServiceWorkerActions.get(fetcher.payload.query.persistentObject.type, this.db);
+                                    const parent: ReadOnlyPersistentObject = fetcher.payload.parent ? Wrappers.PersistentObjectWrapper._wrap(fetcher.payload.parent) : null;
+                                    response.result = Wrappers.QueryResultWrapper._unwrap(await actionsClass.onExecuteQuery(Wrappers.QueryWrapper._wrap(fetcher.payload.query), parent));
+                                }
+                                catch (e) {
+                                    response.exception = e;
+                                }
                             }
-                            else
+                            else if (response.authToken)
                                 this.authToken = response.authToken;
 
                             return this.createResponse(response);
