@@ -332,10 +332,12 @@ declare namespace Vidyano {
         id: string;
         name: string;
     };
+    type StoreChangeType = "New" | "Edit" | "Delete";
     type StoreChange = {
         id: string;
-        type: "New" | "Update" | "Delete";
+        type: StoreChangeType;
         objectId?: string;
+        data?: any;
     };
     type StoreNameMap = {
         "Requests": StoreGetClientDataRequest | StoreGetApplicationRequest;
@@ -382,15 +384,6 @@ declare namespace Vidyano {
         private _saveOfflineQueries;
         getActionClass(name: string): Promise<StoreActionClassById>;
         getRequest<K extends keyof RequestsStoreNameMap>(id: K): Promise<RequestsStoreNameMap[K]>;
-    }
-    type ItemChangeType = "None" | "New" | "Edit" | "Delete";
-    interface IItemChange {
-        objectId: string;
-        key: string;
-        value: string;
-        referenceObjectId?: string;
-        logChange?: boolean;
-        type?: ItemChangeType;
     }
 }
 declare namespace Vidyano {

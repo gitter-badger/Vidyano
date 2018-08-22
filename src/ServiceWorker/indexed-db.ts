@@ -26,10 +26,13 @@ namespace Vidyano {
         name: string;
     };
 
+    export type StoreChangeType = "New" | "Edit" | "Delete";
+
     export type StoreChange = {
         id: string;
-        type: "New" | "Update" | "Delete";
+        type: StoreChangeType;
         objectId?: string;
+        data?: any;
     };
 
     export type StoreNameMap = {
@@ -363,9 +366,16 @@ namespace Vidyano {
                 }
             }
 
-            // TODO: Add change entry
             const keys = items.map(item => item.id);
-            this.deleteAll("QueryResults", "ByPersistentObjectId", query.persistentObject.id, item => keys.indexOf(item.id) >= 0);
+            const deleted = await this.deleteAll("QueryResults", "ByPersistentObjectId", query.persistentObject.id, item => keys.indexOf(item.id) >= 0);
+            if (deleted === keys.length)
+                await this._deleteQueryResultItem(query.persistentObject.id, items, "Delete");
+            else {
+                this._transaction.abort();
+                throw "Could not delete some of the entities.";
+            }
+
+            return deleted;
         }
 
         async getPersistentObject(id: string, objectId?: string): Promise<PersistentObject> {
@@ -418,7 +428,7 @@ namespace Vidyano {
                 const obj = Wrappers.PersistentObjectWrapper._unwrap(persistentObject);
                 obj.objectId = `SW-NEW-${Date.now()}`;
 
-                const item = await this.editQueryResultItemValues(obj, "New");
+                const item = await this._editQueryResultItem(obj, "New");
 
                 await this.add("QueryResults", {
                     ...item,
@@ -429,7 +439,7 @@ namespace Vidyano {
                 obj.isNew = false;
             }
             else {
-                const item = await this.editQueryResultItemValues(persistentObject, "Edit");
+                const item = await this._editQueryResultItem(persistentObject, "Edit");
                 await this.save("QueryResults", {
                     ...item,
                     persistentObjectId: persistentObject.id
@@ -441,7 +451,9 @@ namespace Vidyano {
             return persistentObject;
         }
 
-        private async editQueryResultItemValues(persistentObject: Service.PersistentObject, changeType: ItemChangeType): Promise<Service.QueryResultItem> {
+        private async _editQueryResultItem(persistentObject: Service.PersistentObject, changeType: StoreChangeType): Promise<Service.QueryResultItem> {
+            const data: [Service.QueryResultItemValue, Service.QueryResultItemValue][] = [];
+
             let item: Service.QueryResultItem;
             if (changeType === "New") {
                 item = {
@@ -458,6 +470,7 @@ namespace Vidyano {
             let query: Service.Query;
             for (let attribute of persistentObject.attributes.filter(a => a.isValueChanged)) {
                 let value = item.values.find(v => v.key === attribute.name);
+                let oldValue = null;
                 if (!value) {
                     value = {
                         key: attribute.name,
@@ -466,25 +479,43 @@ namespace Vidyano {
 
                     item.values.push(value);
                 }
-                else
+                else {
+                    oldValue = JSON.parse(JSON.stringify(value));
                     value.value = attribute.value;
+                }
 
                 if (attribute.type === "Reference")
                     value.objectId = (<Service.PersistentObjectAttributeWithReference>attribute).objectId;
+
+                data.push([oldValue, JSON.parse(JSON.stringify(value))]);
             }
+
+            this.add("Changes", {
+                id: persistentObject.id,
+                objectId: persistentObject.objectId,
+                type: changeType,
+                data: data
+            });
 
             return item;
         }
-    }
 
-    export type ItemChangeType = "None" | "New" | "Edit" | "Delete";
+        private async _deleteQueryResultItem(persistentObjectId: string, item: Service.QueryResultItem, changeType: StoreChangeType);
+        private async _deleteQueryResultItem(persistentObjectId: string, items: Service.QueryResultItem[], changeType: StoreChangeType);
+        private async _deleteQueryResultItem(persistentObjectId: string, items: Service.QueryResultItem | Service.QueryResultItem[], changeType: StoreChangeType): Promise<void> {
+            if (Array.isArray(items)) {
+                for (let i = 0; i < items.length; i++)
+                    await this._deleteQueryResultItem(persistentObjectId, items[i], "Delete");
 
-    export interface IItemChange {
-        objectId: string;
-        key: string;
-        value: string;
-        referenceObjectId?: string;
-        logChange?: boolean;
-        type?: ItemChangeType;
+                return;
+            }
+
+            const item = items;
+            this.add("Changes", {
+                id: persistentObjectId,
+                objectId: item.id,
+                type: "Delete"
+            });
+        }
     }
 }
