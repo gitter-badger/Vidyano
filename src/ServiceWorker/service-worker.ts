@@ -85,7 +85,6 @@ namespace Vidyano {
                 `${WEB2_BASE}Libs/Vidyano/vidyano.common.js`,
                 `${WEB2_BASE}Libs/idb/idb.js`);
 
-            this._db = new IndexedDB();
             await (self as ServiceWorkerGlobalScope).skipWaiting();
 
             this._log("Installed ServiceWorker.");
@@ -93,6 +92,8 @@ namespace Vidyano {
 
         private async _onActivate(e: ExtendableEvent) {
             await (self as ServiceWorkerGlobalScope).clients.claim();
+
+            this._db = new IndexedDB();
 
             const oldCaches = (await caches.keys()).filter(cache => cache.startsWith("vidyano.web2.") && cache !== CACHE_NAME);
             while (oldCaches.length > 0) {
