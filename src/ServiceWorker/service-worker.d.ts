@@ -334,7 +334,9 @@ declare namespace Vidyano {
     };
     type StoreChangeType = "New" | "Edit" | "Delete";
     type StoreChange = {
-        id: string;
+        id?: string;
+        ts: string;
+        persistentObjectId: string;
         type: StoreChangeType;
         objectId?: string;
         data?: any;

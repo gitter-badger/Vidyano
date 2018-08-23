@@ -29,7 +29,9 @@ namespace Vidyano {
     export type StoreChangeType = "New" | "Edit" | "Delete";
 
     export type StoreChange = {
-        id: string;
+        id?: string;
+        ts: string;
+        persistentObjectId: string;
         type: StoreChangeType;
         objectId?: string;
         data?: any;
@@ -490,11 +492,12 @@ namespace Vidyano {
                 data.push([oldValue, JSON.parse(JSON.stringify(value))]);
             }
 
-            this.add("Changes", {
-                id: persistentObject.id,
+            await this.add("Changes", {
+                persistentObjectId: persistentObject.id,
                 objectId: persistentObject.objectId,
                 type: changeType,
-                data: data
+                data: data,
+                ts: DataType.toServiceString(new Date(), "DateTime")
             });
 
             return item;
@@ -510,11 +513,11 @@ namespace Vidyano {
                 return;
             }
 
-            const item = items;
-            this.add("Changes", {
-                id: persistentObjectId,
-                objectId: item.id,
-                type: "Delete"
+            await this.add("Changes", {
+                persistentObjectId: persistentObjectId,
+                objectId: items.id,
+                type: "Delete",
+                ts: DataType.toServiceString(new Date(), "DateTime")
             });
         }
     }
