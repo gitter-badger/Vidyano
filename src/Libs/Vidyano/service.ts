@@ -755,7 +755,7 @@ namespace Vidyano {
                 throw result.exception;
             else if (result.result && result.result.notification) {
                 if (result.result.notificationDuration) {
-                    this.hooks.onShowNotification(result.result.notification, NotificationType[<string>result.result.notificationType], result.result.notificationDuration);
+                    this.hooks.onShowNotification(result.result.notification, result.result.notificationType, result.result.notificationDuration);
                     result.result.notification = null;
                     result.result.notificationDuration = 0;
                 }
