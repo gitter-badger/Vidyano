@@ -1,4 +1,4 @@
-declare namespace Idb {
+declare namespace idb {
     /** This is a tiny library that mirrors IndexedDB, but replaces IDBRequest objects with promises.
      * This is your entry point to the API. It's exposed to the global scope unless you're using a module system such as browserify, in which case it's the exported object. */
     export interface IDBStatic {
@@ -290,4 +290,4 @@ declare namespace Idb {
 }
 
 /** This is your entry point to the API. It's exposed to the global scope unless you're using a module system such as browserify, in which case it's the exported object. */
-declare var idb: Idb.IDBStatic;
+declare var idb: idb.IDBStatic;

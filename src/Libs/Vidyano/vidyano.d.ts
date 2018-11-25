@@ -18,7 +18,8 @@ declare namespace Vidyano.Service {
         environmentVersion: string;
     };
     type Response = {
-        authToken: string;
+        authToken?: string;
+        exception?: string;
     };
     type GetApplicationRequest = {
         password?: string;
@@ -1404,6 +1405,7 @@ declare namespace Vidyano {
     namespace Actions {
         class Save extends Action {
             constructor(service: Service, definition: ActionDefinition, owner: ServiceObjectWithActions);
+            _onParentIsDirtyChanged(isDirty: boolean): void;
             protected _onExecute({ menuOption, parameters, selectedItems, skipOpen, noConfirmation, throwExceptions }: IActionExecuteOptions): Promise<PersistentObject>;
         }
     }

@@ -26,7 +26,7 @@
                     };
 
                     try {
-                        await reg.update();
+                        await reg.unregister();
                     }
                     catch { /* Throws service-worker.js not found exception while offline. */}
 

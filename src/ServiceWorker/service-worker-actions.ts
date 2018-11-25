@@ -66,6 +66,14 @@
                 po.breadcrumb = po.breadcrumb.replace(m[0], attribute.value);
             } while (true);
 
+            if (po.queries) {
+                const autoQueries = po.queries.filter(q => q.autoQuery);
+                for (let i = 0; i < autoQueries.length; i++) {
+                    const query = po.queries[i];
+                    query.result.items = (await this.onExecuteQuery(query, po)).items;
+                }
+            }
+
             return Wrappers.PersistentObjectWrapper._wrap(po);
         }
 
@@ -86,7 +94,7 @@
             const result = storedQuery.result;
             result.sortOptions = query.sortOptions;
             result.items = await this.context.getQueryResults(query, parent);
-            
+
             if (query.textSearch)
                 result.items = this.onTextSearch(query.textSearch, result);
 
@@ -152,7 +160,7 @@
         }
 
         onSortQueryResult(result: QueryResult): QueryResultItem[] {
-            const sortOptions: [QueryColumn, number][] = result.sortOptions.split(";").map(option => option.trim()).map(option => {
+            const sortOptions: [QueryColumn, number][] = (result.sortOptions || "").split(";").map(option => option.trim()).map(option => {
                 const optionParts = option.split(" ");
                 const column = result.getColumn(optionParts[0]);
                 if (!column)

@@ -780,7 +780,7 @@ namespace Vidyano {
                 if (result.exception)
                     throw result.exception;
 
-                const queryResult = <IServiceQueryResult>result.result;
+                const queryResult = <Service.QueryResult>result.result;
                 if (queryResult.continuation) {
                     const wanted = <number>data.query.top || queryResult.pageSize;
 
@@ -792,7 +792,7 @@ namespace Vidyano {
                         if (innerResult.exception)
                             throw innerResult.exception;
 
-                        const innerQueryResult = <IServiceQueryResult>innerResult.result;
+                        const innerQueryResult = <Service.QueryResult>innerResult.result;
                         queryResult.items.push(...innerQueryResult.items);
                         queryResult.continuation = innerQueryResult.continuation;
                     }

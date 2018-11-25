@@ -1,5 +1,5 @@
 namespace Vidyano {
-    export type Store = "Requests" | "Queries" | "QueryResults" | "ActionClassesById" | "Changes";
+    export type Store = "Requests" | "Queries" | "QueryResults" | "ActionClassesById" | "Changes" | "Settings";
     export type RequestMapKey = "GetQuery" | "GetPersistentObject"
 
     export type StoreGetClientDataRequest = {
@@ -37,12 +37,18 @@ namespace Vidyano {
         data?: any;
     };
 
+    export type StoreSetting = {
+        key: string;
+        value: string;
+    };
+
     export type StoreNameMap = {
         "Requests": StoreGetClientDataRequest | StoreGetApplicationRequest;
         "Queries": StoreQuery;
         "QueryResults": StoreQueryResultItem;
         "ActionClassesById": StoreActionClassById;
         "Changes": StoreChange;
+        "Settings": StoreSetting;
     };
 
     export type RequestsStoreNameMap = {
@@ -50,7 +56,18 @@ namespace Vidyano {
         "GetApplication": StoreGetApplicationRequest;
     };
 
-    interface IndexedDBTransaction {
+    export interface IIndexedDBContext {
+        setting(key: string, value?: string): Promise<string>;
+        delete(query: ReadOnlyQuery, items: QueryResultItem[]): Promise<number>;
+        getQuery(id: string): Promise<Query>;
+        getQueryResults(query: ReadOnlyQuery, parent: ReadOnlyPersistentObject): Promise<QueryResultItem[]>;
+        getPersistentObject(id: string, objectId?: string): Promise<PersistentObject>;
+        getNewPersistentObject(query: ReadOnlyQuery): Promise<PersistentObject>;
+        savePersistentObject(persistentObject: PersistentObject): Promise<PersistentObject>;
+        saveChanges(): Promise<void>;
+    }
+
+    interface IndexedDBTransaction extends IIndexedDBContext {
         clear<K extends keyof StoreNameMap>(storeName: K): Promise<void>;
         exists<K extends keyof StoreNameMap>(storeName: K, key: string | string[]): Promise<boolean>;
         save<K extends keyof StoreNameMap, I extends keyof RequestsStoreNameMap>(store: "Requests", entry: RequestsStoreNameMap[I]): Promise<void>;
@@ -65,19 +82,9 @@ namespace Vidyano {
         deleteAll<K extends keyof StoreNameMap>(storeName: K, index: string, indexKey: IDBValidKey, condition: (item: StoreNameMap[K]) => boolean): Promise<number>;
     }
 
-    export interface IIndexedDBContext {
-        delete(query: ReadOnlyQuery, items: QueryResultItem[]);
-        getQuery(id: string): Promise<Query>;
-        getQueryResults(query: ReadOnlyQuery, parent: ReadOnlyPersistentObject): Promise<QueryResultItem[]>;
-        getPersistentObject(id: string, objectId?: string): Promise<PersistentObject>;
-        getNewPersistentObject(query: ReadOnlyQuery): Promise<PersistentObject>;
-        savePersistentObject(persistentObject: PersistentObject): Promise<PersistentObject>;
-        saveChanges(): Promise<void>;
-    }
-
     export class IndexedDB {
         private _initializing: Promise<void>;
-        private _db: Idb.DB;
+        private _db: idb.DB;
 
         constructor() {
             this._initializing = new Promise<void>(async resolve => {
@@ -95,13 +102,15 @@ namespace Vidyano {
                     upgrade.createObjectStore("ActionClassesById", { keyPath: "id" });
 
                     upgrade.createObjectStore("Changes", { keyPath: "id", autoIncrement: true });
+
+                    upgrade.createObjectStore("Settings", { keyPath: "key" });
                 });
 
                 resolve();
             });
         }
 
-        get db(): Idb.DB {
+        get db(): idb.DB {
             return this._db;
         }
 
@@ -116,16 +125,17 @@ namespace Vidyano {
         async saveOffline(offline: Service.PersistentObject) {
             const context = <IndexedDBContext>await this.createContext();
 
-            context.clear("Queries");
-            context.clear("QueryResults");
-            context.clear("ActionClassesById");
-            context.clear("Changes");
+            await context.clear("Queries");
+            await context.clear("QueryResults");
+            await context.clear("ActionClassesById");
+            await context.clear("Changes");
 
             await this._saveOfflineQueries(context, offline.queries);
 
             for (let i = 0; i < offline.queries.length; i++)
                 this._saveOfflineQueries(context, offline.queries[0].persistentObject.queries);
 
+            await context.setting("offline-lastreceived", DataType.toServiceString(new Date(), "DateTime"));
             await context.saveChanges();
         }
 
@@ -177,16 +187,33 @@ namespace Vidyano {
     }
 
     class IndexedDBContext implements IIndexedDBContext, IndexedDBTransaction {
-        private readonly _transaction: Idb.Transaction;
+        private readonly _transaction: idb.Transaction;
 
         constructor(private _db: IndexedDB) {
-            this._transaction = _db.db.transaction(["Requests", "Queries", "QueryResults", "ActionClassesById", "Changes"], "readwrite");
+            this._transaction = _db.db.transaction(["Requests", "Queries", "QueryResults", "ActionClassesById", "Changes", "Settings"], "readwrite");
             this._transaction.complete.catch(e => {
                 if (!e) // Abort also requires the transaction complete catch
                     return;
 
                 console.error(e);
             });
+        }
+
+        async setting(key: string, value?: string): Promise<string> {
+            if (value) {
+                await this.save("Settings", {
+                    key: key,
+                    value: value
+                });
+            }
+            else
+                await this.deleteAll("Settings", setting => {
+                    if (!setting)
+                        debugger;
+                    return setting.key === key;
+                });
+
+            return value;
         }
 
         async clear<K extends keyof StoreNameMap>(storeName: K): Promise<void> {
@@ -248,7 +275,7 @@ namespace Vidyano {
         async deleteAll<K extends keyof StoreNameMap>(storeName: K, index: string, indexKey: IDBValidKey, condition: (item: StoreNameMap[K]) => boolean): Promise<number>;
         async deleteAll<K extends keyof StoreNameMap>(storeName: K, indexOrCondition: string | ((item: StoreNameMap[K]) => boolean), indexKey?: IDBValidKey, condition?: (item: StoreNameMap[K]) => boolean): Promise<number> {
             const store = this._transaction.objectStore(storeName);
-            let cursor: Idb.Cursor<any, any>;
+            let cursor: idb.Cursor<any, any>;
 
             if (!indexKey) {
                 condition = <(item: StoreNameMap[K]) => boolean>indexOrCondition;
@@ -258,7 +285,7 @@ namespace Vidyano {
                 cursor = await store.index(<string>indexOrCondition).openCursor(indexKey);
 
             let nDeleted = 0;
-            while (cursor) {
+            while (cursor && cursor.value) {
                 if (condition(cursor.value)) {
                     await cursor.delete();
                     nDeleted++;
@@ -297,7 +324,7 @@ namespace Vidyano {
                 items = [];
                 let detailItemsCursor = await this._transaction.objectStore("QueryResults").index("ByPersistentObjectId").openCursor(detailSourceQuery.persistentObject.id);
                 let i = 0;
-                while (detailItemsCursor) {
+                while (detailItemsCursor && detailItemsCursor.value) {
                     const detailItem = <Service.QueryResultItem>detailItemsCursor.value;
                     const keyValue = detailItem.values.find(v => v.key === keyColumn.name);
                     if (keyValue && keyValue.objectId === parent.objectId)
@@ -314,7 +341,7 @@ namespace Vidyano {
             });
         }
 
-        async delete(query: Query, items: QueryResultItem[]) {
+        async delete(query: Query, items: QueryResultItem[]): Promise<number> {
             const resultQueries = <StoreQuery[]>await this._transaction.objectStore("Queries").index("WithResults").getAll("true");
             const relations = resultQueries.map(q => {
                 let relatedAttributes = <Service.PersistentObjectAttributeWithReference[]>q.persistentObject.attributes.filter(a => a.type === "Reference");
@@ -331,7 +358,7 @@ namespace Vidyano {
                 const relation = relations[i];
 
                 let cursor = await this._transaction.objectStore("QueryResults").index("ByPersistentObjectId").openCursor(relation.query.persistentObject.id);
-                while (cursor) {
+                while (cursor && cursor.value) {
                     const sourceItem = <StoreQueryResultItem>cursor.value;
                     const wrappedSourceItem = <QueryResultItem>Wrappers.QueryResultItemWrapper._wrap(sourceItem);
 

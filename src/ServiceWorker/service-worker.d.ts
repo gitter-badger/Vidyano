@@ -1,3 +1,73 @@
+declare namespace Vidyano {
+    class CultureInfo {
+        name: string;
+        numberFormat: ICultureInfoNumberFormat;
+        dateFormat: ICultureInfoDateFormat;
+        static currentCulture: CultureInfo;
+        static invariantCulture: CultureInfo;
+        static cultures: {
+            [key: string]: CultureInfo;
+        };
+        constructor(name: string, numberFormat: ICultureInfoNumberFormat, dateFormat: ICultureInfoDateFormat);
+    }
+    interface ICultureInfoNumberFormat {
+        naNSymbol: string;
+        negativeSign: string;
+        positiveSign: string;
+        negativeInfinityText: string;
+        positiveInfinityText: string;
+        percentSymbol: string;
+        percentGroupSizes: Array<number>;
+        percentDecimalDigits: number;
+        percentDecimalSeparator: string;
+        percentGroupSeparator: string;
+        percentPositivePattern: string;
+        percentNegativePattern: string;
+        currencySymbol: string;
+        currencyGroupSizes: Array<number>;
+        currencyDecimalDigits: number;
+        currencyDecimalSeparator: string;
+        currencyGroupSeparator: string;
+        currencyNegativePattern: string;
+        currencyPositivePattern: string;
+        numberGroupSizes: Array<number>;
+        numberDecimalDigits: number;
+        numberDecimalSeparator: string;
+        numberGroupSeparator: string;
+    }
+    interface ICultureInfoDateFormat {
+        amDesignator: string;
+        pmDesignator: string;
+        dateSeparator: string;
+        timeSeparator: string;
+        gmtDateTimePattern: string;
+        universalDateTimePattern: string;
+        sortableDateTimePattern: string;
+        dateTimePattern: string;
+        longDatePattern: string;
+        shortDatePattern: string;
+        longTimePattern: string;
+        shortTimePattern: string;
+        yearMonthPattern: string;
+        firstDayOfWeek: number;
+        dayNames: Array<string>;
+        shortDayNames: Array<string>;
+        minimizedDayNames: Array<string>;
+        monthNames: Array<string>;
+        shortMonthNames: Array<string>;
+    }
+}
+declare namespace Vidyano {
+    abstract class DataType {
+        static isDateTimeType(type: string): boolean;
+        static isNumericType(type: string): boolean;
+        static isBooleanType(type: string): boolean;
+        private static _getDate;
+        private static _getServiceTimeString;
+        static fromServiceString(value: string, type: string): any;
+        static toServiceString(value: any, type: string): string;
+    }
+}
 declare namespace Vidyano.Service {
     type KeyValue<T> = {
         [key: string]: T;
@@ -281,37 +351,7 @@ declare namespace Vidyano.Service {
     };
 }
 declare namespace Vidyano {
-    let version: string;
-    type Fetcher<TPayload, TResult> = (payload?: TPayload) => Promise<TResult>;
-    class ServiceWorker {
-        private serviceUri?;
-        private _verbose?;
-        private _db;
-        private _cacheName;
-        private _clientData;
-        private _application;
-        constructor(serviceUri?: string, _verbose?: boolean);
-        readonly db: IndexedDB;
-        readonly clientData: Service.ClientData;
-        readonly application: Application;
-        private authToken;
-        private _log;
-        private _onInstall;
-        private _onActivate;
-        private _onFetch;
-        private _createFetcher;
-        private send;
-        private _getOffline;
-        protected onGetClientData(): Promise<Service.ClientData>;
-        protected onCacheClientData(clientData: Service.ClientData): Promise<void>;
-        protected onCacheApplication(application: Service.ApplicationResponse): Promise<void>;
-        protected onGetApplication(): Promise<Service.ApplicationResponse>;
-        protected createRequest(data: any, request: Request): Request;
-        protected createResponse(data: any, response?: Response): Response;
-    }
-}
-declare namespace Vidyano {
-    type Store = "Requests" | "Queries" | "QueryResults" | "ActionClassesById" | "Changes";
+    type Store = "Requests" | "Queries" | "QueryResults" | "ActionClassesById" | "Changes" | "Settings";
     type RequestMapKey = "GetQuery" | "GetPersistentObject";
     type StoreGetClientDataRequest = {
         id: "GetClientData";
@@ -341,18 +381,33 @@ declare namespace Vidyano {
         objectId?: string;
         data?: any;
     };
+    type StoreSetting = {
+        key: string;
+        value: string;
+    };
     type StoreNameMap = {
         "Requests": StoreGetClientDataRequest | StoreGetApplicationRequest;
         "Queries": StoreQuery;
         "QueryResults": StoreQueryResultItem;
         "ActionClassesById": StoreActionClassById;
         "Changes": StoreChange;
+        "Settings": StoreSetting;
     };
     type RequestsStoreNameMap = {
         "GetClientData": StoreGetClientDataRequest;
         "GetApplication": StoreGetApplicationRequest;
     };
-    interface IndexedDBTransaction {
+    interface IIndexedDBContext {
+        setting(key: string, value?: string): Promise<string>;
+        delete(query: ReadOnlyQuery, items: QueryResultItem[]): Promise<number>;
+        getQuery(id: string): Promise<Query>;
+        getQueryResults(query: ReadOnlyQuery, parent: ReadOnlyPersistentObject): Promise<QueryResultItem[]>;
+        getPersistentObject(id: string, objectId?: string): Promise<PersistentObject>;
+        getNewPersistentObject(query: ReadOnlyQuery): Promise<PersistentObject>;
+        savePersistentObject(persistentObject: PersistentObject): Promise<PersistentObject>;
+        saveChanges(): Promise<void>;
+    }
+    interface IndexedDBTransaction extends IIndexedDBContext {
         clear<K extends keyof StoreNameMap>(storeName: K): Promise<void>;
         exists<K extends keyof StoreNameMap>(storeName: K, key: string | string[]): Promise<boolean>;
         save<K extends keyof StoreNameMap, I extends keyof RequestsStoreNameMap>(store: "Requests", entry: RequestsStoreNameMap[I]): Promise<void>;
@@ -366,26 +421,47 @@ declare namespace Vidyano {
         deleteAll<K extends keyof StoreNameMap>(storeName: K, condition: (item: StoreNameMap[K]) => boolean): Promise<number>;
         deleteAll<K extends keyof StoreNameMap>(storeName: K, index: string, indexKey: IDBValidKey, condition: (item: StoreNameMap[K]) => boolean): Promise<number>;
     }
-    interface IIndexedDBContext {
-        delete(query: ReadOnlyQuery, items: QueryResultItem[]): any;
-        getQuery(id: string): Promise<Query>;
-        getQueryResults(query: ReadOnlyQuery, parent: ReadOnlyPersistentObject): Promise<QueryResultItem[]>;
-        getPersistentObject(id: string, objectId?: string): Promise<PersistentObject>;
-        getNewPersistentObject(query: ReadOnlyQuery): Promise<PersistentObject>;
-        savePersistentObject(persistentObject: PersistentObject): Promise<PersistentObject>;
-        saveChanges(): Promise<void>;
-    }
     class IndexedDB {
         private _initializing;
         private _db;
         constructor();
-        readonly db: Idb.DB;
+        readonly db: idb.DB;
         createContext(): Promise<IndexedDBTransaction>;
         createContext(): Promise<IIndexedDBContext>;
         saveOffline(offline: Service.PersistentObject): Promise<void>;
         private _saveOfflineQueries;
         getActionClass(name: string): Promise<StoreActionClassById>;
         getRequest<K extends keyof RequestsStoreNameMap>(id: K): Promise<RequestsStoreNameMap[K]>;
+    }
+}
+declare namespace Vidyano {
+    let version: string;
+    type Fetcher<TPayload, TResult> = (payload?: TPayload) => Promise<TResult>;
+    class ServiceWorker {
+        private serviceUri?;
+        private _verbose?;
+        private _db;
+        private _cacheName;
+        private _clientData;
+        private _application;
+        constructor(serviceUri?: string, _verbose?: boolean);
+        readonly db: IndexedDB;
+        readonly clientData: Service.ClientData;
+        readonly application: Application;
+        private authToken;
+        private _log;
+        private _onInstall;
+        private _onActivate;
+        private _onFetch;
+        private _createFetcher;
+        private _send;
+        private _getOffline;
+        protected onGetClientData(): Promise<Service.ClientData>;
+        protected onCacheClientData(clientData: Service.ClientData): Promise<void>;
+        protected onCacheApplication(application: Service.ApplicationResponse): Promise<void>;
+        protected onGetApplication(): Promise<Service.ApplicationResponse>;
+        protected createRequest(data: any, request: Request): Request;
+        protected createResponse(data: any, response?: Response): Response;
     }
 }
 declare namespace Vidyano {
@@ -416,76 +492,6 @@ declare namespace Vidyano {
     const vidyanoFiles: string[];
 }
 declare namespace Vidyano {
-    class CultureInfo {
-        name: string;
-        numberFormat: ICultureInfoNumberFormat;
-        dateFormat: ICultureInfoDateFormat;
-        static currentCulture: CultureInfo;
-        static invariantCulture: CultureInfo;
-        static cultures: {
-            [key: string]: CultureInfo;
-        };
-        constructor(name: string, numberFormat: ICultureInfoNumberFormat, dateFormat: ICultureInfoDateFormat);
-    }
-    interface ICultureInfoNumberFormat {
-        naNSymbol: string;
-        negativeSign: string;
-        positiveSign: string;
-        negativeInfinityText: string;
-        positiveInfinityText: string;
-        percentSymbol: string;
-        percentGroupSizes: Array<number>;
-        percentDecimalDigits: number;
-        percentDecimalSeparator: string;
-        percentGroupSeparator: string;
-        percentPositivePattern: string;
-        percentNegativePattern: string;
-        currencySymbol: string;
-        currencyGroupSizes: Array<number>;
-        currencyDecimalDigits: number;
-        currencyDecimalSeparator: string;
-        currencyGroupSeparator: string;
-        currencyNegativePattern: string;
-        currencyPositivePattern: string;
-        numberGroupSizes: Array<number>;
-        numberDecimalDigits: number;
-        numberDecimalSeparator: string;
-        numberGroupSeparator: string;
-    }
-    interface ICultureInfoDateFormat {
-        amDesignator: string;
-        pmDesignator: string;
-        dateSeparator: string;
-        timeSeparator: string;
-        gmtDateTimePattern: string;
-        universalDateTimePattern: string;
-        sortableDateTimePattern: string;
-        dateTimePattern: string;
-        longDatePattern: string;
-        shortDatePattern: string;
-        longTimePattern: string;
-        shortTimePattern: string;
-        yearMonthPattern: string;
-        firstDayOfWeek: number;
-        dayNames: Array<string>;
-        shortDayNames: Array<string>;
-        minimizedDayNames: Array<string>;
-        monthNames: Array<string>;
-        shortMonthNames: Array<string>;
-    }
-}
-declare namespace Vidyano {
-    abstract class DataType {
-        static isDateTimeType(type: string): boolean;
-        static isNumericType(type: string): boolean;
-        static isBooleanType(type: string): boolean;
-        private static _getDate;
-        private static _getServiceTimeString;
-        static fromServiceString(value: string, type: string): any;
-        static toServiceString(value: any, type: string): string;
-    }
-}
-declare namespace Vidyano {
     class Application {
         private _serviceWorker;
         private _application;
@@ -510,10 +516,10 @@ declare namespace Vidyano {
     }
 }
 declare namespace Vidyano {
-    const PersistentObjectAttributeWritableProperties: ("label" | "group" | "isValueChanged" | "offset" | "tab" | "visibility")[];
+    const PersistentObjectAttributeWritableProperties: ("label" | "offset" | "group" | "isValueChanged" | "tab" | "visibility")[];
     type PersistentObjectAttribute = Wrappers.Wrap<Service.PersistentObjectAttribute, typeof PersistentObjectAttributeWritableProperties[number], Wrappers.PersistentObjectAttributeWrapper>;
     type ReadOnlyPersistentObjectAttribute = Readonly<PersistentObjectAttribute>;
-    const PersistentObjectAttributeWithReferenceWritableProperties: ("label" | "group" | "isValueChanged" | "offset" | "tab" | "visibility")[];
+    const PersistentObjectAttributeWithReferenceWritableProperties: ("label" | "offset" | "group" | "isValueChanged" | "tab" | "visibility")[];
     type PersistentObjectAttributeWithReference = Wrappers.Wrap<Service.PersistentObjectAttributeWithReference, typeof PersistentObjectAttributeWithReferenceWritableProperties[number], Wrappers.PersistentObjectAttributeWithReferenceWrapper>;
     type ReadOnlyPersistentObjectAttributeWithReference = Readonly<PersistentObjectAttributeWithReference>;
     namespace Wrappers {
@@ -558,7 +564,7 @@ declare namespace Vidyano {
     }
 }
 declare namespace Vidyano {
-    const QueryColumnWritableProperties: ("label" | "offset" | "canSort")[];
+    const QueryColumnWritableProperties: ("label" | "canSort" | "offset")[];
     type QueryColumn = Wrappers.Wrap<Service.QueryColumn, typeof QueryColumnWritableProperties[number], Wrappers.QueryColumnWrapper>;
     type ReadOnlyQueryColumn = Readonly<QueryColumn>;
     namespace Wrappers {

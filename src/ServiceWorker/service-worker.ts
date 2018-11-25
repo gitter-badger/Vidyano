@@ -27,7 +27,7 @@ namespace Vidyano {
         }
 
         get db(): IndexedDB {
-            return this._db;
+            return this._db || (this._db = new IndexedDB());
         }
 
         get clientData(): Service.ClientData {
@@ -85,20 +85,22 @@ namespace Vidyano {
                 `${WEB2_BASE}Libs/Vidyano/vidyano.common.js`,
                 `${WEB2_BASE}Libs/idb/idb.js`);
 
-            await (self as ServiceWorkerGlobalScope).skipWaiting();
+            //await (self as ServiceWorkerGlobalScope).skipWaiting();
 
             this._log("Installed ServiceWorker.");
         }
 
         private async _onActivate(e: ExtendableEvent) {
-            await (self as ServiceWorkerGlobalScope).clients.claim();
-
-            this._db = new IndexedDB();
+            try {
+                await (self as ServiceWorkerGlobalScope).clients.claim();
+            } catch (ee) {
+                debugger;
+                throw ee;
+            }
 
             const oldCaches = (await caches.keys()).filter(cache => cache.startsWith("vidyano.web2.") && cache !== CACHE_NAME);
             while (oldCaches.length > 0) {
                 const cacheName = oldCaches.splice(0, 1)[0];
-
                 console.log("Uninstalling Vidyano Web2 version " + cacheName.substr(13));
                 const success = await caches.delete(cacheName);
                 if (!success)
@@ -117,8 +119,10 @@ namespace Vidyano {
                     let response = await fetcher.fetch();
                     if (!response)
                         response = await this.onGetClientData();
-                    else
+                    else {
                         await this.onCacheClientData(response);
+
+                    }
 
                     return this.createResponse(response);
                 }
@@ -168,7 +172,14 @@ namespace Vidyano {
                                     response.result = Wrappers.PersistentObjectWrapper._unwrap(await actionsClass.onGetPersistentObject(<ReadOnlyPersistentObject>parent, fetcher.payload.persistentObjectTypeId, fetcher.payload.objectId, fetcher.payload.isNew));
                                 }
                                 catch (e) {
-                                    response.exception = e;
+                                    if (typeof e === "string")
+                                        response.exception = e;
+                                    else if (typeof e === "object" && e["message"])
+                                        response.exception = e["message"];
+                                    else {
+                                        console.error(e);
+                                        throw e;
+                                    }
                                 }
                             }
                             else if (response.authToken)
@@ -293,6 +304,7 @@ namespace Vidyano {
                     fetcher.response = await fetch(fetchRquest);
                 }
                 catch (ex) {
+                    await this._send("Offline");
                     return;
                 }
 
@@ -302,7 +314,7 @@ namespace Vidyano {
             return fetcher;
         }
 
-        private async send(message: string) {
+        private async _send(message: string) {
             const clients = await ((self as ServiceWorkerGlobalScope).clients).matchAll();
             await Promise.all(clients.map(client => {
                 const channel = new MessageChannel();
@@ -311,13 +323,18 @@ namespace Vidyano {
         }
 
         private async _getOffline(id: string, authToken: string, userName: string) {
+            const context = <IIndexedDBContext>await this.db.createContext();
+
             const payload: Service.GetPersistentObjectRequest = {
                 authToken: authToken,
                 userName: userName,
                 environment: "Web,ServiceWorker",
                 environmentVersion: "2",
                 clientVersion: "",
-                persistentObjectTypeId: id
+                persistentObjectTypeId: id,
+                objectId: JSON.stringify({
+                    lastreceived: await context.setting("offline-lastreceived")
+                })
             };
 
             const response = await fetch(new Request(`${this.serviceUri.trimEnd("/")}/GetPersistentObject`, {
@@ -337,9 +354,10 @@ namespace Vidyano {
             }
 
             const responseData = <Service.GetPersistentObjectResponse>await response.json();
-            await this.db.saveOffline(<Service.PersistentObject>responseData.result);
-
-            this.send("Application offline data loaded successfully.");
+            if (responseData.result) {
+                await this.db.saveOffline(<Service.PersistentObject>responseData.result);
+                this._send("Application offline data updated successfully.");
+            }
         }
 
         protected async onGetClientData(): Promise<Service.ClientData> {

@@ -50,7 +50,8 @@ namespace Vidyano {
 
             static fromQuery(query: Query | ReadOnlyQuery): QueryResult {
                 return QueryResultWrapper._wrap({
-                    columns: query.columns.map(c => QueryColumnWrapper._unwrap(c))
+                    columns: query.columns.map(c => QueryColumnWrapper._unwrap(c)),
+                    sortOptions: query.sortOptions || ""
                 });
             }
 
