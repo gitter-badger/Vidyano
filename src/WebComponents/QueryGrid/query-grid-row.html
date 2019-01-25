@@ -1,0 +1,17 @@
+﻿<dom-module id="vi-query-grid-row">
+    <template>
+        <link rel="stylesheet" href="query-grid-row.css" />
+        <div id="header">
+            Test
+        </div>
+        <div id="cells" class="layout horizontal">
+            <dom-repeat items="[[columns]]" as="column">
+                <template>
+                    <vi-query-grid-cell item="[[item]]" column="[[column]]"></vi-query-grid-cell>
+                </template>
+            </dom-repeat>
+        </div>
+    </template>
+</dom-module>
+
+<script src="query-grid-row.js"></script>
