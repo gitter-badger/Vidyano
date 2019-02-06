@@ -8,6 +8,7 @@
     --vi-query-grid--row-height: var(--theme-h2);
     --vi-query-grid--header-height: var(--theme-h2);
     border: var(--vi-query-grid--border, none);
+    @include noSelection();
 
     #headerHost {
         height: var(--vi-query-grid--header-height);

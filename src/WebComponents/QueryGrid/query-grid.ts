@@ -37,7 +37,8 @@ namespace Vidyano.WebComponents {
             "_syncHorizontalScrollOffset(horizontalScrollOffset)"
         ],
         listeners: {
-            "row-connected": "_rowConnected"
+            "row-connected": "_rowConnected",
+            "item-select": "_itemSelect"
         }
     })
     export class QueryGrid extends Vidyano.WebComponents.WebComponent {
@@ -45,10 +46,11 @@ namespace Vidyano.WebComponents {
         private _physicalRows: QueryGridRow[];
         private _syncingHeader: boolean;
         private _syncingData: boolean;
-        horizontalScrollOffset: number;
+        private _lastSelectedItemIndex: number;
         readonly items: QueryGridLazyQueryResultItem[];
         readonly loading: boolean; private _setLoading: (loading: boolean) => void;
         query: Vidyano.Query;
+        horizontalScrollOffset: number;
 
         connectedCallback() {
             super.connectedCallback();
@@ -223,6 +225,30 @@ namespace Vidyano.WebComponents {
 
             cancelAnimationFrame(this._measureAF);
             this._measureAF = requestAnimationFrame(measure);
+        }
+
+        private _itemSelect(e: CustomEvent) {
+            const detail: { item: Vidyano.QueryResultItem; shift: boolean; ctrl: boolean; } = e.detail;
+
+            const indexOfItem = this.query.items.indexOf(detail.item);
+            if (!detail.item.isSelected && this._lastSelectedItemIndex >= 0 && detail.shift) {
+                if (this.query.selectRange(Math.min(this._lastSelectedItemIndex, indexOfItem), Math.max(this._lastSelectedItemIndex, indexOfItem))) {
+                    this._lastSelectedItemIndex = indexOfItem;
+                    return;
+                }
+            }
+
+            if (!detail.ctrl) {
+                if (this.query.selectAll.isAvailable && this.query.selectAll)
+                    this.query.selectAll.allSelected = this.query.selectAll.inverse = false;
+
+                this.query.selectedItems = this.query.selectedItems.length > 1 || !detail.item.isSelected ? [detail.item] : [];
+            }
+            else
+                detail.item.isSelected = !detail.item.isSelected;
+
+            if (detail.item.isSelected)
+                this._lastSelectedItemIndex = indexOfItem;
         }
     }
 }

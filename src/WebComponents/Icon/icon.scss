@@ -45,7 +45,7 @@
     &[source="Selected"] {
         fill: var(--vi-icon-selected-unchecked-color, #bbb);
 
-        &[is-selected ] {
+        &[is-selected] {
             #backdrop {
                 opacity: 1 !important;
             }

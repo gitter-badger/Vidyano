@@ -28,6 +28,9 @@
         observers: [
             "_fireConnected(item, index, isConnected)"
         ],
+        forwardObservers: [
+            "item.isSelected"
+        ],
         listeners: {
             "tap": "_getPersistentObject"
         }
@@ -73,6 +76,18 @@
                 return;
 
             this.fire("open", this.lazyItem);
+        }
+
+        private _select(e: Polymer.TapEvent) {
+            this.fire("item-select", {
+                item: this.item,
+                shift: !!event && event instanceof MouseEvent ? event.shiftKey : false,
+                ctrl: this.app.configuration.getSetting("vi-query-grid.single-click", "true").toLowerCase() === "true" || (!!event && event instanceof MouseEvent ? event.ctrlKey : true)
+            }, { bubbles: true });
+        }
+
+        private _getIsSelectedIcon(isSelected: boolean): string {
+            return isSelected ? "Selected" : "Unselected";
         }
 
         private _computeCanRead(item: QueryResultItem, canRead: boolean): boolean {

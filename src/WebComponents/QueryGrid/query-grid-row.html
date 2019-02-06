@@ -1,8 +1,8 @@
 ﻿<dom-module id="vi-query-grid-row">
     <template>
         <link rel="stylesheet" href="query-grid-row.css" />
-        <div id="header">
-            Test
+        <div id="header" on-tap="_select">
+            <vi-icon source="Selected" is-selected$="[[item.isSelected]]"></vi-icon>
         </div>
         <div id="cells" class="layout horizontal">
             <dom-repeat items="[[columns]]" as="column">
