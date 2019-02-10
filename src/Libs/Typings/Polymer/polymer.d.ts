@@ -33,6 +33,11 @@
 
     interface TapEvent extends GestureEvent {
         model: any;
+        detail: {
+            sourceEvent: Event;
+            x: number;
+            y: number;
+        }
     }
 
     interface TrackEvent extends GestureEvent {

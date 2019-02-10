@@ -42,7 +42,6 @@
         readonly item: QueryResultItem; private _setItem: (item: QueryResultItem) => void;
         lazyItem: QueryGridLazyQueryResultItem;
         columns: QueryGridColumn[];
-        forceOffscreen: boolean;
 
         disconnectedCallback() {
             super.disconnectedCallback();
@@ -79,10 +78,11 @@
         }
 
         private _select(e: Polymer.TapEvent) {
+            const mouse = e.detail.sourceEvent instanceof MouseEvent ? e.detail.sourceEvent : null;
             this.fire("item-select", {
                 item: this.item,
-                shift: !!event && event instanceof MouseEvent ? event.shiftKey : false,
-                ctrl: this.app.configuration.getSetting("vi-query-grid.single-click", "true").toLowerCase() === "true" || (!!event && event instanceof MouseEvent ? event.ctrlKey : true)
+                shift: mouse ? mouse.shiftKey : false,
+                ctrl: this.app.configuration.getSetting("vi-query-grid.single-click", "true").toLowerCase() === "true" || (mouse ? mouse.ctrlKey : true)
             }, { bubbles: true });
         }
 

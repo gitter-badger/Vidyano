@@ -1,5 +1,9 @@
 namespace Vidyano.WebComponents {
-    export type QueryGridLazyQueryResultItem = { item: Vidyano.QueryResultItem; loader?: Promise<void>; };
+    export type QueryGridLazyQueryResultItem = {
+        item?: Vidyano.QueryResultItem;
+        group?: Vidyano.QueryResultItemGroup;
+        loader?: Promise<Vidyano.QueryResultItem>;
+    };
 
     @Vidyano.WebComponents.WebComponent.register({
         properties: {
@@ -13,7 +17,7 @@ namespace Vidyano.WebComponents {
             },
             items: {
                 type: Array,
-                computed: "_computeItems(query.items, isConnected)"
+                computed: "_computeItems(query.items, hasGrouping, isConnected)"
             },
             horizontalScrollOffset: {
                 type: Number
@@ -27,10 +31,16 @@ namespace Vidyano.WebComponents {
                 readOnly: true,
                 reflectToAttribute: true,
                 value: true
+            },
+            hasGrouping: {
+                type: Boolean,
+                reflectToAttribute: true,
+                computed: "_computeHasGrouping(query.groupingInfo)"
             }
         },
         forwardObservers: [
             "query.items",
+            "query.groupingInfo",
             "query.columns"
         ],
         observers: [
@@ -47,8 +57,8 @@ namespace Vidyano.WebComponents {
         private _syncingHeader: boolean;
         private _syncingData: boolean;
         private _lastSelectedItemIndex: number;
-        readonly items: QueryGridLazyQueryResultItem[];
         readonly loading: boolean; private _setLoading: (loading: boolean) => void;
+        readonly hasGrouping: boolean;
         query: Vidyano.Query;
         horizontalScrollOffset: number;
 
@@ -94,7 +104,7 @@ namespace Vidyano.WebComponents {
 
             const columnsSlot = <HTMLSlotElement>this.$.columns;
 
-            const gridColumns = <QueryGridColumn[]>  Array.from(this.querySelectorAll("vi-query-grid-column"));
+            const gridColumns = <QueryGridColumn[]>Array.from(this.querySelectorAll("vi-query-grid-column"));
             if (gridColumns.length) {
                 return gridColumns.map(g => {
                     g.column = columns.find(c => c.name === g.name);
@@ -110,33 +120,48 @@ namespace Vidyano.WebComponents {
             });
         }
 
-        private _computeItems(items: Vidyano.QueryResultItem[]): QueryGridLazyQueryResultItem[] {
-            this._setLoading(true);
+        private _computeHasGrouping(groupingInfo: Vidyano.IQueryGroupingInfo): boolean {
+            return groupingInfo != null && groupingInfo.groups != null;
+        }
 
+        private _computeItems(items: Vidyano.QueryResultItem[], hasGrouping: boolean): QueryGridLazyQueryResultItem[] {
+            // Make sure the list scrollTarget is set to the vi-scroller
             const list = <any>this.$.dataList;
             list.scrollTarget = (<Scroller>this.$.dataHost).scroller;
+
+            this._setLoading(true);
 
             const handler = {
                 lazyItems: [],
                 get: (target, prop) => {
-                    if (prop === "length")
-                        return !this.query.hasMore ? this.query.totalItems : this.query.totalItems + 1;
-                    else if (isNaN(prop))
-                        return target[prop];
-                    else {
-                        const index = parseInt(prop);
-                        const item = target[prop];
+                    if (prop === "length") {
+                        if (!this.query.hasSearched)
+                            return 0;
 
-                        const currentLazyItem = handler.lazyItems[index];
-                        if (currentLazyItem && currentLazyItem.item === item)
-                            return currentLazyItem;
+                        if (!this.query.hasMore)
+                            return this.query.totalItems + (hasGrouping ? this.query.groupingInfo.groups.length : 0);
+                        else
+                            return this.query.totalItems + 1;
+                    }
+                    else if (!isNaN(prop)) {
+                        const lazyIndex = parseInt(prop);
+                        if (handler.lazyItems[lazyIndex])
+                            return handler.lazyItems[lazyIndex];
 
+                        let index = lazyIndex;
+                        // if (hasGrouping) {
+                        // }
+
+                        const item = target[index];
                         const lazyItem: QueryGridLazyQueryResultItem = {
-                            item: item,
+                            item: item
                         };
 
                         if (!lazyItem.item) {
-                            lazyItem.loader = this.query.queueWork(async () => {
+                            let resolve: (item: Vidyano.QueryResultItem) => void;
+                            lazyItem.loader = new Promise<Vidyano.QueryResultItem>(r => resolve = r);
+
+                            this.query.queueWork(async () => {
                                 if (this.query.items[index]) {
                                     // The item was fetched in the meantime
                                     lazyItem.item = this.query.items[index];
@@ -145,28 +170,34 @@ namespace Vidyano.WebComponents {
                                 else if (this._physicalRows.some(r => r.lazyItem === lazyItem) || this.query.hasMore) {
                                     // A row is still bound to this item so query it
                                     const hasMoreItemCount = this.query.hasMore ? target.length : -1;
-                                    await this.query.getItems(index, this.query.pageSize, true).then(() => {
-                                        lazyItem.item = this.query.items[index];
-                                        lazyItem.loader = null;
+                                    await this.query.getItems(index, this.query.pageSize, true);
 
-                                        if (hasMoreItemCount > 0) {
-                                            (<Polymer.Element>this.$.dataList).notifySplices("items", [{
-                                                index: hasMoreItemCount,
-                                                removed: [],
-                                                addedCount: this.query.items.length - hasMoreItemCount,
-                                                items: this.query.items,
-                                                type: "splice"
-                                            }]);
-                                        }
-                                    });
+                                    lazyItem.item = this.query.items[index];
+                                    lazyItem.loader = null;
+
+                                    if (hasMoreItemCount > 0) {
+                                        (<Polymer.Element>this.$.dataList).notifySplices("items", [{
+                                            index: hasMoreItemCount,
+                                            removed: [],
+                                            addedCount: this.query.items.length - hasMoreItemCount,
+                                            items: this.query.items,
+                                            type: "splice"
+                                        }]);
+                                    }
                                 }
-                                else
-                                    handler.lazyItems[index] = null;
+                                else {
+                                    // No physical row is waiting for the result
+                                    handler.lazyItems[lazyIndex] = null;
+                                }
+
+                                resolve(lazyItem.item);
                             });
                         }
 
-                        return (handler.lazyItems[index] = lazyItem);
+                        return (handler.lazyItems[lazyIndex] = lazyItem);
                     }
+                    else
+                        return target[prop];
                 }
             };
 

@@ -16,7 +16,7 @@
                 </dom-repeat>
             </header>
         </div>
-        <vi-scroller id="dataHost" class="flex" horizontal-scroll-offset="{{horizontalScrollOffset}}" outer-width="{{dataHostWidth}}">
+        <vi-scroller id="dataHost" class="flex" horizontal-scroll-offset="{{horizontalScrollOffset}}" outer-width="{{dataHostWidth}}" outer-height="{{dataHostOuterHeight}}">
             <iron-list id="dataList" class="content" items="[[items]]" as="lazyItem">
                 <template>
                     <vi-query-grid-row lazy-item="[[lazyItem]]" columns="[[columns]]" index="[[index]]"></vi-query-grid-row>
