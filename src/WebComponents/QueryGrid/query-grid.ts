@@ -83,11 +83,8 @@ namespace Vidyano.WebComponents {
                 const horizontalScrollOffset = this.horizontalScrollOffset;
                 this.$.headerHost.scrollLeft = horizontalScrollOffset;
 
-                if (this._physicalRows && this._physicalRows.length) {
-                    this._physicalRows.forEach(row => {
-                        row.$.header.style.transform = `translate3d(${horizontalScrollOffset}px, 0, 0)`;
-                    });
-                }
+                if (this._physicalRows && this._physicalRows.length)
+                    this._physicalRows.forEach(row => row.scrollHorizontal(horizontalScrollOffset));
             }
             this._syncingData = false;
         }
@@ -148,11 +145,28 @@ namespace Vidyano.WebComponents {
                         if (handler.lazyItems[lazyIndex])
                             return handler.lazyItems[lazyIndex];
 
-                        let index = lazyIndex;
-                        // if (hasGrouping) {
-                        // }
+                        let itemIndex = lazyIndex;
+                        if (hasGrouping) {
+                            let diff = 0;
+                            const groupIndex = this.query.groupingInfo.groups.findIndex(g => {
+                                diff += g.isCollapsed ? g.count + 1 : 1;
+                                if (g.end < itemIndex - diff)
+                                    return false;
 
-                        const item = target[index];
+                                return true;
+                            });
+
+                            const group = this.query.groupingInfo.groups[groupIndex];
+                            if (group.start + groupIndex === itemIndex) {
+                                return (handler.lazyItems[lazyIndex] = {
+                                    group: group
+                                });
+                            }
+                            else
+                                itemIndex -= diff;
+                        }
+
+                        const item = target[itemIndex];
                         const lazyItem: QueryGridLazyQueryResultItem = {
                             item: item
                         };
@@ -162,18 +176,9 @@ namespace Vidyano.WebComponents {
                             lazyItem.loader = new Promise<Vidyano.QueryResultItem>(r => resolve = r);
 
                             this.query.queueWork(async () => {
-                                if (this.query.items[index]) {
-                                    // The item was fetched in the meantime
-                                    lazyItem.item = this.query.items[index];
-                                    lazyItem.loader = null;
-                                }
-                                else if (this._physicalRows.some(r => r.lazyItem === lazyItem) || this.query.hasMore) {
-                                    // A row is still bound to this item so query it
+                                if (!this.query.items[itemIndex]) {
                                     const hasMoreItemCount = this.query.hasMore ? target.length : -1;
-                                    await this.query.getItems(index, this.query.pageSize, true);
-
-                                    lazyItem.item = this.query.items[index];
-                                    lazyItem.loader = null;
+                                    await this.query.getItems(itemIndex, this.query.pageSize, true);
 
                                     if (hasMoreItemCount > 0) {
                                         (<Polymer.Element>this.$.dataList).notifySplices("items", [{
@@ -185,10 +190,9 @@ namespace Vidyano.WebComponents {
                                         }]);
                                     }
                                 }
-                                else {
-                                    // No physical row is waiting for the result
-                                    handler.lazyItems[lazyIndex] = null;
-                                }
+
+                                lazyItem.item = this.query.items[itemIndex];
+                                lazyItem.loader = null;
 
                                 resolve(lazyItem.item);
                             });
@@ -222,35 +226,38 @@ namespace Vidyano.WebComponents {
                 if (!this.loading)
                     return;
 
-                const headersTemplate = <any>this.$.headers;
-                headersTemplate.render();
-
-                const headers: { [key: string]: number; } = {};
-                this.shadowRoot.querySelectorAll("vi-query-grid-header").forEach((header: QueryGridHeader) => headers[header.column.name] = header.offsetWidth);
-
-                this._measureAF = 0;
-
-                const parentBoundingRect = this.$.dataHost.getBoundingClientRect();
-                const rowRect = detail.row.getBoundingClientRect();
-
                 const rows = this._physicalRows.filter(row => !!row.item);
-                if (rows.length === rows.filter(r => !r.loading).length && (rowRect.bottom > parentBoundingRect.height || detail.index === this.query.items.length - 1)) {
-                    const style = {};
-                    let totalWidth = 0;
+                if (rows.length === rows.filter(r => !r.loading).length) {
+                    this._measureAF = 0;
 
-                    const cellWidths = [].concat.apply([], this._physicalRows.map(row => row.getCellWidths()));
-                    cellWidths.groupBy(cw => cw.column.name, cw => cw).forEach((cwg, index) => {
-                        const width = Math.max(cwg.value.max(cw => cw.width), headers[cwg.key]);
-                        totalWidth += width;
-                        style[`--vi-query-grid-attribute-${cwg.key.replace(".", "-")}-width`] = `${width}px`;
-                    });
+                    const parentBoundingRect = this.$.dataHost.getBoundingClientRect();
+                    const rowRect = detail.row.getBoundingClientRect();
 
-                    style["--vi-query-grid--row-width"] = `${totalWidth}px`;
-                    this.updateStyles(style);
+                    if (rowRect.bottom > parentBoundingRect.height || detail.index === this.query.items.length - 1) {
+                        const headersTemplate = <any>this.$.headers;
+                        headersTemplate.render();
 
-                    this._setLoading(false);
+                        const headers: { [key: string]: number; } = {};
+                        this.shadowRoot.querySelectorAll("vi-query-grid-header").forEach((header: QueryGridHeader) => headers[header.column.name] = header.offsetWidth);
+
+                        const style = {};
+                        let totalWidth = 0;
+
+                        const cellWidths = [].concat.apply([], this._physicalRows.map(row => row.getCellWidths()));
+                        cellWidths.groupBy(cw => cw.column.name, cw => cw).forEach(cwg => {
+                            const width = Math.max(cwg.value.max(cw => cw.width), headers[cwg.key]);
+                            totalWidth += width;
+                            style[`--vi-query-grid-attribute-${cwg.key.replace(".", "-")}-width`] = `${width}px`;
+                        });
+
+                        style["--vi-query-grid--row-width"] = `${totalWidth}px`;
+                        this.updateStyles(style);
+
+                        this._setLoading(false);
+                    }
                 }
-                else
+
+                if (this.loading)
                     this._measureAF = requestAnimationFrame(measure);
             };
 

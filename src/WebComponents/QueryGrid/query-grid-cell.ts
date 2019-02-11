@@ -1,6 +1,6 @@
 ﻿namespace Vidyano.WebComponents {
     let renderRAFId: number;
-    const renderWork: (() => void)[] = [];
+    const renderWork: (() => boolean)[] = [];
     const renderTemplates: { [type: string]: { new (model: any): TemplateInstanceBase & Polymer.TemplateInstance }; } = { };
 
     @Vidyano.WebComponents.WebComponent.register({
