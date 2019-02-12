@@ -227,19 +227,3 @@
 :host([scroll-bottom-shadow]) .scroll-shadow.bottom {
     transform: translateY(var(--theme-h2));
 }
-
-:host([hide-native-scrollbar]:not([allow-native])[vertical]) {
-    .wrapper {
-        margin-right: calc(var(--theme-scrollbar-width) * -1);
-    }
-}
-
-:host([hide-native-scrollbar]:not([allow-native])[horizontal]) {
-    .wrapper {
-        margin-bottom: calc(var(--theme-scrollbar-width) * -1);
-    }
-}
-
-:host([hide-native-scrollbar][allow-native]) .scrollbar-parent {
-    display: none !important;
-}
