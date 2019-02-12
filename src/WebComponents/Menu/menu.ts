@@ -231,7 +231,7 @@ namespace Vidyano.WebComponents {
         }
 
         private _instantSearchResultMouseEnter(e: MouseEvent) {
-            const anchor = <HTMLAnchorElement>this.todo_checkEventTarget(e.target);
+            const anchor = <HTMLAnchorElement>e.target;
             const div = anchor.querySelector("div");
             anchor.setAttribute("title", div.offsetWidth < div.scrollWidth ? e["model"].item.breadcrumb : "");
         }
