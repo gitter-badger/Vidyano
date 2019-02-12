@@ -1,6 +1,4 @@
 namespace Vidyano.WebComponents {
-    "use strict";
-
     interface IQueryPresenterRouteParameters {
         programUnitName: string;
         id: string;

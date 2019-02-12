@@ -26,15 +26,10 @@
     </template>
 </dom-module>
 
-<dom-module id="vi-scroller-style-module">
-    <template>
-        <link rel="stylesheet" href="scroller.css">
-    </template>
-</dom-module>
-
 <dom-module id="vi-scroller">
     <template>
-        <style include="vi-scroller-style-module"></style>
+        <style include="vi-flex-layout-style-module"></style>
+        <link rel="stylesheet" href="scroller.css">
         <vi-size-tracker class="fit" on-sizechanged="_outerSizeChanged"></vi-size-tracker>
         <div id="wrapper" class="wrapper" tabindex="-1">
             <div id="content" class="relative content">

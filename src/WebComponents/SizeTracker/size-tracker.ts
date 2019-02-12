@@ -10,8 +10,6 @@ declare class ResizeObserver implements IResizeObserver {
 }
 
 namespace Vidyano.WebComponents {
-    "use strict";
-
     export interface SizeTrackerEvent extends CustomEvent {
         detail: ISize;
     }

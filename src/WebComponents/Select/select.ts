@@ -1,6 +1,4 @@
 namespace Vidyano.WebComponents {
-    "use strict";
-
     export type SelectOption = KeyValuePair<any, string>;
 
     export interface ISelectItem {

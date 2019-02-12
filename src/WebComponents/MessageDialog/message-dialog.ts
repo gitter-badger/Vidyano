@@ -1,6 +1,4 @@
 ﻿namespace Vidyano.WebComponents {
-    "use strict";
-
     export interface IMessageDialogOptions {
         noClose?: boolean;
         title?: string;

@@ -1,6 +1,4 @@
 namespace Vidyano.WebComponents {
-    "use strict";
-
     export class QueryGridColumnFilterProxyBase extends Vidyano.WebComponents.WebComponent {
         private _label: string;
         private _labelTextNode: Text;

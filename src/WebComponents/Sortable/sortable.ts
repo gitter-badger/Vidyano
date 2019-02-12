@@ -1,6 +1,4 @@
 namespace Vidyano.WebComponents {
-    "use strict";
-
     const _groups: Sortable[] = [];
 
     export interface ISortableDragEndDetails {

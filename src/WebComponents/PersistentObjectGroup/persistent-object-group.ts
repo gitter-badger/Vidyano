@@ -1,6 +1,4 @@
 ﻿namespace Vidyano.WebComponents {
-    "use strict";
-
     interface IPersistentObjectGroupItem {
         attribute: Vidyano.PersistentObjectAttribute;
         config: Vidyano.WebComponents.PersistentObjectAttributeConfig;

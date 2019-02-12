@@ -4,6 +4,7 @@
 
 <dom-module id="vi-query">
     <template>
+        <style include="vi-flex-layout-style-module"></style>
         <link rel="stylesheet" href="query.css" />
         <vi-query-items-presenter class="flex" query="[[query]]"></vi-query-items-presenter>
         <dom-if if="[[!hideHeader]]">

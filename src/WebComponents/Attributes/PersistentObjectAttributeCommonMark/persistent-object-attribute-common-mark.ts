@@ -6,7 +6,6 @@ marked.defaults.breaks = true;
 /* tslint:enable:no-use-before-declare */
 
 namespace Vidyano.WebComponents.Attributes {
-    "use strict";
 
     @WebComponent.register()
     export class PersistentObjectAttributeCommonMark extends PersistentObjectAttribute {

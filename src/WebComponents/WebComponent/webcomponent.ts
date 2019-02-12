@@ -1,6 +1,4 @@
 namespace Vidyano.WebComponents {
-    "use strict";
-
     const verboseLogElements = [];
     const verboseLogFunctions = [];
     const verboseSkipLogFunctions = [];

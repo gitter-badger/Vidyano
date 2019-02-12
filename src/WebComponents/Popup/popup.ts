@@ -1,6 +1,4 @@
 namespace Vidyano.WebComponents {
-    "use strict";
-
     let _documentClosePopupListener: EventListener;
     document.addEventListener("mousedown", _documentClosePopupListener = e => {
         const path = e.composedPath().slice();

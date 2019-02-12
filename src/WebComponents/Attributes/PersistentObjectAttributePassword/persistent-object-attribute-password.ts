@@ -1,5 +1,4 @@
 namespace Vidyano.WebComponents.Attributes {
-    "use strict";
 
     @WebComponent.register()
     export class PersistentObjectAttributePassword extends WebComponents.Attributes.PersistentObjectAttribute {

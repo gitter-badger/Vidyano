@@ -7,7 +7,6 @@ interface Window {
 }
 
 namespace Vidyano {
-    "use strict";
 
     export function debug(debug: boolean = true) {
         document.cookie = `useweb2home=${debug};path=/`;
@@ -15,8 +14,6 @@ namespace Vidyano {
 }
 
 namespace Vidyano.WebComponents {
-    "use strict";
-
     const base = document.head.querySelector("base") as HTMLBaseElement;
     const parser = document.createElement("a");
     parser.href = base.href;

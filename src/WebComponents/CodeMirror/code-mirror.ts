@@ -2,8 +2,6 @@ type CM = CodeMirror.EditorFromTextArea;
 const CMFromTextArea = CodeMirror.fromTextArea;
 
 namespace Vidyano.WebComponents {
-    "use strict";
-
     @WebComponent.register({
         properties: {
             size: Object,

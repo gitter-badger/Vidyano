@@ -30,9 +30,16 @@
     </template>
 </dom-module>
 
+<dom-module id="vi-flex-layout-style-module">
+    <template>
+        <link rel="stylesheet" href="StyleModules/flex-layout.css">
+    </template>
+</dom-module>
+
 <dom-module id="vi-app">
     <template>
         <style include="vi-responsive-style-module"></style>
+        <style include="vi-flex-layout-style-module"></style>
         <link rel="stylesheet" href="app.css">
         <iron-a11y-keys keys="[[keys]]" on-keys-pressed="_keysPressed"></iron-a11y-keys>
         <iron-media-query query="(max-width: 479px)" query-matches="{{isPhone}}"></iron-media-query>

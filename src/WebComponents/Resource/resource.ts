@@ -1,6 +1,4 @@
 namespace Vidyano.WebComponents {
-    "use strict";
-
     const resources: Resource[] = [];
 
     export abstract class ResourceBase extends WebComponent {

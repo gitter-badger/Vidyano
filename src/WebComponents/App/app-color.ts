@@ -1,6 +1,4 @@
 ﻿namespace Vidyano.WebComponents {
-    "use strict";
-
     interface IRGB {
         r: number;
         g: number;

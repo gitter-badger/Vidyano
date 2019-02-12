@@ -1,6 +1,4 @@
 namespace Vidyano.WebComponents {
-    "use strict";
-
     @WebComponent.registerAbstract({
         properties: {
             noHeader: {

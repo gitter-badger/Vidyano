@@ -1,6 +1,4 @@
 namespace Vidyano.WebComponents {
-    "use strict";
-
     let _queryGridComponentLoader: Promise<any>;
     let _chartComponentLoader: Promise<any>;
 

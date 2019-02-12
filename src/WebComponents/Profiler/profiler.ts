@@ -1,6 +1,4 @@
 namespace Vidyano.WebComponents {
-    "use strict";
-
     export interface IProfilerServiceRequest extends Vidyano.IServiceRequest {
         hasNPlusOne: boolean;
         parameters: {

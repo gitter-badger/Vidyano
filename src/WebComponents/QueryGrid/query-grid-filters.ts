@@ -1,6 +1,4 @@
 ﻿namespace Vidyano.WebComponents {
-    "use strict";
-
     interface IQueryFilter {
         filter?: QueryFilter;
         groupName?: string;

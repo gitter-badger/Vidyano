@@ -1,6 +1,4 @@
 ﻿namespace Vidyano.WebComponents {
-    "use strict";
-
     interface ILogEntryGroup {
         today: boolean;
         date: Date;

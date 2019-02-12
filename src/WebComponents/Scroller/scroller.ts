@@ -1,6 +1,4 @@
 ﻿namespace Vidyano.WebComponents {
-    "use strict";
-
     @WebComponent.register()
     export class ScrollbarTest extends WebComponent {
         isScrollbarHidden: boolean;

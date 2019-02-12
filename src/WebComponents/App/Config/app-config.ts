@@ -1,6 +1,4 @@
 namespace Vidyano.WebComponents {
-    "use strict";
-
     @WebComponent.register()
     export class AppConfig extends WebComponent {
         private _nodeObserver: Polymer.FlattenedNodesObserver;

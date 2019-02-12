@@ -104,7 +104,7 @@
                     return;
             }
 
-            const cells = <QueryGridCell[]><any>this.shadowRoot.querySelectorAll("vi-query-grid-cell");
+            const cells = <QueryGridCell[]>Array.from(this.shadowRoot.querySelectorAll("vi-query-grid-cell"));
             if (cells.some(cell => cell.item === lazyItem.item))
                 this._setLoading(this._columnsToRender.length > 0);
             else

@@ -1,6 +1,4 @@
 namespace Vidyano.WebComponents {
-    "use strict";
-
     const _attributeImports: { [key: string]: Promise<any>; } = {
         "AsDetail": undefined,
         "BinaryFile": undefined,

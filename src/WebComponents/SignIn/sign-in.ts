@@ -1,6 +1,4 @@
 ﻿namespace Vidyano.WebComponents {
-    "use strict";
-
     declare type Step = "username" | "password" | "twofactor" | "register" | "initial";
 
     interface ISignInRouteParameters {
