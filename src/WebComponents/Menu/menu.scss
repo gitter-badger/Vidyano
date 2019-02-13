@@ -131,9 +131,6 @@ header {
         @apply --vi-menu--toggle-collapse;
 
         > vi-icon {
-            -moz-transition: transform 0.3s ease-in-out;
-            -o-transition: transform 0.3s ease-in-out;
-            -webkit-transition: transform 0.3s ease-in-out;
             transition: transform 0.3s ease-in-out;
 
             --vi-icon-width: var(--theme-h4);

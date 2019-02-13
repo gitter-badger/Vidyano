@@ -243,8 +243,10 @@ namespace Vidyano.WebComponents {
                         const style = {};
                         let totalWidth = 0;
 
-                        const cellWidths = [].concat.apply([], this._physicalRows.map(row => row.getCellWidths()));
-                        cellWidths.groupBy(cw => cw.column.name, cw => cw).forEach(cwg => {
+                        // TODO Use Array.flat after Edge moved to Chromium
+                        const flat = <T>(array: T[][]): T[] => [].concat.apply([], array);
+                        const cellWidths = flat(this._physicalRows.map(row => row.getCellWidths()));
+                        cellWidths.groupBy(cw => cw.column.name).forEach(cwg => {
                             const width = Math.max(cwg.value.max(cw => cw.width), headers[cwg.key]);
                             totalWidth += width;
                             style[`--vi-query-grid-attribute-${cwg.key.replace(".", "-")}-width`] = `${width}px`;
