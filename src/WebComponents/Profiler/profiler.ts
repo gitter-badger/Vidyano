@@ -441,7 +441,7 @@ namespace Vidyano.WebComponents {
         }
 
         private _close(e: Polymer.TapEvent) {
-            this.app.service.profile = false;
+            this.service.profile = false;
 
             e.stopPropagation();
         }

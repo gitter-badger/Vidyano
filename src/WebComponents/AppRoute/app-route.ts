@@ -97,12 +97,12 @@ namespace Vidyano.WebComponents {
                         this._distributeNewComponent();
                 }
                 else {
-                    const template = <HTMLTemplateElement>this.querySelector("template[is='dom-template']");
+                    const template = this.querySelector("template");
                     if (template) {
                         const templateClass = Polymer.Templatize.templatize(template);
                         const templateInstance = new templateClass({ app: this.app });
                         this.appendChild(templateInstance.root);
-                        Polymer.flush();
+                        this.shadowRoot.querySelector("slot").assignedElements().forEach(this._fireActivate.bind(this));
 
                         this._hasChildren = true;
                     }
@@ -121,7 +121,7 @@ namespace Vidyano.WebComponents {
             this._setActive(true);
             this._setPath(this.app.path);
 
-            (<AppServiceHooks>this.app.service.hooks).trackPageView(this.app.path);
+            (<AppServiceHooks>this.service.hooks).trackPageView(this.app.path);
         }
 
         private _constructorFromComponent(component: string): IAppRouteComponentConstructor {
@@ -156,7 +156,7 @@ namespace Vidyano.WebComponents {
             this._hasChildren = false;
         }
 
-        deactivate(nextRoute?: AppRoute): Promise<boolean> {
+        deactivate(nextRoute?: RouteInfo): Promise<boolean> {
             const component = <WebComponent>this.children[0];
 
             return new Promise<boolean>(resolve => {
@@ -165,7 +165,7 @@ namespace Vidyano.WebComponents {
                     resolve(true);
             }).then(result => {
                 if (result) {
-                    if (!this.preserveContent || nextRoute !== this)
+                    if (!this.preserveContent || (nextRoute && nextRoute.route !== this))
                         this._setActive(false);
 
                     document.title = this._documentTitleBackup;

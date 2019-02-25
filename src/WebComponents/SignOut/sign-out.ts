@@ -8,14 +8,14 @@ namespace Vidyano.WebComponents {
         private async _activate(e: CustomEvent) {
             e.preventDefault();
 
-            const signInUsingDefaultCredentials = !this.app.service.isUsingDefaultCredentials && !!this.app.service.defaultUserName;
-            await this.app.service.signOut();
+            const signInUsingDefaultCredentials = !this.service.isUsingDefaultCredentials && !!this.service.defaultUserName;
+            await this.service.signOut();
 
             let path: string;
             if (!signInUsingDefaultCredentials)
                 path = decodeURIComponent((<AppRoute>this.parentNode).parameters.returnUrl || "SignIn");
             else {
-                await this.app.service.signInUsingDefaultCredentials();
+                await this.service.signInUsingDefaultCredentials();
                 path = "";
             }
 

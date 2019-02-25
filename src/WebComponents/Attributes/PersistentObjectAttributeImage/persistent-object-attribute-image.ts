@@ -43,10 +43,12 @@ namespace Vidyano.WebComponents.Attributes {
         private _change(e: Event) {
             this.attribute.parent.queueWork(() => {
                 return new Promise((resolve, reject) => {
-                    const input = <HTMLInputElement>this.todo_checkEventTarget(e.target);
-                    if (input.files && input.files.length === 1) {
+                    if (!(e.target instanceof HTMLInputElement))
+                        return;
+
+                    if (e.target.files && e.target.files.length === 1) {
                         const fr = new FileReader();
-                        fr.readAsDataURL(input.files[0]);
+                        fr.readAsDataURL(e.target.files[0]);
                         fr.onload = () => {
                             resolve(this.value = (<string>fr.result).match(/,(.*)$/)[1]);
                         };

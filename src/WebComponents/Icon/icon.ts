@@ -6,6 +6,11 @@ namespace Vidyano.WebComponents {
                 observer: "_load",
                 value: null,
                 reflectToAttribute: true
+            },
+            unresolved: {
+                type: Boolean,
+                readOnly: true,
+                reflectToAttribute: true
             }
         },
         observers: [
@@ -15,6 +20,7 @@ namespace Vidyano.WebComponents {
     export class Icon extends ResourceBase {
         private _source: string;
         source: string;
+        readonly unresolved: boolean; private _setUnresolved: (unresolved: boolean) => void;
 
         private _load(source: string, isConnected: boolean) {
             if (isConnected) {
@@ -26,7 +32,9 @@ namespace Vidyano.WebComponents {
             }
 
             const resource = Resource.Load("icon", this._source = source);
-            if (resource) {
+            this._setUnresolved(!resource);
+
+            if (!this.unresolved) {
                 const fragment = document.createDocumentFragment();
                 const host = document.createElement("div");
                 fragment.appendChild(host);

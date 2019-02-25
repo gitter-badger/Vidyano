@@ -1,6 +1,6 @@
 ﻿namespace Vidyano.WebComponents {
     export class AppServiceHooks extends Vidyano.ServiceHooks {
-        constructor(public app: App) {
+        constructor(public app: AppBase) {
             super();
         }
 
@@ -56,7 +56,7 @@
             if (!this.app || !this.app.service || !this.app.service.application || !this.app.service.application.analyticsKey)
                 return;
 
-            path = Vidyano.WebComponents.App.removeRootPath(path);
+            path = Vidyano.WebComponents.AppBase.removeRootPath(path);
             if (!path || path.startsWith("FromAction"))
                 return;
 
@@ -136,7 +136,7 @@
             return result === 0;
         }
 
-        async onAppRouteChanging(newRoute: AppRoute, currentRoute: AppRoute): Promise<string> {
+        async onAppRouteChanging(newRoute: RouteInfo, currentRoute: RouteInfo): Promise<string> {
             return Promise.resolve(null);
         }
 
@@ -196,7 +196,7 @@
 
                     return;
                 }
-                else if (this.app.barebone)
+                else if (!(this.app instanceof App))
                     return;
 
                 let path: string;
@@ -238,7 +238,7 @@
             if (parent instanceof Vidyano.PersistentObject) {
                 const cacheEntry = <PersistentObjectFromActionAppCacheEntry>this.app.cachePing(new PersistentObjectFromActionAppCacheEntry(parent));
                 if (cacheEntry instanceof PersistentObjectFromActionAppCacheEntry && cacheEntry.fromActionIdReturnPath) {
-                    if (App.removeRootPath(this.app.getUrlForFromAction(cacheEntry.fromActionId)) === App.removeRootPath(this.app.path)) {
+                    if (AppBase.removeRootPath(this.app.getUrlForFromAction(cacheEntry.fromActionId)) === AppBase.removeRootPath(this.app.path)) {
                         if (this.app.noHistory)
                             this.app.changePath(cacheEntry.fromActionIdReturnPath, true);
                         else
@@ -254,11 +254,11 @@
                 return;
             }
 
-            this.app.changePath("SignIn" + (keepUrl && this.app.path ? "/" + encodeURIComponent(App.removeRootPath(this.app.path).replace(/SignIn\/?/, "")).replace(/\./g, "%2E") : ""), true);
+            this.app.changePath("SignIn" + (keepUrl && this.app.path ? "/" + encodeURIComponent(AppBase.removeRootPath(this.app.path).replace(/SignIn\/?/, "")).replace(/\./g, "%2E") : ""), true);
         }
 
         onRedirectToSignOut(keepUrl: boolean) {
-            this.app.changePath("SignOut" + (keepUrl && this.app.path ? "/" + encodeURIComponent(App.removeRootPath(decodeURIComponent(this.app.path)).replace(/SignIn\/?/, "")).replace(/\./g, "%2E") : ""), true);
+            this.app.changePath("SignOut" + (keepUrl && this.app.path ? "/" + encodeURIComponent(AppBase.removeRootPath(decodeURIComponent(this.app.path)).replace(/SignIn\/?/, "")).replace(/\./g, "%2E") : ""), true);
         }
 
         onMessageDialog(title: string, message: string, rich: boolean, ...actions: string[]): Promise<number> {
@@ -285,7 +285,7 @@
 
         async onInitial(initial: Vidyano.PersistentObject) {
             const initialPath = `SignIn/${initial.type}`;
-            const currentPathWithoutRoot = Vidyano.WebComponents.App.removeRootPath(this.app.path);
+            const currentPathWithoutRoot = Vidyano.WebComponents.AppBase.removeRootPath(this.app.path);
 
             if (!currentPathWithoutRoot.startsWith(initialPath)) {
                 const returnPath = currentPathWithoutRoot && !currentPathWithoutRoot.startsWith("SignIn") ? currentPathWithoutRoot : "";
@@ -294,7 +294,7 @@
         }
 
         async onSessionExpired(): Promise<boolean> {
-            if (!this.app.barebone) {
+            if (!(this.app instanceof App)) {
                 this.app.redirectToSignIn();
                 return false;
             }
@@ -310,7 +310,7 @@
         }
 
         onNavigate(path: string, replaceCurrent: boolean = false) {
-            this.app.changePath(Vidyano.WebComponents.App.removeRootPath(path), replaceCurrent);
+            this.app.changePath(Vidyano.WebComponents.AppBase.removeRootPath(path), replaceCurrent);
         }
 
         onClientOperation(operation: ClientOperations.IClientOperation) {

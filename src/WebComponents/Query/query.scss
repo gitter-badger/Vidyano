@@ -4,10 +4,10 @@
     display: block;
     @include fit();
     @include layout-vertical-reverse();
-    --vi-action-bar-style: #{'{
+    --vi-action-bar-style: {
         box-shadow: var(--theme-box-shadow);
         z-index: 1;
-    }'};
+    };
 
     header {
         @include page-title();

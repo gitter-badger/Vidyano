@@ -78,17 +78,22 @@ namespace Vidyano.Web2
                     {
                         var file = Path.Combine(web2homeFolder, id);
                         if (File.Exists(file))
-                            return "<style>" + File.ReadAllText(file) + "</style>";
+                            return "<style>" + FixCss(File.ReadAllText(file)) + "</style>";
                     }
 
                     if (useLocalFileSystem)
-                        return "<style>" + File.ReadAllText(Path.Combine(System.Web.Hosting.HostingEnvironment.MapPath("~"), id)) + "</style>";
+                        return "<style>" + FixCss(File.ReadAllText(Path.Combine(System.Web.Hosting.HostingEnvironment.MapPath("~"), id))) + "</style>";
 
                     return "<style>" + GetEmbeddedResource(id) + "</style>";
                 });
 
                 return html;
             }
+        }
+
+        private static string FixCss(string css)
+        {
+            return Regex.Replace(css, ":host([^(][^{> ]+)", ":host($1) ");
         }
     }
 }

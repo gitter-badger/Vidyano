@@ -584,7 +584,10 @@ namespace Vidyano {
                     application = await this._getApplication();
                 }
                 catch (e) {
-                    application = null;
+                    if (e === "Session expired")
+                        application = null;
+                    else
+                        throw e;
                 }
             }
             else

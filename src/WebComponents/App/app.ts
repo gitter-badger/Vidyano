@@ -2,38 +2,7 @@
 var _gaq: any[];
 /* tslint:enable:no-var-keyword */
 
-interface Window {
-    app: Vidyano.WebComponents.App;
-}
-
-namespace Vidyano {
-
-    export function debug(debug: boolean = true) {
-        document.cookie = `useweb2home=${debug};path=/`;
-    }
-}
-
 namespace Vidyano.WebComponents {
-    const base = document.head.querySelector("base") as HTMLBaseElement;
-    const parser = document.createElement("a");
-    parser.href = base.href;
-    Path.routes.rootPath = parser.pathname[0] === "/" ? parser.pathname : `/${parser.pathname}`; // IE Bug: https://connect.microsoft.com/IE/Feedback/Details/1002846
-
-    const hashBangRe = /(.+)#!\/(.*)/;
-    if (hashBangRe.test(document.location.href)) {
-        const hashBangParts = hashBangRe.exec(document.location.href);
-        if (hashBangParts[2].startsWith("SignInWithToken/")) {
-            history.replaceState(null, null, hashBangParts[1]);
-            Service.token = hashBangParts[2].substr(16);
-        }
-        else if (hashBangParts[2].startsWith("SignInWithAuthorizationHeader/")) {
-            history.replaceState(null, null, hashBangParts[1]);
-            Service.token = `JWT:${hashBangParts[2].substr(30)}`;
-        }
-        else
-            history.replaceState(null, null, `${hashBangParts[1]}${hashBangParts[2]}`);
-    }
-
     export class AppCacheEntry {
         constructor(public id: string) {
         }
@@ -116,44 +85,20 @@ namespace Vidyano.WebComponents {
 
     @WebComponent.register({
         properties: {
-            uri: {
-                type: String,
-                reflectToAttribute: true,
-                value: ""
-            },
-            hooks: {
-                type: String,
-                reflectToAttribute: true,
-                value: null
-            },
-            noHistory: {
-                type: Boolean,
-                reflectToAttribute: true,
-                value: false
+            cacheSize: {
+                type: Number,
+                value: 25,
+                reflectToAttribute: true
             },
             path: {
                 type: String,
-                reflectToAttribute: true,
-                value: ""
+                observer: "_pathChanged",
+                reflectToAttribute: true
             },
-            service: {
-                type: Object,
-                computed: "_computeInitialService(uri, hooks, isConnected)"
-            },
-            user: {
+            pathExtended: {
                 type: String,
-                reflectToAttribute: true,
-                value: null
+                observer: "_pathExtendedChanged"
             },
-            keys: {
-                type: String,
-                readOnly: true
-            },
-            currentRoute: {
-                type: Object,
-                readOnly: true
-            },
-            application: Object,
             programUnit: {
                 type: Object,
                 computed: "_computeProgramUnit(service.application, path)"
@@ -163,24 +108,8 @@ namespace Vidyano.WebComponents {
                 reflectToAttribute: true,
                 value: false
             },
-            barebone: {
-                type: Boolean,
-                readOnly: true,
-                value: false
-            },
-            initializing: {
-                type: Boolean,
-                reflectToAttribute: true,
-                readOnly: true,
-                value: true
-            },
             label: {
                 type: String,
-                reflectToAttribute: true
-            },
-            cacheSize: {
-                type: Number,
-                value: 25,
                 reflectToAttribute: true
             },
             isProfiling: {
@@ -191,629 +120,55 @@ namespace Vidyano.WebComponents {
             signInLogo: String,
             showMenu: {
                 type: Boolean,
-                computed: "_computeShowMenu(service.application, noMenu, currentRoute)"
-            },
-            isDesktop: {
-                type: Boolean,
-                reflectToAttribute: true
-            },
-            isTablet: {
-                type: Boolean,
-                reflectToAttribute: true
-            },
-            isPhone: {
-                type: Boolean,
-                reflectToAttribute: true
-            },
-            isIe: {
-                type: Boolean,
-                reflectToAttribute: true,
-                value: () => navigator.userAgent.indexOf("Trident/7") !== -1
-            },
-            isTracking: {
-                type: Boolean,
-                reflectToAttribute: true
-            },
-            cookiePrefix: {
-                type: String,
-                reflectToAttribute: true,
-                observer: "_cookiePrefixChanged"
-            },
-            themeColor: {
-                type: String,
-                reflectToAttribute: true,
-                value: "#4682B4"
-            },
-            themeAccentColor: {
-                type: String,
-                reflectToAttribute: true,
-                value: "#009688"
-            },
-            configs: String,
-            updateAvailable: {
-                type: Boolean,
-                readOnly: true,
-                value: false
-            },
-            sensitive: {
-                type: Boolean,
-                reflectToAttribute: true,
-                observer: "_sensitiveChanged"
-            },
-            sessionLost: {
-                type: Boolean,
-                reflectToAttribute: true,
-                readOnly: true,
-                value: false
+                computed: "_computeShowMenu(service.application, noMenu, path)"
             }
         },
         observers: [
-            "_updateInitialize(serviceInitializer, appRoutesInitializer)",
-            "_updateRoute(path, initializing)",
             "_hookWindowBeforeUnload(noHistory, isConnected)",
-            "_cleanUpOnSignOut(service.isSignedIn)",
-            "_resolveDependencies(service.application.hasManagement)",
-            "_computeThemeColorVariants(themeColor, 'color', isConnected)",
-            "_computeThemeColorVariants(themeAccentColor, 'accent-color', isConnected)",
-            "_importConfigs(configs, isConnected)",
-            "_mediaQueryChanged(isDesktop, isTablet, isPhone)"
+            "_resolveDependencies(service.application.hasManagement)"
         ],
-        hostAttributes: {
-            "tabindex": "-1"
-        },
         listeners: {
-            "contextmenu": "_configureContextmenu",
-            "click": "_anchorClickHandler",
-            "app-update-available": "_updateAvailable"
+            "contextmenu": "_configureContextmenu"
         },
         forwardObservers: [
-            "service.isSignedIn",
-            "service.profile",
-            "service.application"
+            "service.profile"
         ]
     })
-    export class App extends WebComponent {
+    export class App extends AppBase {
         private _cache: AppCacheEntry[] = [];
-        private _nodeObserver: Polymer.FlattenedNodesObserver;
-        private _appRoutePresenter: Vidyano.WebComponents.AppRoutePresenter;
-        private _initializeResolve: (app: Vidyano.Application) => void;
-        private _initializeReject: (e: any) => void;
-        private _initialize: Promise<Vidyano.Application> = new Promise((resolve, reject) => { this._initializeResolve = resolve; this._initializeReject = reject; });
-        private _routeMap: { [key: string]: AppRoute } = {};
-        private _routeUpdater: Promise<any> = Promise.resolve();
-        private _keybindingRegistrations: { [key: string]: Keyboard.IKeybindingRegistration[]; } = {};
         private _beforeUnloadEventHandler: EventListener;
-        private _activeDialogs: Dialog[] = [];
-        private _updateAvailableSnoozeTimer: number;
-        readonly initializing: boolean; private _setInitializing: (init: boolean) => void;
-        readonly keys: string; private _setKeys: (keys: string) => void;
-        readonly currentRoute: AppRoute; private _setCurrentRoute: (route: AppRoute) => void;
-        readonly barebone: boolean; private _setBarebone: (barebone: boolean) => void;
-        readonly updateAvailable: boolean; private _setUpdateAvailable: (updateAvailable: boolean) => void;
-        readonly sessionLost: boolean; private _setSessionLost: (sessionLost: boolean) => void;
-        readonly isIe: boolean;
         programUnit: ProgramUnit;
-        uri: string;
-        hooks: string;
-        noHistory: boolean;
-        path: string;
-        cacheSize: number;
         noMenu: boolean;
         label: string;
-        isTracking: boolean;
-        sensitive: boolean;
 
-        constructor() {
+        private constructor() {
             super();
-
-            window.app = this;
-        }
-
-        connectedCallback() {
-            super.connectedCallback();
-
-            window.addEventListener("storage", this._onSessionStorage.bind(this), false);
-
-            this.set("appRoutesInitializer", new Promise(resolve => {
-                const bareboneTemplate = <Polymer.Template><Node>Array.from(this.children).filter(c => c.tagName === "TEMPLATE" && c.getAttribute("is") === "dom-template")[0];
-                this._setBarebone(!!bareboneTemplate);
-                if (this.barebone) {
-                    const appRouteTargetSetter = (e: CustomEvent) => {
-                        this._appRoutePresenter = this.todo_checkEventTarget(e.target) as Vidyano.WebComponents.AppRoutePresenter;
-                        this._distributeAppRoutes();
-
-                        this.removeEventListener("app-route-presenter-attached", appRouteTargetSetter);
-                        resolve(this._appRoutePresenter);
-                    };
-
-                    this.addEventListener("app-route-presenter-attached", appRouteTargetSetter.bind(this));
-
-                    this.shadowRoot.appendChild(bareboneTemplate.stamp({ app: this }).root);
-                } else {
-                    const task = Polymer.Async.microTask.run(() => {
-                        this._appRoutePresenter = this.shadowRoot.querySelector("vi-app-route-presenter") as Vidyano.WebComponents.AppRoutePresenter;
-                        if (this._appRoutePresenter) {
-                            Polymer.Async.microTask.cancel(task);
-
-                            this._distributeAppRoutes();
-                            resolve(this._appRoutePresenter);
-                        }
-                    });
-                }
-            }));
-
-            Vidyano.Path.rescue(() => {
-                this.path = decodeURI(App.removeRootPath(Vidyano.Path.routes.current));
-            });
-
-            if (!this.noHistory) {
-                Vidyano.Path.root(base.href);
-                Vidyano.Path.history.listen();
-
-                Vidyano.Path["dispatch"](document.location.toString().substr(base.href.length).replace(document.location.hash, ""));
-            }
 
             if (!this.label)
                 this.label = this.title;
-
-            const keys = <any>this.shadowRoot.querySelector("iron-a11y-keys");
-            keys.target = document.body;
         }
 
-        disconnectedCallback() {
-            super.disconnectedCallback();
-
-            if (this._nodeObserver) {
-                Polymer.dom(this._appRoutePresenter).unobserveNodes(this._nodeObserver);
-                this._nodeObserver = null;
-            }
+        private _pathChanged(path: string) {
+            this.set("pathExtended", this._convertPath(this.service.application, path));
         }
 
-        private _onSessionStorage(event: StorageEvent) {
-            if (!event)
-                event = <StorageEvent>window.event;
-
-            if (event.newValue == null || (!event.newValue.startsWith("{") && Vidyano.cookiePrefix !== event.newValue))
-                return;
-            else if (event.newValue.startsWith("{")) {
-                const value = JSON.parse(event.newValue);
-                if (Vidyano.cookiePrefix !== value.cookiePrefix)
-                    return;
-            }
-
-            if (event.key === "vi-signOut" && this.service && this.service.isSignedIn)
-                this._setSessionLost(true);
-            else if (this.sessionLost && event.key === "vi-setAuthToken") {
-                const authTokenInfo = JSON.parse(event.newValue);
-
-                this.service.authToken = authTokenInfo.authToken;
-                this._setSessionLost(false);
-            }
-            else if (event.key === "vi-updateAvailable") {
-                if (this.service != null)
-                    this.service.hooks.onUpdateAvailable();
-                else
-                    this._updateAvailable();
-            }
+        private _pathExtendedChanged(pathExtended: string) {
+            this.path = pathExtended;
         }
 
-        private _reload(e: Polymer.TapEvent) {
-            e.stopPropagation();
+        static get template() {
+            const baseTemplate = <HTMLTemplateElement>(Polymer.DomModule.import("vi-app-base", "template")).cloneNode(true);
+            const defaultTemplate = <HTMLTemplateElement>Polymer.DomModule.import("vi-app", "template");
 
-            document.location.reload();
-        }
+            baseTemplate.content.appendChild(defaultTemplate.content);
 
-        get configuration(): AppConfig {
-            return this.shadowRoot.querySelector("vi-app-config") as AppConfig;
-        }
-
-        get initialize(): Promise<Vidyano.Application> {
-            return this._initialize;
-        }
-
-        get routeMap(): { [key: string]: AppRoute } {
-            return this._routeMap;
-        }
-
-        changePath(path: string, replaceCurrent: boolean = false) {
-            path = path.trimStart("/");
-            if (this.path === path)
-                return;
-
-            if (!this.noHistory) {
-                if (!replaceCurrent)
-                    Vidyano.Path.history.pushState(null, null, Path.routes.rootPath + path);
-                else
-                    Vidyano.Path.history.replaceState(null, null, Path.routes.rootPath + path);
-            }
-            else {
-                this.path = path;
-                if (replaceCurrent)
-                    history.pushState("", document.title, window.location.pathname);
-            }
-        }
-
-        getUrlForPersistentObject(id: string, objectId: string, pu: ProgramUnit = this.programUnit) {
-            const persistentObjects = this.service.application.routes.persistentObjects;
-            for (const type in persistentObjects) {
-                if (persistentObjects[type] === id)
-                    return (pu ? pu.name + "/" : "") + type + (objectId ? "/" + objectId : "");
-            }
-
-            return (pu ? pu.name + "/" : "") + `PersistentObject.${id}${objectId ? "/" + objectId : ""}`;
-        }
-
-        getUrlForQuery(id: string, pu: ProgramUnit = this.programUnit) {
-            const queries = this.service.application.routes.persistentObjects;
-            for (const name in queries) {
-                if (queries[name] === id)
-                    return (pu ? pu.name + "/" : "") + `${name}`;
-            }
-
-            return (pu ? pu.name + "/" : "") + `Query.${id}`;
-        }
-
-        getUrlForFromAction(id: string, pu: ProgramUnit = this.programUnit) {
-            return (pu ? pu.name + "/" : "") + `FromAction/${id}`;
-        }
-
-        cache(entry: Vidyano.WebComponents.AppCacheEntry): Vidyano.WebComponents.AppCacheEntry {
-            // Remove LRU from cache
-            if (this._cache.length >= this.cacheSize)
-                this._cache.splice(0, this._cache.length - this.cacheSize);
-
-            let cacheEntry = this.cachePing(entry);
-            if (!cacheEntry)
-                this._cache.push(cacheEntry = entry);
-
-            return cacheEntry;
-        }
-
-        cachePing(entry: Vidyano.WebComponents.AppCacheEntry): Vidyano.WebComponents.AppCacheEntry {
-            const cacheEntry = this._cache.slice().reverse().find(e => entry.isMatch(e));
-            if (cacheEntry) {
-                this._cache.remove(cacheEntry);
-                this._cache.push(cacheEntry);
-            }
-
-            return cacheEntry;
-        }
-
-        cacheRemove(key: Vidyano.WebComponents.AppCacheEntry) {
-            const entry = this._cache.find(e => key.isMatch(e));
-            if (entry)
-                this._cache.remove(entry);
-        }
-
-        get cacheEntries(): Vidyano.WebComponents.AppCacheEntry[] {
-            return this._cache;
-        }
-
-        cacheClear() {
-            this._cache = [];
-        }
-
-        redirectToSignIn(keepUrl: boolean = true) {
-            (<AppServiceHooks>this.app.service.hooks).onRedirectToSignIn(keepUrl);
-        }
-
-        redirectToSignOut(keepUrl: boolean = true) {
-            (<AppServiceHooks>this.app.service.hooks).onRedirectToSignOut(keepUrl);
-        }
-
-        async showDialog(dialog: Dialog): Promise<any> {
-            this.shadowRoot.appendChild(dialog);
-            this._activeDialogs.push(dialog);
-
-            try {
-                return await dialog.open();
-            }
-            finally {
-                this.shadowRoot.removeChild(dialog);
-                this._activeDialogs.pop();
-            }
-        }
-
-        async showMessageDialog(options: Vidyano.WebComponents.IMessageDialogOptions): Promise<any> {
-            await this.app.importComponent("MessageDialog");
-            return this.showDialog(new Vidyano.WebComponents.MessageDialog(options));
-        }
-
-        showAlert(notification: string, type: Vidyano.NotificationType = Vidyano.NotificationType.Notice, duration: number = 3000) {
-            switch (type) {
-                case NotificationType.Error:
-                    alertify.log(notification, "error", duration);
-                    break;
-
-                case NotificationType.OK:
-                    alertify.log(notification, "success", duration);
-                    break;
-
-                case NotificationType.Warning:
-                    alertify.log(notification, "warning", duration);
-                    break;
-
-                case NotificationType.Notice:
-                    alertify.log(notification, "notice", duration);
-                    break;
-            }
-        }
-
-        importComponent(...components: string[]): Promise<any> {
-            return Promise.all(components.map(async component => {
-                if (component.split(".").reduce((obj: any, path: string) => obj[path], Vidyano.WebComponents))
-                    return Promise.resolve(null);
-
-                const vidyanoComponentFolder = component.replace(".", "/");
-                const vidyanoComponent = vidyanoComponentFolder.split("/").reverse()[0].replace(/([A-Z])/g, m => "-" + m[0].toLowerCase()).substr(1);
-                const href = this.resolveUrl(`../${vidyanoComponentFolder}/${vidyanoComponent}.html`);
-
-                try {
-                    await this.importHref(href);
-                }
-                catch (e) {
-                    console.error(`Unable to load component ${component} via import ${href}`);
-                }
-            }));
-        }
-
-        private static _libs = {
-            "alertify": "alertify.js/alertify.html",
-            "codemirror": "codemirror/codemirror.html",
-            "d3": "d3/d3.min.js",
-            "iron-a11y-keys": "iron-a11y-keys/iron-a11y-keys.html",
-            "iron-collapse": "iron-collapse/iron-collapse.html",
-            "iron-list": "iron-list/iron-list.html",
-            "iron-media-query": "iron-media-query/iron-media-query.html",
-            "marked-element": "marked-element/marked-element.html",
-            "masked-input": "MaskedInput/masked-input.html",
-            "moment": "moment/moment.html",
-            "paper-ripple": "paper-ripple/paper-ripple.html",
-            "sortable": "sortable/sortable.html"
-        };
-        async importLib(lib: string): Promise<any> {
-            const href = this.resolveUrl(`../../Libs/${App._libs[lib] || lib}`);
-
-            try {
-                await this.importHref(href);
-            }
-            catch (e) {
-                console.error(`Unable to load support library ${lib} via import ${href}`);
-            }
-        }
-
-        private _distributeAppRoutes() {
-            this._nodeObserver = new Polymer.FlattenedNodesObserver(this._appRoutePresenter, this._nodesChanged.bind(this));
-
-            Array.from(this.querySelectorAll("vi-app-route")).forEach(route => this._appRoutePresenter.appendChild(route));
-
-            if (this.noHistory)
-                this.changePath(this.path);
-        }
-
-        private _nodesChanged(info: Polymer.FlattenedNodesObserverInfo) {
-            info.addedNodes.filter(node => node instanceof Vidyano.WebComponents.AppRoute).forEach((appRoute: Vidyano.WebComponents.AppRoute) => {
-                const route = App.removeRootPath(appRoute.route);
-
-                if (!this._routeMap[route]) {
-                    this._routeMap[route] = appRoute;
-                    Vidyano.Path.map(Path.routes.rootPath + route).to(() => this.path = Vidyano.Path.routes.current);
-                }
-            });
-        }
-
-        private _computeIsProfiling(isSignedIn: boolean, profile: boolean): boolean {
-            if (!isSignedIn || !profile)
-                return false;
-
-            this.importComponent("Profiler");
-            return true;
-        }
-
-        private _sensitiveChanged(sensitive: boolean) {
-            const currentSensitiveCookie = !!BooleanEx.parse(Vidyano.cookie("sensitive"));
-            if (currentSensitiveCookie !== sensitive)
-                Vidyano.cookie("sensitive", String(sensitive));
-
-            this.fire("sensitive-changed", sensitive, { bubbles: false });
-        }
-
-        private _cookiePrefixChanged(cookiePrefix: string) {
-            Vidyano.cookiePrefix = cookiePrefix;
-        }
-
-        private async _importConfigs(configs: string, isConnected: boolean) {
-            if (!configs || !isConnected)
-                return;
-
-            const doc = <HTMLDocument>await this.importHref(configs);
-            Array.from(doc.body.childNodes).forEach(c => this.appendChild(c));
-        }
-
-        private async _updateInitialize(...promises: Promise<any>[]) {
-            if (promises.some(p => p === undefined))
-                return;
-
-            try {
-                if (this._initializeResolve) {
-                    const results = await Promise.all(promises);
-                    this._initializeResolve(results[0]);
-                    this._initializeResolve = null;
-                    this._initializeReject = null;
-                }
-                else {
-                    this._initialize = Promise.all(promises).then((results: any[]) => {
-                        this._setInitializing(false);
-                        return results[0];
-                    });
-
-                    await this._initialize;
-                }
-
-                this._setInitializing(false);
-            }
-            catch (e) {
-                const noInternet = Vidyano.NoInternetMessage.messages[navigator.language.split("-")[0].toLowerCase()] || Vidyano.NoInternetMessage.messages["en"];
-
-                await this.showMessageDialog({
-                    title: e === noInternet.message ? noInternet.title : this.app.label || document.title,
-                    message: e,
-                    actions: [noInternet.tryAgain],
-                    actionTypes: ["Danger"],
-                    noClose: true
-                });
-
-                document.location.reload();
-            }
-        }
-
-        private _computeInitialService(uri: string, hooks: string, isConnected: boolean): Vidyano.Service {
-            if (this.service) {
-                console.warn("Service uri and hooks cannot be altered.");
-                return this.service;
-            }
-
-            let hooksInstance: Vidyano.ServiceHooks;
-            if (hooks) {
-                const ctor = this.hooks.split(".").reduce((obj: any, path: string) => obj && obj[path], window);
-                if (ctor)
-                    hooksInstance = new ctor(this);
-                else
-                    console.error(`Service hooks "${this.hooks}" was not found.`);
-            }
-            else
-                hooksInstance = new AppServiceHooks(this);
-
-            const service = new Vidyano.Service(this.uri, hooksInstance);
-            const path = this.noHistory ? this.path : App.removeRootPath(document.location.pathname);
-            const skipDefaultCredentialLogin = path.startsWith("SignIn");
-
-            this._setInitializing(true);
-            this.set("serviceInitializer", service.initialize(skipDefaultCredentialLogin).then(() => {
-                if (this.service === service)
-                    return this.service.application;
-
-                return null;
-            }, e => {
-                if (this.service === service) {
-                    if (e !== "Session expired")
-                        throw e;
-                }
-
-                return null;
-            }));
-
-            return service;
-        }
-
-        private _anchorClickHandler(e: MouseEvent) {
-            if (e.defaultPrevented)
-                return;
-
-            const path = e.composedPath();
-            const anchorParent = <HTMLAnchorElement>path.find(el => el.tagName === "A");
-            if (anchorParent && anchorParent.href.startsWith(Path.routes.root || "") && !anchorParent.hasAttribute("download") && !(anchorParent.getAttribute("rel") || "").contains("external")) {
-                let path = anchorParent.href.slice(Path.routes.root.length);
-                if (path.startsWith("#!/"))
-                    path = path.substr(3);
-
-                if (Path.match(Path.routes.rootPath + path, true) != null || Path.match(Path.routes.rootPath + (this._convertPath(this.service.application, path)), true) != null) {
-                    this.changePath(path);
-
-                    e.stopPropagation();
-                    e.preventDefault();
-                }
-            }
-        }
-
-        private _convertPath(application: Vidyano.Application, path: string): string {
-            if (application && !this.barebone) {
-                let match = application.poRe.exec(path);
-                if (match)
-                    path = (match[1] || "") + "PersistentObject." + application.routes.persistentObjects[match[3]] + (match[4] || "");
-                else {
-                    match = application.queryRe.exec(path);
-                    if (match)
-                        path = (match[1] || "") + "Query." + application.routes.queries[match[3]];
-                }
-            }
-
-            return path;
-        }
-
-        private _updateRoute(path: string, initializing: boolean) {
-            if (initializing)
-                return;
-
-            let currentPath = this.path;
-            this._routeUpdater = this._routeUpdater.then(async () => {
-                const initial: Vidyano.PersistentObject = this.service["_initial"];
-                if (initial != null)
-                    await (<AppServiceHooks>this.service.hooks).onInitial(initial);
-
-                if (currentPath !== this.path)
-                    return;
-
-                path = Vidyano.WebComponents.App.removeRootPath(this._convertPath(this.service.application, path));
-
-                if (this.service && this.service.isSignedIn && path === "") {
-                    let programUnit = this.programUnit;
-                    if (!programUnit && this.service.application.programUnits.length > 0)
-                        programUnit = this.service.application.programUnits[0];
-
-                    if (programUnit && !this.barebone) {
-                        if (programUnit.openFirst && programUnit.path && path !== programUnit.path) {
-                            Polymer.Async.microTask.run(() => this.changePath(programUnit.path));
-                            return;
-                        }
-                        else {
-                            const config = this.app.configuration.getProgramUnitConfig(programUnit.name);
-                            if (!!config && config.hasTemplate) {
-                                Polymer.Async.microTask.run(() => this.changePath(programUnit.name));
-                                return;
-                            }
-                        }
-                    }
-                }
-
-                const mappedPathRoute = path != null || this.barebone ? Vidyano.Path.match(Path.routes.rootPath + path, true) : null;
-                const newRoute = mappedPathRoute ? this._routeMap[App.removeRootPath(mappedPathRoute.path)] : null;
-
-                if (!this.service.isSignedIn && (!newRoute || !newRoute.allowSignedOut)) {
-                    this.redirectToSignIn();
-                    return;
-                }
-
-                if (this.currentRoute) {
-                    if (this.currentRoute === newRoute && this.currentRoute.matchesParameters(mappedPathRoute.params))
-                        return;
-
-                    if (!await this.currentRoute.deactivate(newRoute))
-                        return;
-                }
-
-                Array.from(this.shadowRoot.querySelectorAll("[dialog]")).forEach((dialog: Vidyano.WebComponents.Dialog) => dialog.close());
-
-                const redirect = await (<AppServiceHooks>this.app.service.hooks).onAppRouteChanging(newRoute, this.currentRoute);
-                if (redirect) {
-                    this._setCurrentRoute(null);
-                    this.async(() => this.changePath(redirect));
-
-                    return;
-                }
-
-                if (!!newRoute)
-                    await newRoute.activate(mappedPathRoute.params);
-
-                this._setCurrentRoute(newRoute);
-                this._appRoutePresenter.notFound = !!path && !this.currentRoute;
-            });
+            return baseTemplate;
         }
 
         private _computeProgramUnit(application: Vidyano.Application, path: string): ProgramUnit {
             path = this._convertPath(application, path);
 
-            const mappedPathRoute = Vidyano.Path.match(Path.routes.rootPath + App.removeRootPath(path), true);
+            const mappedPathRoute = Vidyano.Path.match(Path.routes.rootPath + AppBase.removeRootPath(path), true);
             if (application) {
                 if (mappedPathRoute && mappedPathRoute.params && mappedPathRoute.params.programUnitName)
                     return application.programUnits.find(pu => pu.name === mappedPathRoute.params.programUnitName);
@@ -824,27 +179,12 @@ namespace Vidyano.WebComponents {
             return null;
         }
 
-        private _computeShowMenu(application: Vidyano.Application, noMenu: boolean, currentRoute: Vidyano.WebComponents.AppRoute): boolean {
-            const showMenu = application && !noMenu && currentRoute != null && !currentRoute.route.startsWith("SignIn") && !currentRoute.route.startsWith("SignOut");
+        private _computeShowMenu(application: Vidyano.Application, noMenu: boolean, path: string): boolean {
+            const showMenu = application && !noMenu && path != null && !path.startsWith("SignIn") && !path.startsWith("SignOut");
             if (showMenu)
                 this.importComponent("Menu");
 
             return showMenu;
-        }
-
-        private _cleanUpOnSignOut(isSignedIn: boolean) {
-            if (isSignedIn === false) {
-
-                this.cacheClear();
-                for (const route in this._routeMap)
-                    this._routeMap[route].reset();
-
-                this._setCurrentRoute(null);
-
-                // Trigger sign out across tabs for the same base uri
-                localStorage.setItem("vi-signOut", Vidyano.cookiePrefix);
-                localStorage.removeItem("vi-signOut");
-            }
         }
 
         private _hookWindowBeforeUnload(noHistory: boolean, isConnected: boolean) {
@@ -864,82 +204,6 @@ namespace Vidyano.WebComponents {
                 (e || window.event).returnValue = <any>confirmationMessage; // Gecko + IE
                 return confirmationMessage; // Webkit, Safari, Chrome etc.
             }
-        }
-
-        private _registerKeybindings(registration: Keyboard.IKeybindingRegistration) {
-            const currentKeys = this.keys ? this.keys.split(" ") : [];
-            registration.keys.forEach(key => {
-                registration.scope = <any>this.findParent(e => e instanceof AppRoute || e instanceof Dialog, registration.element);
-
-                const registrations = this._keybindingRegistrations[key] || (this._keybindingRegistrations[key] = []);
-                registrations.push(registration);
-
-                currentKeys.push(key);
-            });
-
-            this._setKeys(currentKeys.distinct().join(" "));
-        }
-
-        private _unregisterKeybindings(registration: Keyboard.IKeybindingRegistration) {
-            const currentKeys = this.keys.split(" ");
-
-            registration.keys.forEach(key => {
-                const registrations = this._keybindingRegistrations[key];
-                registrations.remove(registration);
-
-                if (registrations.length === 0) {
-                    this._keybindingRegistrations[key] = undefined;
-                    currentKeys.remove(key);
-                }
-            });
-
-            this._setKeys(currentKeys.distinct().join(" "));
-        }
-
-        private _mediaQueryChanged(isDesktop: boolean, isTablet: boolean, isPhone: boolean) {
-            this.fire("media-query-changed", isDesktop ? "desktop" : (isTablet ? "tablet" : "phone"), { bubbles: false });
-        }
-
-        private _keysPressed(e: Keyboard.IKeysEvent) {
-            if (!this._keybindingRegistrations[e.detail.combo])
-                return;
-
-            if (document.activeElement instanceof HTMLInputElement && !(e.detail.keyboardEvent.ctrlKey || e.detail.keyboardEvent.shiftKey || e.detail.keyboardEvent.altKey) && e.detail.key !== "esc")
-                return;
-
-            let combo = e.detail.combo;
-            if (e.detail.keyboardEvent.ctrlKey && combo.indexOf("ctrl") < 0)
-                combo = "ctrl+" + combo;
-            if (e.detail.keyboardEvent.shiftKey && combo.indexOf("shift") < 0)
-                combo = "shift+" + combo;
-            if (e.detail.keyboardEvent.altKey && combo.indexOf("alt") < 0)
-                combo = "alt+" + combo;
-
-            let registrations = this._keybindingRegistrations[combo];
-            if (!registrations)
-                return;
-
-            if (this._activeDialogs.length > 0) {
-                const activeDialog = this._activeDialogs[this._activeDialogs.length - 1];
-                registrations = registrations.filter(r => r.scope === activeDialog);
-            }
-
-            registrations = registrations.filter(reg => !reg.scope || (reg.scope instanceof AppRoute && (<AppRoute>reg.scope).active));
-            const highestPriorityRegs = registrations.groupBy(r => r.priority).orderByDescending(kvp => kvp.key)[0];
-            if (!highestPriorityRegs || !highestPriorityRegs.value.length)
-                return;
-
-            const regs = highestPriorityRegs;
-            if (regs.value.length > 1 && regs.value.some(r => !r.nonExclusive))
-                return;
-
-            regs.value.forEach(reg => {
-                reg.listener(e);
-            });
-        }
-
-        private _resolveDependencies(hasManagement: boolean) {
-            this.importComponent("PopupMenu");
         }
 
         private _configureContextmenu(e: MouseEvent) {
@@ -986,65 +250,151 @@ namespace Vidyano.WebComponents {
                 return;
             }
 
-            const popupMenuItem = <PopupMenuItem>this.shadowRoot.querySelector("#viConfigure");
-            this.empty(popupMenuItem);
+            // TODO
+            // const popupMenuItem = <PopupMenuItem>this.shadowRoot.querySelector("#viConfigure");
+            // this.empty(popupMenuItem);
 
-            configureItems.forEach(item => Polymer.dom(popupMenuItem).appendChild(item));
+            // configureItems.forEach(item => Polymer.dom(popupMenuItem).appendChild(item));
         }
 
-        private _computeThemeColorVariants(base: string, target: string, isConnected: boolean) {
-            if (!isConnected || !base)
+        protected _cleanUpOnSignOut(isSignedIn: boolean) {
+            if (isSignedIn === false) {
+                this.cacheClear();
+                this.appRoutePresenter.clear();
+
+                super._cleanUpOnSignOut(isSignedIn);
+            }
+        }
+
+        cache(entry: Vidyano.WebComponents.AppCacheEntry): Vidyano.WebComponents.AppCacheEntry {
+            // Remove LRU from cache
+            if (this._cache.length >= this.cacheSize)
+                this._cache.splice(0, this._cache.length - this.cacheSize);
+
+            let cacheEntry = this.cachePing(entry);
+            if (!cacheEntry)
+                this._cache.push(cacheEntry = entry);
+
+            return cacheEntry;
+        }
+
+        cachePing(entry: Vidyano.WebComponents.AppCacheEntry): Vidyano.WebComponents.AppCacheEntry {
+            const cacheEntry = this._cache.slice().reverse().find(e => entry.isMatch(e));
+            if (cacheEntry) {
+                this._cache.remove(cacheEntry);
+                this._cache.push(cacheEntry);
+            }
+
+            return cacheEntry;
+        }
+
+        cacheRemove(key: Vidyano.WebComponents.AppCacheEntry) {
+            const entry = this._cache.find(e => key.isMatch(e));
+            if (entry)
+                this._cache.remove(entry);
+        }
+
+        get cacheEntries(): Vidyano.WebComponents.AppCacheEntry[] {
+            return this._cache;
+        }
+
+        cacheClear() {
+            this._cache = [];
+        }
+
+        getUrlForPersistentObject(id: string, objectId: string, pu: ProgramUnit = this.programUnit) {
+            const persistentObjects = this.service.application.routes.persistentObjects;
+            for (const type in persistentObjects) {
+                if (persistentObjects[type] === id)
+                    return (pu ? pu.name + "/" : "") + type + (objectId ? "/" + objectId : "");
+            }
+
+            return (pu ? pu.name + "/" : "") + `PersistentObject.${id}${objectId ? "/" + objectId : ""}`;
+        }
+
+        getUrlForQuery(id: string, pu: ProgramUnit = this.programUnit) {
+            const queries = this.service.application.routes.persistentObjects;
+            for (const name in queries) {
+                if (queries[name] === id)
+                    return (pu ? pu.name + "/" : "") + `${name}`;
+            }
+
+            return (pu ? pu.name + "/" : "") + `Query.${id}`;
+        }
+
+        getUrlForFromAction(id: string, pu: ProgramUnit = this.programUnit) {
+            return (pu ? pu.name + "/" : "") + `FromAction/${id}`;
+        }
+
+        private _computeIsProfiling(isSignedIn: boolean, profile: boolean): boolean {
+            if (!isSignedIn || !profile)
+                return false;
+
+            this.importComponent("Profiler");
+            return true;
+        }
+
+        private async _importConfigs(configs: string, isConnected: boolean) {
+            if (!configs || !isConnected)
                 return;
 
-            if (!base.startsWith("#"))
-                base = `#${base}`;
-
-            const appColor = new AppColor(base);
-
-            const customStyle = {};
-            customStyle[`--theme-${target}`] = base;
-            customStyle[`--theme-${target}-light`] = appColor.light;
-            customStyle[`--theme-${target}-lighter`] = appColor.lighter;
-            customStyle[`--theme-${target}-dark`] = appColor.dark;
-            customStyle[`--theme-${target}-darker`] = appColor.darker;
-            customStyle[`--theme-${target}-faint`] = appColor.faint;
-            customStyle[`--theme-${target}-semi-faint`] = appColor.semiFaint;
-
-            this.updateStyles(customStyle);
+            // TODO
+            // const doc = <HTMLLinkElement>await this.importHref(configs);
+            // Array.from(doc.body.childNodes).forEach(c => this.appendChild(c));
         }
 
-        private _updateAvailable() {
-            if (this._updateAvailableSnoozeTimer)
-                return;
-
-            this._setUpdateAvailable(true);
-
-            Polymer.flush();
-            this.async(() => this.shadowRoot.querySelector("#update").classList.add("show"), 100);
-        }
-
-        private _refreshForUpdate() {
-            document.location.reload(true);
-        }
-
-        private _refreshForUpdateDismiss() {
-            if (this._updateAvailableSnoozeTimer)
-                clearTimeout(this._updateAvailableSnoozeTimer);
-
-            this._updateAvailableSnoozeTimer = setTimeout(() => {
-                this._updateAvailableSnoozeTimer = null;
-                this._updateAvailable();
-            }, 300000);
-
-            this.shadowRoot.querySelector("#update").classList.remove("show");
-            this.async(() => this._setUpdateAvailable(false), 500);
-        }
-
-        static removeRootPath(path: string = ""): string {
-            if (path.startsWith(Path.routes.rootPath))
-                return path.substr(Path.routes.rootPath.length);
+        private _convertPath(application: Vidyano.Application, path: string): string {
+            if (application) {
+                let match = application.poRe.exec(path);
+                if (match)
+                    path = (match[1] || "") + "PersistentObject." + application.routes.persistentObjects[match[3]] + (match[4] || "");
+                else {
+                    match = application.queryRe.exec(path);
+                    if (match)
+                        path = (match[1] || "") + "Query." + application.routes.queries[match[3]];
+                }
+            }
 
             return path;
+        }
+
+        private async _delegatePath(path: string, initializing: boolean) {
+            if (initializing)
+                return;
+
+            let currentPath = this.path;
+            const initial: Vidyano.PersistentObject = this.service["_initial"];
+            if (initial != null)
+                await (<AppServiceHooks>this.service.hooks).onInitial(initial);
+
+            if (currentPath !== this.path)
+                return;
+
+            path = Vidyano.WebComponents.AppBase.removeRootPath(this._convertPath(this.service.application, path));
+
+            if (this.service && this.service.isSignedIn && path === "") {
+                let programUnit = this.programUnit;
+                if (!programUnit && this.service.application.programUnits.length > 0)
+                    programUnit = this.service.application.programUnits[0];
+
+                if (programUnit) {
+                    if (programUnit.openFirst && programUnit.path && path !== programUnit.path) {
+                        Polymer.Async.microTask.run(() => this.changePath(programUnit.path));
+                        return;
+                    }
+                    else {
+                        const config = this.app.configuration.getProgramUnitConfig(programUnit.name);
+                        if (!!config && config.hasTemplate) {
+                            Polymer.Async.microTask.run(() => this.changePath(programUnit.name));
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+
+        private _resolveDependencies(hasManagement: boolean) {
+            this.importComponent("PopupMenu");
         }
     }
 }

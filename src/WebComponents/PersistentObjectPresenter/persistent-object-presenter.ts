@@ -96,19 +96,19 @@ namespace Vidyano.WebComponents {
 
         private async _deactivate(e: CustomEvent) {
             const route = <AppRoute>this.parentNode;
-            const currentPath = App.removeRootPath(route.path);
-            const newPath = App.removeRootPath(this.app.path);
+            const currentPath = AppBase.removeRootPath(route.path);
+            const newPath = AppBase.removeRootPath(this.app.path);
 
             if (this.persistentObject && this.persistentObject.isDirty && this.persistentObject.actions.some(a => a.name === "Save" || a.name === "EndEdit") && currentPath !== newPath) {
                 e.preventDefault();
 
                 const result = await this.app.showMessageDialog( {
-                    title: this.app.service.getTranslatedMessage("PagesWithUnsavedChanges"),
+                    title: this.service.getTranslatedMessage("PagesWithUnsavedChanges"),
                     noClose: true,
-                    message: this.app.service.getTranslatedMessage("ConfirmLeavePage"),
+                    message: this.service.getTranslatedMessage("ConfirmLeavePage"),
                     actions: [
-                        this.app.service.getTranslatedMessage("StayOnThisPage"),
-                        this.app.service.getTranslatedMessage("LeaveThisPage")
+                        this.service.getTranslatedMessage("StayOnThisPage"),
+                        this.service.getTranslatedMessage("LeaveThisPage")
                     ]
                 });
 
@@ -142,7 +142,7 @@ namespace Vidyano.WebComponents {
                 this._setLoading(true);
 
                 try {
-                    const po = await this.app.service.getPersistentObject(null, persistentObjectId, persistentObjectObjectId);
+                    const po = await this.service.getPersistentObject(null, persistentObjectId, persistentObjectObjectId);
                     const cacheEntry = <PersistentObjectAppCacheEntry>this.app.cache(new PersistentObjectAppCacheEntry(persistentObjectId, persistentObjectObjectId));
 
                     cacheEntry.persistentObject = po;

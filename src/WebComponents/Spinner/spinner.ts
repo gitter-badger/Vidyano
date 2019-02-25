@@ -13,15 +13,16 @@
     export class Spinner extends WebComponent {
         private static _spinnerConfig: SpinnerConfig;
 
-        static get template() {
-            if (typeof Spinner._spinnerConfig === "undefined")
-                Spinner._spinnerConfig = window.app.configuration.getSpinnerConfig();
+        // TODO
+        // static get template() {
+        //     if (Spinner._spinnerConfig === undefined && window.app !== undefined)
+        //         Spinner._spinnerConfig = window.app.configuration.getSpinnerConfig();
 
-            if (Spinner._spinnerConfig)
-                return Spinner._spinnerConfig.template.cloneNode(true);
+        //     if (Spinner._spinnerConfig)
+        //         return Spinner._spinnerConfig.template.cloneNode(true);
 
-            return Polymer.DomModule.import('vi-spinner', 'template');
-        }
+        //     return Polymer.DomModule.import("vi-spinner", "template");
+        // }
 
         private _updateColor(color: string, isConnected: boolean) {
             this.updateStyles({

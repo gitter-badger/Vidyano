@@ -8,6 +8,13 @@ $animation-time: 1s;
     width: var(--vi-spinner-size, var(--theme-h2));
     height: var(--vi-spinner-size, var(--theme-h2));
 
+    &:not([block]) {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(calc(var(--vi-spinner-size, var(--theme-h2)) / -2), calc(var(--vi-spinner-size, var(--theme-h2)) / -2));
+    }
+
     .box {
         width: 45%;
         height: 45%;
@@ -46,13 +53,6 @@ $animation-time: 1s;
     ::content > * {
         vertical-align: top;
     }
-}
-
-:host(:not([block])) {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(calc(var(--vi-spinner-size, var(--theme-h2)) / -2), calc(var(--vi-spinner-size, var(--theme-h2)) / -2));
 }
 
 @keyframes loadAnimation {

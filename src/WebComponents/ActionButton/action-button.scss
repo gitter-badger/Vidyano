@@ -25,10 +25,6 @@
             &[source^="Down"] {
                 width: var(--theme-h3);
             }
-
-            &:empty {
-                display: none;
-            }
         }
 
         span {
@@ -40,9 +36,9 @@
 
     &[disabled] {
         vi-button {
-            --vi-button-disabled: #{'{
+            --vi-button-disabled: {
                 opacity: 1;
-            }'};
+            };
 
             span {
                 opacity: 0.5;

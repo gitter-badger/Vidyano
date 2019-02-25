@@ -36,9 +36,9 @@
     }
 
     vi-checkbox {
-        --vi-checkbox--icon-disabled: #{'{
+        --vi-checkbox--icon-disabled: {
             background-color: #eee;
-        }'};
+        };
     }
 
     input, textarea {

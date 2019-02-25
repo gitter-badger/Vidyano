@@ -165,44 +165,6 @@ namespace Vidyano.WebComponents {
         height: number;
     }
 
-    ////////////////////////////////////////////////////
-    // Get browser scrollbar width and height
-    ////////////////////////////////////////////////////
-
-    export let scrollbarWidth = function (): number {
-        let width = <number>scrollbarWidth["cached"];
-        if (width)
-            return width;
-
-        const inner = document.createElement("p");
-        inner.style.width = "100%";
-        inner.style.height = "100px";
-
-        const outer = document.createElement("div");
-        outer.style.position = "absolute";
-        outer.style.top = "0px";
-        outer.style.left = "0px";
-        outer.style.visibility = "hidden";
-        outer.style.width = "50px";
-        outer.style.height = "50px";
-        outer.appendChild(inner);
-
-        document.body.appendChild(outer);
-        outer.style.overflow = "hidden";
-
-        const w1 = inner.offsetWidth;
-        outer.style.overflow = "scroll";
-
-        let w2 = inner.offsetWidth;
-        if (w1 === w2) w2 = outer.clientWidth;
-
-        width = scrollbarWidth["cached"] = (w1 - w2);
-
-        document.body.removeChild(outer);
-
-        return width;
-    };
-
     export interface IWebComponentKeybindingInfo {
         [keys: string]: {
             listener: string;
@@ -267,7 +229,6 @@ namespace Vidyano.WebComponents {
     }
 
     export abstract class WebComponent extends Polymer.GestureEventListeners(Polymer.Element) {
-        private _app: Vidyano.WebComponents.App;
         readonly service: Vidyano.Service;
         readonly translations: { [key: string]: string; };
         protected readonly isAppSensitive: boolean;
@@ -276,7 +237,6 @@ namespace Vidyano.WebComponents {
         tagName: string;
         style: CSSStyleDeclaration;
         isConnected: boolean;
-        app: Vidyano.WebComponents.App;
 
         connectedCallback() {
             if (this["_updateListeners"])
@@ -292,6 +252,10 @@ namespace Vidyano.WebComponents {
 
             super.disconnectedCallback();
             this.notifyPath("isConnected", false);
+        }
+
+        get app(): AppBase {
+            return window["app"];
         }
 
         get domHost(): HTMLElement {
@@ -376,10 +340,10 @@ namespace Vidyano.WebComponents {
         }
 
         translateMessage(key: string, ...params: string[]): string {
-            if (!key || !this.app || !this.app.service || !this.app.service.language)
+            if (!key || !this.app || !this.service || !this.service.language)
                 return key;
 
-            return this.app.service.getTranslatedMessage.apply(this.app.service, [key].concat(params));
+            return this.service.getTranslatedMessage.apply(this.service, [key].concat(params));
         }
 
         importHref(href: string): Promise<HTMLLinkElement> {
@@ -489,6 +453,20 @@ namespace Vidyano.WebComponents {
 
             obj["is"] = elementName;
 
+            if (Vidyano.WebComponents.AppBase && obj.prototype instanceof Vidyano.WebComponents.AppBase && !obj.hasOwnProperty("template")) {
+                Object.defineProperty(obj, "template", {
+                    enumerable: false,
+                    configurable: false,
+                    get: () => {
+                        const appTemplate = <HTMLTemplateElement>(Polymer.DomModule.import("vi-app-base", "template")).cloneNode(true);
+                        const customTemplate = <HTMLTemplateElement>Polymer.DomModule.import(elementName, "template");
+
+                        appTemplate.content.appendChild(customTemplate.content);
+                        return appTemplate;
+                    }
+                });
+            }
+
             info.properties = info.properties || {};
             obj["properties"] = info.properties;
 
@@ -507,10 +485,6 @@ namespace Vidyano.WebComponents {
             }
 
             info.properties.isConnected = Boolean;
-            info.properties.app = {
-                type: Object,
-                value: elementName !== "vi-app" ? () => window["app"] : function () { return this; }
-            };
 
             if (!info.properties.service) {
                 info.properties.service = {

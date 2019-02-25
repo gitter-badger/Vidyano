@@ -82,11 +82,11 @@ namespace Vidyano.WebComponents {
         }
 
         getPersistentObjectConfig(persistentObject: Vidyano.PersistentObject): PersistentObjectConfig {
-            return (<AppServiceHooks>this.app.service.hooks).getPersistentObjectConfig(persistentObject, this._persistentObjectConfigs);
+            return (<AppServiceHooks>this.service.hooks).getPersistentObjectConfig(persistentObject, this._persistentObjectConfigs);
         }
 
         getAttributeConfig(attribute: Vidyano.PersistentObjectAttribute): PersistentObjectAttributeConfig {
-            let config = (<AppServiceHooks>this.app.service.hooks).getAttributeConfig(attribute, this._attributeConfigs);
+            let config = (<AppServiceHooks>this.service.hooks).getAttributeConfig(attribute, this._attributeConfigs);
             if (!config) {
                 if (!this._defaultAttributeConfig)
                     this._defaultAttributeConfig = <PersistentObjectAttributeConfig><any>this.appendChild(new WebComponents.PersistentObjectAttributeConfig());
@@ -98,19 +98,19 @@ namespace Vidyano.WebComponents {
         }
 
         getTabConfig(tab: Vidyano.PersistentObjectTab): PersistentObjectTabConfig {
-            return (<AppServiceHooks>this.app.service.hooks).getTabConfig(tab, this._tabConfigs);
+            return (<AppServiceHooks>this.service.hooks).getTabConfig(tab, this._tabConfigs);
         }
 
         getProgramUnitConfig(name: string): ProgramUnitConfig {
-            return (<AppServiceHooks>this.app.service.hooks).getProgramUnitConfig(name, this._programUnitConfigs);
+            return (<AppServiceHooks>this.service.hooks).getProgramUnitConfig(name, this._programUnitConfigs);
         }
 
         getQueryConfig(query: Vidyano.Query): QueryConfig {
-            return (<AppServiceHooks>this.app.service.hooks).getQueryConfig(query, this._queryConfigs);
+            return (<AppServiceHooks>this.service.hooks).getQueryConfig(query, this._queryConfigs);
         }
 
         getQueryChartConfig(type: string): QueryChartConfig {
-            return (<AppServiceHooks>this.app.service.hooks).getQueryChartConfig(type, this._queryChartConfigs);
+            return (<AppServiceHooks>this.service.hooks).getQueryChartConfig(type, this._queryChartConfigs);
         }
 
         getSpinnerConfig(): SpinnerConfig {

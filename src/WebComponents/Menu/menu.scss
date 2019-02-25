@@ -10,21 +10,21 @@ $backgroundColor: $blue-grey-900;
     color: var(--vi-menu-color, $color);
     background-color: var(--vi-menu-background, $backgroundColor);
     width: var(--vi-menu--expand-width, 17em);
-    @apply --vi-menu;
-}
+    --at-apply: --vi-menu;
 
-:host([hide-search]) {
-    vi-input-search {
-        display: none !important;
+    &[hide-search] {
+        vi-input-search {
+            display: none !important;
+        }
+    
+        vi-menu-item:first-of-type {
+            margin-top: var(--theme-h5);
+        }
     }
-
-    vi-menu-item:first-of-type {
-        margin-top: var(--theme-h5);
+    
+    &[is-resizing] #resizer, #resizer:hover {
+        background-color: #333;
     }
-}
-
-:host([is-resizing]) #resizer, #resizer:hover {
-    background-color: #333;
 }
 
 header {
@@ -118,7 +118,7 @@ header {
         background-color: var(--theme-color-dark);
         white-space: nowrap;
         overflow: hidden;
-        @apply --vi-menu--label;
+        --at-apply: --vi-menu--label;
     }
 
     #toggleCollapse {
@@ -128,7 +128,7 @@ header {
         height: var(--theme-h1);
         width: var(--theme-h1);
         fill: rgba(255, 255, 255, 0.5);
-        @apply --vi-menu--toggle-collapse;
+        --at-apply: --vi-menu--toggle-collapse;
 
         > vi-icon {
             transition: transform 0.3s ease-in-out;
@@ -141,7 +141,7 @@ header {
 
 footer {
     overflow: hidden;
-    @apply --vi-menu--footer;
+    --at-apply: --vi-menu--footer;
 }
 
 vi-input-search {

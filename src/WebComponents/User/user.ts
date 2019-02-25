@@ -93,7 +93,7 @@ namespace Vidyano.WebComponents {
         }
 
         private _showProfiler() {
-            this.app.service.profile = true;
+            this.service.profile = true;
         }
 
         private _signedInChanged() {

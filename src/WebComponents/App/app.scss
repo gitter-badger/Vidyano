@@ -55,9 +55,9 @@
     }
 
     &[sensitive] {
-        --vi-app--sensitive: #{'{
+        --vi-app--sensitive: {
             filter: blur(5px);
-        }'};
+        };
     }
 
     vi-app-config {

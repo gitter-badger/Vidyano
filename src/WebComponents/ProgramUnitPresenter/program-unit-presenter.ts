@@ -26,10 +26,10 @@ namespace Vidyano.WebComponents {
         private _activate(e: CustomEvent) {
             const { parameters }: { parameters: IProgramUnitPresenterRouteParameters; } = e.detail;
 
-            if (!this.app.service || !this.app.service.application)
+            if (!this.service || !this.service.application)
                 return;
 
-            this._setProgramUnit(this.app.service.application.programUnits.find(pu => pu.name === parameters.programUnitName));
+            this._setProgramUnit(this.service.application.programUnits.find(pu => pu.name === parameters.programUnitName));
             if (!this.programUnit) {
                 e.preventDefault();
 

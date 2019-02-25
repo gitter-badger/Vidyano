@@ -141,7 +141,6 @@
             if (this._connectedFired)
                 return;
 
-            Polymer.flush();
             this.fire("row-connected", { item: item, index: index, row: this });
             this._connectedFired = true;
         }

@@ -106,7 +106,6 @@ namespace Vidyano.WebComponents {
     export class PersistentObjectAttributePresenter extends WebComponent implements IConfigurable {
         private _renderedAttribute: Vidyano.PersistentObjectAttribute;
         private _renderedAttributeElement: Vidyano.WebComponents.Attributes.PersistentObjectAttribute;
-        private _customTemplate: PolymerTemplate;
         private _focusQueued: boolean;
         readonly loading: boolean; private _setLoading: (loading: boolean) => void;
         attribute: Vidyano.PersistentObjectAttribute;
@@ -115,13 +114,6 @@ namespace Vidyano.WebComponents {
         height: number;
         disabled: boolean;
         readOnly: boolean;
-
-        connectedCallback() {
-            if (!this._customTemplate)
-                this._customTemplate = <PolymerTemplate><any>this.querySelector("template[is='dom-template']");
-
-            super.connectedCallback();
-        }
 
         queueFocus() {
             const activeElement = document.activeElement;
@@ -133,7 +125,7 @@ namespace Vidyano.WebComponents {
 
         private _attributeChanged(attribute: Vidyano.PersistentObjectAttribute, isConnected: boolean) {
             if (this._renderedAttribute) {
-                Polymer.dom(this.$.content).children.forEach(c => Polymer.dom(this.$.content).removeChild(c));
+                Array.from(this.$.content.children).forEach(c => this.$.content.removeChild(c));
                 this._renderedAttributeElement = this._renderedAttribute = null;
             }
 
@@ -254,23 +246,19 @@ namespace Vidyano.WebComponents {
 
             let focusTarget: HTMLElement;
             try {
-                if (this._customTemplate)
-                    (focusTarget = this.$.content).appendChild(this._customTemplate.stamp({ attribute: attribute }).root);
+                const config = <PersistentObjectAttributeConfig>this.app.configuration.getAttributeConfig(attribute);
+                this.noLabel = this.noLabel || (config && !!config.noLabel);
+
+                if (!!config && config.hasTemplate)
+                    this.$.content.appendChild(config.stamp(attribute, config.as || "attribute"));
                 else {
-                    const config = <PersistentObjectAttributeConfig>this.app.configuration.getAttributeConfig(attribute);
-                    this.noLabel = this.noLabel || (config && !!config.noLabel);
+                    this._renderedAttributeElement = <WebComponents.Attributes.PersistentObjectAttribute>new (Vidyano.WebComponents.Attributes["PersistentObjectAttribute" + attributeType] || Vidyano.WebComponents.Attributes.PersistentObjectAttributeString)();
+                    this._renderedAttributeElement.classList.add("attribute");
+                    this._renderedAttributeElement.attribute = attribute;
+                    this._renderedAttributeElement.nonEdit = this.nonEdit;
+                    this._renderedAttributeElement.disabled = this.disabled;
 
-                    if (!!config && config.hasTemplate)
-                        this.$.content.appendChild(config.stamp(attribute, config.as || "attribute"));
-                    else {
-                        this._renderedAttributeElement = <WebComponents.Attributes.PersistentObjectAttribute>new (Vidyano.WebComponents.Attributes["PersistentObjectAttribute" + attributeType] || Vidyano.WebComponents.Attributes.PersistentObjectAttributeString)();
-                        this._renderedAttributeElement.classList.add("attribute");
-                        this._renderedAttributeElement.attribute = attribute;
-                        this._renderedAttributeElement.nonEdit = this.nonEdit;
-                        this._renderedAttributeElement.disabled = this.disabled;
-
-                        this.$.content.appendChild(focusTarget = this._renderedAttributeElement);
-                    }
+                    this.$.content.appendChild(focusTarget = this._renderedAttributeElement);
                 }
 
                 this._renderedAttribute = attribute;

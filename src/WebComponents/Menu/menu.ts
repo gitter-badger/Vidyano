@@ -96,7 +96,7 @@ namespace Vidyano.WebComponents {
                 if (this.instantSearchDelay) {
                     const filter = this.filter;
                     this._instantSearchDebouncer = Polymer.Debouncer.debounce(this._instantSearchDebouncer, Polymer.Async.timeOut.after(this.instantSearchDelay), async () => {
-                        const results = await this.app.service.getInstantSearch(filter);
+                        const results = await this.service.getInstantSearch(filter);
                         if (filter !== this.filter)
                             return;
 
@@ -124,7 +124,7 @@ namespace Vidyano.WebComponents {
             if (!this.filtering || !this.hasGlobalSearch)
                 return;
 
-            this.app.changePath(this.app.getUrlForPersistentObject(this.app.service.application.globalSearchId, this.filter));
+            this.app.changePath(this.app.getUrlForPersistentObject(this.service.application.globalSearchId, this.filter));
             this.filter = "";
         }
 
@@ -194,7 +194,7 @@ namespace Vidyano.WebComponents {
         }
 
         private async _add(e: CustomEvent) {
-            const query = (await Promise.all([this.app.service.getQuery("5a4ed5c7-b843-4a1b-88f7-14bd1747458b"), this.app.importComponent("SelectReferenceDialog")]))[0] as Vidyano.Query;
+            const query = (await Promise.all([this.service.getQuery("5a4ed5c7-b843-4a1b-88f7-14bd1747458b"), this.app.importComponent("SelectReferenceDialog")]))[0] as Vidyano.Query;
             if (!query)
                 return;
 
@@ -216,7 +216,7 @@ namespace Vidyano.WebComponents {
                     return;
 
                 try {
-                    await this.app.service.executeAction("System.AddQueriesToProgramUnit", null, query, query.selectedItems, { Id: this.app.service.application.programUnits[0].id });
+                    await this.service.executeAction("System.AddQueriesToProgramUnit", null, query, query.selectedItems, { Id: this.service.application.programUnits[0].id });
                     document.location.reload();
                 }
                 catch (e) {
@@ -477,7 +477,7 @@ namespace Vidyano.WebComponents {
                             icon: "Add",
                             action: async () => {
                                 await this.app.importComponent("SelectReferenceDialog");
-                                const query = await this.app.service.getQuery("5a4ed5c7-b843-4a1b-88f7-14bd1747458b");
+                                const query = await this.service.getQuery("5a4ed5c7-b843-4a1b-88f7-14bd1747458b");
                                 if (!query)
                                     return;
 
@@ -485,7 +485,7 @@ namespace Vidyano.WebComponents {
                                 if (!query.selectedItems || query.selectedItems.length === 0)
                                     return;
 
-                                await this.app.service.executeAction("System.AddQueriesToProgramUnit", null, query, query.selectedItems, { Id: this.item.id });
+                                await this.service.executeAction("System.AddQueriesToProgramUnit", null, query, query.selectedItems, { Id: this.item.id });
                                 document.location.reload();
                             }
                         }

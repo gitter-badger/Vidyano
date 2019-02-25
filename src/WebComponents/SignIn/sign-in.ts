@@ -137,12 +137,12 @@
                     try {
                         this.app.importComponent("PersistentObjectTabPresenter");
 
-                        const registerService = new Service(this.app.service.serviceUri, this.service.hooks, true);
+                        const registerService = new Service(this.service.serviceUri, this.service.hooks, true);
                         await registerService.initialize(true);
 
                         registerService.staySignedIn = false;
-                        await registerService.signInUsingCredentials(this.app.service.providers.Vidyano.registerUser, "");
-                        const register = await registerService.getPersistentObject(null, this.app.service.providers.Vidyano.registerPersistentObjectId, undefined, true);
+                        await registerService.signInUsingCredentials(this.service.providers.Vidyano.registerUser, "");
+                        const register = await registerService.getPersistentObject(null, this.service.providers.Vidyano.registerPersistentObjectId, undefined, true);
 
                         register.beginEdit();
                         register.stateBehavior = "StayInEdit";
@@ -176,36 +176,36 @@
 
             this._setReturnUrl(decodeURIComponent(parameters.returnUrl || parameters.stateOrReturnUrl || ""));
 
-            this.userName = (this.app.service.userName !== this.app.service.defaultUserName && this.app.service.userName !== this.app.service.registerUserName ? this.app.service.userName : "") || "";
+            this.userName = (this.service.userName !== this.service.defaultUserName && this.service.userName !== this.service.registerUserName ? this.service.userName : "") || "";
             this.staySignedIn = Vidyano.cookie("staySignedIn", { force: true }) === "true";
 
-            this._setHasVidyano(!!this.app.service.providers.Vidyano);
-            this._setHasOther(Object.keys(this.app.service.providers).length > 1 || !this.hasVidyano);
+            this._setHasVidyano(!!this.service.providers.Vidyano);
+            this._setHasOther(Object.keys(this.service.providers).length > 1 || !this.hasVidyano);
             if (this.hasVidyano) {
-                this._setHasForgot(this.app.service.providers.Vidyano.forgotPassword || false);
-                this._setHasRegister(!!this.app.service.providers.Vidyano.registerUser && !!this.app.service.providers.Vidyano.registerPersistentObjectId);
+                this._setHasForgot(this.service.providers.Vidyano.forgotPassword || false);
+                this._setHasRegister(!!this.service.providers.Vidyano.registerUser && !!this.service.providers.Vidyano.registerPersistentObjectId);
             }
 
             if (this.hasVidyano)
-                this._setDescription(this.app.service.providers.Vidyano.description || "");
+                this._setDescription(this.service.providers.Vidyano.description || "");
 
-            if (this.app.service.isSignedIn) {
-                this.async(() => this.app.redirectToSignOut(), 0);
+            if (this.service.isSignedIn) {
+                Polymer.Async.microTask.run(() => this.app.redirectToSignOut());
 
                 e.preventDefault();
                 return;
             }
 
-            if (this.app.service.windowsAuthentication) {
+            if (this.service.windowsAuthentication) {
                 e.preventDefault();
 
-                await this.app.service.signInUsingCredentials("", "");
+                await this.service.signInUsingCredentials("", "");
                 this.app.changePath(this.returnUrl);
 
                 return;
             }
-            else if (this.app.service.providers && Object.keys(this.app.service.providers).length === 1 && !this.app.service.providers.Vidyano) {
-                this._authenticateExternal(Object.keys(this.app.service.providers)[0]);
+            else if (this.service.providers && Object.keys(this.service.providers).length === 1 && !this.service.providers.Vidyano) {
+                this._authenticateExternal(Object.keys(this.service.providers)[0]);
                 return;
             }
 
@@ -392,7 +392,7 @@
                 }
                 else if (this.step === "password") {
                     try {
-                        await this.app.service.signInUsingCredentials(this.userName, this.password, this.staySignedIn);
+                        await this.service.signInUsingCredentials(this.userName, this.password, this.staySignedIn);
                         this.app.changePath(decodeURIComponent(this.returnUrl || ""));
                     }
                     catch (e) {
@@ -403,7 +403,7 @@
                     }
                 }
                 else if (this.step === "twofactor") {
-                    await this.app.service.signInUsingCredentials(this.userName, this.password, this.twoFactorCode, this.staySignedIn);
+                    await this.service.signInUsingCredentials(this.userName, this.password, this.twoFactorCode, this.staySignedIn);
                     this.app.changePath(decodeURIComponent(this.returnUrl || ""));
                 }
 
@@ -421,7 +421,7 @@
             this._setIsBusy(true);
             setTimeout(() => {
                 Vidyano.cookie("returnUrl", this.returnUrl, { expires: 1, force: true });
-                this.app.service.signInExternal(key);
+                this.service.signInExternal(key);
             }, 500);
         }
 

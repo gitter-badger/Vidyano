@@ -1,11 +1,7 @@
 ﻿<dom-module id="vi-app-route-presenter">
     <template>
         <link rel="stylesheet" href="app-route-presenter.css" />
-        <dom-if if="[[!notFound]]">
-            <template>
-                <slot></slot>
-            </template>
-        </dom-if>
+        <slot id="routes"></slot>
         <dom-if if="[[notFound]]">
             <template>
                 <vi-error class="flex" message="[[translateMessage('NotFound', app.service.isSignedIn)]]"></vi-error>

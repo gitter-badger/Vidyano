@@ -34,16 +34,16 @@
         }
     }
 
+    &[loading] {
+        #headerHost, #dataHost {
+            visibility: hidden;
+        }
+    }
+
     #dataList {
         --iron-list-items-container: {
             width: var(--vi-query-grid--row-container-width, auto);
             min-width: var(--vi-query-grid--row-width, auto);
         };
-    }
-}
-
-:host([loading]) {
-    #headerHost, #dataHost {
-        visibility: hidden;
     }
 }
