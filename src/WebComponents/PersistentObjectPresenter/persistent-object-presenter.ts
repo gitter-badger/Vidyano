@@ -53,8 +53,8 @@ namespace Vidyano.WebComponents {
         },
         sensitive: true
     })
-    export class PersistentObjectPresenter extends WebComponent implements IConfigurable {
-        private _cacheEntry: PersistentObjectAppCacheEntry;
+    export class PersistentObjectPresenter extends WebComponent<App> implements IConfigurable {
+        private _cacheEntry: AppCacheEntryPersistentObject;
         readonly loading: boolean; private _setLoading: (loading: boolean) => void;
         readonly templated: boolean; private _setTemplated: (templated: boolean) => void;
         readonly error: string; private _setError: (error: string) => void;
@@ -65,7 +65,7 @@ namespace Vidyano.WebComponents {
         private _activate(e: CustomEvent) {
             const { parameters }: { parameters: IPersistentObjectPresenterRouteParameters; } = e.detail;
             if (parameters.fromActionId) {
-                if (this._cacheEntry = <PersistentObjectFromActionAppCacheEntry>this.app.cachePing(new PersistentObjectFromActionAppCacheEntry(undefined, parameters.fromActionId)))
+                if (this._cacheEntry = <AppCacheEntryPersistentObjectFromAction>this.app.cachePing(new AppCacheEntryPersistentObjectFromAction(undefined, parameters.fromActionId)))
                     this.persistentObject = this._cacheEntry.persistentObject;
 
                 if (!this._cacheEntry) {
@@ -77,8 +77,8 @@ namespace Vidyano.WebComponents {
                     return;
                 }
             } else {
-                const cacheEntry = new PersistentObjectAppCacheEntry(parameters.id, parameters.objectId);
-                this._cacheEntry = <PersistentObjectAppCacheEntry>this.app.cachePing(cacheEntry);
+                const cacheEntry = new AppCacheEntryPersistentObject(parameters.id, parameters.objectId);
+                this._cacheEntry = <AppCacheEntryPersistentObject>this.app.cachePing(cacheEntry);
                 if (!this._cacheEntry)
                     this.app.cache(this._cacheEntry = cacheEntry);
 
@@ -114,7 +114,7 @@ namespace Vidyano.WebComponents {
 
                 if (result === 1) {
                     this.app.cacheEntries.forEach(entry => {
-                        if (entry instanceof Vidyano.WebComponents.PersistentObjectAppCacheEntry && !!entry.persistentObject && entry.persistentObject.isDirty && entry.persistentObject.actions.some(a => a.name === "Save" || a.name === "EndEdit")) {
+                        if (entry instanceof Vidyano.WebComponents.AppCacheEntryPersistentObject && !!entry.persistentObject && entry.persistentObject.isDirty && entry.persistentObject.actions.some(a => a.name === "Save" || a.name === "EndEdit")) {
                             if (entry.persistentObject.isNew)
                                 this.app.cacheRemove(entry);
                             else
@@ -143,7 +143,7 @@ namespace Vidyano.WebComponents {
 
                 try {
                     const po = await this.service.getPersistentObject(null, persistentObjectId, persistentObjectObjectId);
-                    const cacheEntry = <PersistentObjectAppCacheEntry>this.app.cache(new PersistentObjectAppCacheEntry(persistentObjectId, persistentObjectObjectId));
+                    const cacheEntry = <AppCacheEntryPersistentObject>this.app.cache(new AppCacheEntryPersistentObject(persistentObjectId, persistentObjectObjectId));
 
                     cacheEntry.persistentObject = po;
 

@@ -228,7 +228,7 @@ namespace Vidyano.WebComponents {
         subActions?: IConfigurableAction[];
     }
 
-    export abstract class WebComponent extends Polymer.GestureEventListeners(Polymer.Element) {
+    export abstract class WebComponent<T extends AppBase = AppBase> extends Polymer.GestureEventListeners(Polymer.Element) {
         readonly service: Vidyano.Service;
         readonly translations: { [key: string]: string; };
         protected readonly isAppSensitive: boolean;
@@ -254,8 +254,8 @@ namespace Vidyano.WebComponents {
             this.notifyPath("isConnected", false);
         }
 
-        get app(): AppBase {
-            return window["app"];
+        get app(): T {
+            return <T>window["app"];
         }
 
         get domHost(): HTMLElement {
@@ -309,16 +309,16 @@ namespace Vidyano.WebComponents {
         }
 
         /**
-          * Dispatches a custom event with an optional detail value.
-          * @param {string} type Name of event type.
-          * @param {*=} detail Detail value containing event-specific payload.
-          * @param {{ bubbles: (boolean|undefined), cancelable: (boolean|undefined), composed: (boolean|undefined) }=}
-          *  options Object specifying options.  These may include:
-          *  `bubbles` (boolean, defaults to `true`),
-          *  `cancelable` (boolean, defaults to false), and
-          *  `node` on which to fire the event (HTMLElement, defaults to `this`).
-          * @return {!Event} The new event that was fired.
-          */
+         * Dispatches a custom event with an optional detail value.
+         * @param {string} type Name of event type.
+         * @param {*=} detail Detail value containing event-specific payload.
+         * @param {{ bubbles: (boolean|undefined), cancelable: (boolean|undefined), composed: (boolean|undefined) }=}
+         *  options Object specifying options.  These may include:
+         *  `bubbles` (boolean, defaults to `true`),
+         *  `cancelable` (boolean, defaults to false), and
+         *  `node` on which to fire the event (HTMLElement, defaults to `this`).
+         * @return {!Event} The new event that was fired.
+         */
         fire(type: string, detail?: any, options?: { node?: Node, bubbles?: boolean, cancelable?: boolean, composed?: boolean }): Event {
             options = options || {};
             detail = (detail === null || detail === undefined) ? {} : detail;

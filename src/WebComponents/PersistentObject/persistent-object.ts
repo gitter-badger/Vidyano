@@ -1,4 +1,4 @@
-﻿namespace Vidyano.WebComponents {
+namespace Vidyano.WebComponents {
     @WebComponent.register({
         properties: {
             persistentObject: {
@@ -96,11 +96,11 @@
             "tabselect": "_tabselect"
         }
     })
-    export class PersistentObject extends WebComponent {
+    export class PersistentObject extends WebComponent<App> {
         private _uniqueId: string = Unique.get();
         private _parameters: { id: string; objectId: string };
         private _styleElement: HTMLElement;
-        private _cacheEntry: PersistentObjectAppCacheEntry;
+        private _cacheEntry: AppCacheEntryPersistentObject;
         persistentObject: Vidyano.PersistentObject;
         layout: string;
         masterWidth: string;
@@ -126,7 +126,7 @@
 
         private _persistentObjectChanged(persistentObject: Vidyano.PersistentObject, isConnected: boolean) {
             if (persistentObject && isConnected) {
-                this._cacheEntry = <PersistentObjectAppCacheEntry>this.app.cache(new PersistentObjectAppCacheEntry(this.persistentObject));
+                this._cacheEntry = <AppCacheEntryPersistentObject>this.app.cache(new AppCacheEntryPersistentObject(this.persistentObject));
 
                 this.selectedMasterTab = this._cacheEntry.selectedMasterTab || this._computeMasterTabs(this.persistentObject, this.persistentObject.tabs)[0] || null;
                 this.selectedDetailTab = this._cacheEntry.selectedDetailTab || this._computeDetailTabs(this.persistentObject, this.persistentObject.tabs)[0] || null;
@@ -284,17 +284,17 @@
         }
 
         private _trackSplitter(e: Polymer.TrackEvent) {
-            if (e.state === "track") {
+            if (e.detail.state === "track") {
                 const px = parseInt(this.masterWidth);
-                this.masterWidth = (px + e.ddx) + "px";
+                this.masterWidth = (px + e.detail.ddx) + "px";
             }
-            else if (e.state === "start") {
+            else if (e.detail.state === "start") {
                 this.app.isTracking = true;
                 this.app.classList.add("dragging");
                 if (this.masterWidth.endsWith("%"))
                     this.masterWidth = (this.offsetWidth * (parseInt(this.masterWidth) / 100)).toString() + "px";
             }
-            else if (e.state === "end") {
+            else if (e.detail.state === "end") {
                 this.app.classList.remove("dragging");
                 window.getSelection().removeAllRanges();
 

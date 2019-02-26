@@ -95,13 +95,13 @@ namespace Vidyano.WebComponents {
         }
 
         private _track(e: Polymer.TrackEvent) {
-            if (e.state === "track" && this._translatePosition && this.app.isTracking) {
+            if (e.detail.state === "track" && this._translatePosition && this.app.isTracking) {
                 this._translate({
-                    x: this._translatePosition.x + e.ddx,
-                    y: this._translatePosition.y + e.ddy
+                    x: this._translatePosition.x + e.detail.ddx,
+                    y: this._translatePosition.y + e.detail.ddy
                 });
             }
-            else if (e.state === "start") {
+            else if (e.detail.state === "start") {
                 if (!(<HTMLElement>(e.sourceEvent.target)).tagName.startsWith("H")) {
                     e.stopPropagation();
                     e.preventDefault();
@@ -115,7 +115,7 @@ namespace Vidyano.WebComponents {
 
                 this.setAttribute("dragging", "");
             }
-            else if (e.state === "end") {
+            else if (e.detail.state === "end") {
                 this.removeAttribute("dragging");
                 this.app.isTracking = false;
             }

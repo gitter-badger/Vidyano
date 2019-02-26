@@ -8,8 +8,8 @@
             if (args.action === "ShowHelp") {
                 // Only pass selected tab for actions on persistent objects
                 if (!args.query) {
-                    let cacheEntry = new PersistentObjectAppCacheEntry(args.persistentObject);
-                    cacheEntry = <PersistentObjectAppCacheEntry>this.app.cacheEntries.find(ce => ce.isMatch(cacheEntry));
+                    let cacheEntry = new AppCacheEntryPersistentObject(args.persistentObject);
+                    cacheEntry = <AppCacheEntryPersistentObject>this.app.cacheEntries.find(ce => ce.isMatch(cacheEntry));
 
                     if (cacheEntry && cacheEntry.selectedMasterTab) {
                         if (!args.parameters)
@@ -51,7 +51,7 @@
                 if (!fromAction) {
                     path = this.app.getUrlForPersistentObject(po.id, po.objectId);
 
-                    const cacheEntry = new PersistentObjectAppCacheEntry(po);
+                    const cacheEntry = new AppCacheEntryPersistentObject(po);
                     const existing = this.app.cachePing(cacheEntry);
                     if (existing)
                         this.app.cacheRemove(existing);
@@ -63,19 +63,19 @@
                     path = this.app.getUrlForFromAction(fromActionId);
 
                     if (!po.isNew && po.objectId) {
-                        const existingPoCacheEntry = this.app.cachePing(new PersistentObjectAppCacheEntry(po));
+                        const existingPoCacheEntry = this.app.cachePing(new AppCacheEntryPersistentObject(po));
                         if (existingPoCacheEntry)
                             this.app.cacheRemove(existingPoCacheEntry);
                     }
                     else if (po.isBulkEdit) {
                         po.bulkObjectIds.forEach(poId => {
-                            const existingPoCacheEntry = this.app.cachePing(new PersistentObjectAppCacheEntry(po.id, poId));
+                            const existingPoCacheEntry = this.app.cachePing(new AppCacheEntryPersistentObject(po.id, poId));
                             if (existingPoCacheEntry)
                                 this.app.cacheRemove(existingPoCacheEntry);
                         });
                     }
 
-                    this.app.cache(new PersistentObjectFromActionAppCacheEntry(po, fromActionId, this.app.path));
+                    this.app.cache(new AppCacheEntryPersistentObjectFromAction(po, fromActionId, this.app.path));
                 }
 
                 this.app.changePath(path, replaceCurrent);
@@ -84,8 +84,8 @@
 
         onClose(parent: Vidyano.ServiceObject) {
             if (parent instanceof Vidyano.PersistentObject) {
-                const cacheEntry = <PersistentObjectFromActionAppCacheEntry>this.app.cachePing(new PersistentObjectFromActionAppCacheEntry(parent));
-                if (cacheEntry instanceof PersistentObjectFromActionAppCacheEntry && cacheEntry.fromActionIdReturnPath) {
+                const cacheEntry = <AppCacheEntryPersistentObjectFromAction>this.app.cachePing(new AppCacheEntryPersistentObjectFromAction(parent));
+                if (cacheEntry instanceof AppCacheEntryPersistentObjectFromAction && cacheEntry.fromActionIdReturnPath) {
                     if (AppBase.removeRootPath(this.app.getUrlForFromAction(cacheEntry.fromActionId)) === AppBase.removeRootPath(this.app.path)) {
                         if (this.app.noHistory)
                             this.app.changePath(cacheEntry.fromActionIdReturnPath, true);
@@ -101,16 +101,16 @@
                 case "Refresh":
                     const refresh = <ClientOperations.IRefreshOperation>operation;
                     if (refresh.queryId) {
-                        const cacheEntry = <QueryAppCacheEntry>this.app.cachePing(new QueryAppCacheEntry(refresh.queryId));
+                        const cacheEntry = <AppCacheEntryQuery>this.app.cachePing(new AppCacheEntryQuery(refresh.queryId));
                         if (cacheEntry && cacheEntry.query)
                             cacheEntry.query.search({ delay: refresh.delay });
 
-                        const poCacheEntriesWithQueries = <PersistentObjectAppCacheEntry[]>this.app.cacheEntries.filter(e => e instanceof PersistentObjectAppCacheEntry && !!e.persistentObject && e.persistentObject.queries.length > 0);
+                        const poCacheEntriesWithQueries = <AppCacheEntryPersistentObject[]>this.app.cacheEntries.filter(e => e instanceof AppCacheEntryPersistentObject && !!e.persistentObject && e.persistentObject.queries.length > 0);
                         poCacheEntriesWithQueries.forEach(poEntry => poEntry.persistentObject.queries.filter(q => q.id === refresh.queryId).forEach(q => q.search({ delay: refresh.delay })));
                     }
                     else {
                         const refreshPersistentObject = async () => {
-                            const cacheEntry = <PersistentObjectAppCacheEntry>this.app.cachePing(new PersistentObjectAppCacheEntry(refresh.fullTypeName, refresh.objectId));
+                            const cacheEntry = <AppCacheEntryPersistentObject>this.app.cachePing(new AppCacheEntryPersistentObject(refresh.fullTypeName, refresh.objectId));
                             if (!cacheEntry || !cacheEntry.persistentObject)
                                 return;
 

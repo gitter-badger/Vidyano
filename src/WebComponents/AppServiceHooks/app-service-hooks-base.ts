@@ -1,3 +1,7 @@
+/* tslint:disable:no-var-keyword */
+var _gaq: any[];
+/* tslint:enable:no-var-keyword */
+
 namespace Vidyano.WebComponents {
     export class AppServiceHooksBase extends Vidyano.ServiceHooks {
         constructor(public app: AppBase) {

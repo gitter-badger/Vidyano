@@ -1,88 +1,4 @@
-/* tslint:disable:no-var-keyword */
-var _gaq: any[];
-/* tslint:enable:no-var-keyword */
-
 namespace Vidyano.WebComponents {
-    export class AppCacheEntry {
-        constructor(public id: string) {
-        }
-
-        isMatch(entry: AppCacheEntry): boolean {
-            return entry.id === this.id;
-        }
-    }
-
-    export class PersistentObjectAppCacheEntry extends AppCacheEntry {
-        private _persistentObject: Vidyano.PersistentObject;
-        selectedMasterTab: Vidyano.PersistentObjectTab;
-        selectedDetailTab: Vidyano.PersistentObjectTab;
-
-        constructor(idOrPo: string | Vidyano.PersistentObject, public objectId?: string) {
-            super(typeof idOrPo === "string" ? idOrPo : (idOrPo instanceof Vidyano.PersistentObject ? idOrPo.id : null));
-
-            if (idOrPo instanceof Vidyano.PersistentObject) {
-                this.persistentObject = idOrPo;
-                this.objectId = this.persistentObject.objectId;
-            }
-        }
-
-        get persistentObject(): Vidyano.PersistentObject {
-            return this._persistentObject;
-        }
-
-        set persistentObject(po: Vidyano.PersistentObject) {
-            if (po === this._persistentObject)
-                return;
-
-            this._persistentObject = po;
-            this.selectedMasterTab = this.selectedDetailTab = null;
-        }
-
-        isMatch(entry: PersistentObjectAppCacheEntry): boolean {
-            if (!(entry instanceof PersistentObjectAppCacheEntry))
-                return false;
-
-            if (entry.persistentObject != null && entry.persistentObject === this.persistentObject)
-                return true;
-
-            return (super.isMatch(entry) || (entry.persistentObject && this.id === entry.persistentObject.fullTypeName)) && (entry.objectId === this.objectId || StringEx.isNullOrEmpty(entry.objectId) && StringEx.isNullOrEmpty(this.objectId));
-        }
-    }
-
-    export class PersistentObjectFromActionAppCacheEntry extends PersistentObjectAppCacheEntry {
-        constructor(po: Vidyano.PersistentObject, public fromActionId?: string, public fromActionIdReturnPath?: string) {
-            super(po);
-        }
-
-        isMatch(entry: PersistentObjectFromActionAppCacheEntry): boolean {
-            if (!(entry instanceof PersistentObjectFromActionAppCacheEntry))
-                return false;
-
-            return this.fromActionId === entry.fromActionId || entry.persistentObject === this.persistentObject;
-        }
-    }
-
-    export class QueryAppCacheEntry extends AppCacheEntry {
-        query: Vidyano.Query;
-
-        constructor(idOrQuery: string | Vidyano.Query) {
-            super(typeof idOrQuery === "string" ? idOrQuery : null);
-
-            if (idOrQuery instanceof Vidyano.Query)
-                this.query = idOrQuery;
-        }
-
-        isMatch(entry: QueryAppCacheEntry): boolean {
-            if (!(entry instanceof QueryAppCacheEntry))
-                return false;
-
-            if (entry.query === this.query)
-                return true;
-
-            return entry instanceof QueryAppCacheEntry && super.isMatch(entry);
-        }
-    }
-
     @WebComponent.register({
         properties: {
             cacheSize: {
@@ -202,7 +118,7 @@ namespace Vidyano.WebComponents {
         }
 
         private _beforeUnload(e: Event) {
-            if (this._cache.some(entry => entry instanceof Vidyano.WebComponents.PersistentObjectAppCacheEntry && !!entry.persistentObject && entry.persistentObject.isDirty && entry.persistentObject.actions.some(a => a.name === "Save" || a.name === "EndEdit")) && this.service) {
+            if (this._cache.some(entry => entry instanceof Vidyano.WebComponents.AppCacheEntryPersistentObject && !!entry.persistentObject && entry.persistentObject.isDirty && entry.persistentObject.actions.some(a => a.name === "Save" || a.name === "EndEdit")) && this.service) {
                 const confirmationMessage = this.service.getTranslatedMessage("PagesWithUnsavedChanges");
 
                 (e || window.event).returnValue = <any>confirmationMessage; // Gecko + IE

@@ -41,9 +41,9 @@ namespace Vidyano.WebComponents {
             "query.labelWithTotalItems"
         ]
     })
-    export class QueryPresenter extends WebComponent {
+    export class QueryPresenter extends WebComponent<App> {
         private _customTemplate: PolymerTemplate;
-        private _cacheEntry: QueryAppCacheEntry;
+        private _cacheEntry: AppCacheEntryQuery;
         readonly loading: boolean; private _setLoading: (loading: boolean) => void;
         readonly error: string; private _setError: (error: string) => void;
         queryId: string;
@@ -59,7 +59,7 @@ namespace Vidyano.WebComponents {
         private _activate(e: CustomEvent) {
             const { parameters }: { parameters: IQueryPresenterRouteParameters; } = e.detail;
 
-            this._cacheEntry = <QueryAppCacheEntry>this.app.cache(new QueryAppCacheEntry(parameters.id));
+            this._cacheEntry = <AppCacheEntryQuery>this.app.cache(new AppCacheEntryQuery(parameters.id));
             if (this._cacheEntry && this._cacheEntry.query)
                 this.query = this._cacheEntry.query;
             else {
@@ -92,7 +92,7 @@ namespace Vidyano.WebComponents {
 
                     const query = await app.service.getQuery(this.queryId);
                     if (query.id.toUpperCase() === this.queryId.toUpperCase()) {
-                        this._cacheEntry = <QueryAppCacheEntry>this.app.cache(new QueryAppCacheEntry(query.id));
+                        this._cacheEntry = <AppCacheEntryQuery>this.app.cache(new AppCacheEntryQuery(query.id));
                         this.query = this._cacheEntry.query = query;
                     }
                 }

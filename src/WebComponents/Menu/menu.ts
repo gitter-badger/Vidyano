@@ -48,7 +48,7 @@ namespace Vidyano.WebComponents {
             "reset-filter": "_resetFilter"
         }
     })
-    export class Menu extends WebComponent {
+    export class Menu extends WebComponent<App> {
         private static _minResizeWidth: number;
         private _resizeWidth: number;
         private _instantSearchDebouncer: Polymer.Debouncer;
@@ -87,6 +87,10 @@ namespace Vidyano.WebComponents {
             // TODO
             // Array.from(Polymer.dom(this.$.footerElements).children).forEach(element => Polymer.dom(this.app).appendChild(element));
             // Array.from(Polymer.dom(this.$.headerElements).children).forEach(element => Polymer.dom(this.app).appendChild(element));
+        }
+
+        get app(): App {
+            return <App>super.app;
         }
 
         private _filterChanged() {
@@ -167,17 +171,17 @@ namespace Vidyano.WebComponents {
         }
 
         private _onResize(e: Polymer.TrackEvent) {
-            if (e.state === "start") {
+            if (e.detail.state === "start") {
                 this.app.isTracking = true;
                 this._resizeWidth = Math.max(Menu._minResizeWidth, this.offsetWidth);
                 this.updateStyles({ "--vi-menu--expand-width": `${this._resizeWidth}px` });
                 this._setIsResizing(true);
             }
-            else if (e.state === "track") {
-                this._resizeWidth = Math.max(Menu._minResizeWidth, this._resizeWidth + e.ddx);
+            else if (e.detail.state === "track") {
+                this._resizeWidth = Math.max(Menu._minResizeWidth, this._resizeWidth + e.detail.ddx);
                 this.updateStyles({ "--vi-menu--expand-width": `${this._resizeWidth} px` });
             }
-            else if (e.state === "end") {
+            else if (e.detail.state === "end") {
                 Vidyano.cookie("menu-width", String(this._resizeWidth));
                 this._setIsResizing(false);
                 this.app.isTracking = false;
@@ -311,7 +315,7 @@ namespace Vidyano.WebComponents {
             "tap": "_tap"
         }
     })
-    export class MenuItem extends WebComponent {
+    export class MenuItem extends WebComponent<App> {
         readonly expand: boolean; private _setExpand: (val: boolean) => void;
         collapseGroupsOnTap: boolean;
         item: Vidyano.ProgramUnitItem;
@@ -351,9 +355,9 @@ namespace Vidyano.WebComponents {
                     item = (<Vidyano.ProgramUnit>item).items[0];
 
                 if (item instanceof Vidyano.ProgramUnitItemQuery)
-                    this.app.cacheRemove(new QueryAppCacheEntry((<Vidyano.ProgramUnitItemQuery>item).queryId));
+                    this.app.cacheRemove(new AppCacheEntryQuery((<Vidyano.ProgramUnitItemQuery>item).queryId));
                 else if (item instanceof Vidyano.ProgramUnitItemPersistentObject)
-                    this.app.cacheRemove(new PersistentObjectAppCacheEntry((<Vidyano.ProgramUnitItemPersistentObject>item).persistentObjectId, (<Vidyano.ProgramUnitItemPersistentObject>item).persistentObjectObjectId));
+                    this.app.cacheRemove(new AppCacheEntryPersistentObject((<Vidyano.ProgramUnitItemPersistentObject>item).persistentObjectId, (<Vidyano.ProgramUnitItemPersistentObject>item).persistentObjectObjectId));
 
                 if (this.app.noHistory && !(item instanceof Vidyano.ProgramUnitItemUrl)) {
                     e.preventDefault();
