@@ -453,18 +453,38 @@ namespace Vidyano.WebComponents {
 
             obj["is"] = elementName;
 
-            if (Vidyano.WebComponents.AppBase && obj.prototype instanceof Vidyano.WebComponents.AppBase && !obj.hasOwnProperty("template")) {
-                Object.defineProperty(obj, "template", {
-                    enumerable: false,
-                    configurable: false,
-                    get: () => {
-                        const appTemplate = <HTMLTemplateElement>(Polymer.DomModule.import("vi-app-base", "template")).cloneNode(true);
-                        const customTemplate = <HTMLTemplateElement>Polymer.DomModule.import(elementName, "template");
+            if (!obj.hasOwnProperty("template")) {
+                if (Vidyano.WebComponents.AppBase && obj.prototype instanceof Vidyano.WebComponents.AppBase) {
+                    Object.defineProperty(obj, "template", {
+                        enumerable: false,
+                        configurable: false,
+                        get: () => {
+                            const appTemplate = <HTMLTemplateElement>(Polymer.DomModule.import("vi-app-base", "template")).cloneNode(true);
+                            const customTemplate = <HTMLTemplateElement>Polymer.DomModule.import(elementName, "template");
 
-                        appTemplate.content.appendChild(customTemplate.content);
-                        return appTemplate;
+                            appTemplate.content.appendChild(customTemplate.content);
+                            return appTemplate;
+                        }
+                    });
+                }
+                else {
+                    const styleModuleTemplate = <HTMLTemplateElement>Polymer.DomModule.import(`${elementName}-style-module`, "template");
+                    if (styleModuleTemplate != null) {
+                        const style = styleModuleTemplate.content.querySelector("style");
+                        if (style != null) {
+                            Object.defineProperty(obj, "template", {
+                                enumerable: false,
+                                configurable: false,
+                                get: () => {
+                                    const componentTemplate = <HTMLTemplateElement>(Polymer.DomModule.import(elementName, "template")).cloneNode(true);
+                                    componentTemplate.content.appendChild(style);
+
+                                    return componentTemplate;
+                                }
+                            });
+                        }
                     }
-                });
+                }
             }
 
             info.properties = info.properties || {};
