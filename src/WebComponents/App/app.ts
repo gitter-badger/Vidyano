@@ -148,6 +148,10 @@ namespace Vidyano.WebComponents {
                 this.label = this.title;
         }
 
+        protected _createServiceHooks(): ServiceHooks {
+            return new AppServiceHooks(this);
+        }
+
         private _pathChanged(path: string) {
             this.set("pathExtended", this._convertPath(this.service.application, path));
         }

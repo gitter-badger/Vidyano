@@ -41,6 +41,7 @@
                     const route = AppBase.removeRootPath(appRoute.route);
 
                     this._routeMap[route] = appRoute;
+
                     Vidyano.Path.map(Path.routes.rootPath + route).to(() => this.path = AppBase.removeRootPath(Vidyano.Path.routes.current));
                 });
               });

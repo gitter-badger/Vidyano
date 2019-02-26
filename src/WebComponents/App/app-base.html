@@ -40,7 +40,7 @@
     <template>
         <style include="vi-responsive-style-module"></style>
         <style include="vi-flex-layout-style-module"></style>
-        <link rel="stylesheet" href="app.css">
+        <link rel="stylesheet" href="app-base.css">
         <iron-a11y-keys keys="[[keys]]" on-keys-pressed="_keysPressed"></iron-a11y-keys>
         <iron-media-query query="(max-width: 479px)" query-matches="{{isPhone}}"></iron-media-query>
         <iron-media-query query="(min-width: 480px) and (max-width: 839px)" query-matches="{{isTablet}}"></iron-media-query>
@@ -109,11 +109,6 @@
             </vi-persistent-object-config>
             <slot name="vi-app-config" slot="vi-app-config"></slot>
         </vi-app-config>
-        <dom-if if="[[service.application.hasManagement]]">
-            <template>
-                <vi-popup-menu id="viConfigure" ctrl-key context-menu-only></vi-popup-menu>
-            </template>
-        </dom-if>
         <dom-if if="[[updateAvailable]]">
             <template>
                 <div id="update">
@@ -146,5 +141,5 @@
 <script src="Config/spinner-config.js"></script>
 <script src="Config/app-config.js"></script>
 <script src="app-color.js"></script>
-<script src="app-service-hooks.js"></script>
+<script src="../AppServiceHooks/app-service-hooks-base.js"></script>
 <script src="app-base.js"></script>

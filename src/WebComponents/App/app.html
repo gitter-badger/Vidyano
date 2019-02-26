@@ -1,5 +1,6 @@
 ﻿<dom-module id="vi-app">
     <template>
+        <link rel="stylesheet" href="app.css">
         <vi-profiler service="[[service]]" hidden$="[[!isProfiling]]"></vi-profiler>
         <dom-if if="[[showMenu]]" restamp>
             <template>
@@ -30,7 +31,13 @@
                 </template>
             </vi-app-route>
         </vi-app-route-presenter>
+        <dom-if if="[[service.application.hasManagement]]">
+            <template>
+                <vi-popup-menu id="viConfigure" ctrl-key context-menu-only></vi-popup-menu>
+            </template>
+        </dom-if>
     </template>
 </dom-module>
 
+<script src="../AppServiceHooks/app-service-hooks.js"></script>
 <script src="app.js"></script>

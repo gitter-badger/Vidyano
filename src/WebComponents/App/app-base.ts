@@ -192,7 +192,7 @@ namespace Vidyano.WebComponents {
             if (this.service == null) {
                 const serviceInitializer = new Promise(resolve => {
                     const task = async () => {
-                        let hooks: AppServiceHooks;
+                        let hooks: ServiceHooks;
                         if (this.hooks) {
                             const ctor = this.hooks.split(".").reduce((obj: any, path: string) => obj && obj[path], window);
                             if (ctor)
@@ -201,7 +201,7 @@ namespace Vidyano.WebComponents {
                                 Polymer.Async.timeOut.run(task, 250);
                         }
                         else
-                            hooks = new AppServiceHooks(this);
+                            hooks = this._createServiceHooks();
 
                         if (this.service == null)
                             this._setService(new Vidyano.Service(this.uri, hooks));
@@ -252,6 +252,10 @@ namespace Vidyano.WebComponents {
         private _appRoutePresenterConnected(e: CustomEvent) {
             const appRoutePresenter = <AppRoutePresenter>e.composedPath()[0];
             this._setAppRoutePresenter(appRoutePresenter);
+        }
+
+        protected _createServiceHooks(): ServiceHooks {
+            return new AppServiceHooksBase(this);
         }
 
         private _onSessionStorage(event: StorageEvent) {
