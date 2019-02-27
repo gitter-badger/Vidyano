@@ -1,3 +1,22 @@
+
+<dom-module id="vi-base-style-module">
+    <template>
+        <link rel="stylesheet" href="StyleModules/base.css">
+    </template>
+</dom-module>
+
+<dom-module id="vi-flex-layout-style-module">
+    <template>
+        <link rel="stylesheet" href="StyleModules/flex-layout.css">
+    </template>
+</dom-module>
+    
+<dom-module id="vi-responsive-style-module">
+    <template>
+        <link rel="stylesheet" href="StyleModules/responsive.css">
+    </template>
+</dom-module>
+
 <script src="../../Libs/pathjs/path.js"></script>
 <script src="../../Libs/shims/requestIdleCallback.js"></script>
 <link rel="import" href="../../Libs/iron-a11y-keys/iron-a11y-keys.html">
@@ -16,7 +35,7 @@
 <link rel="import" href="../Grid/grid.html">
 <link rel="import" href="../Icon/icon.html">
 <link rel="import" href="../Popup/popup.html">
-<link rel="import" href="../SessionPresenter/session-presenter.html">
+<link rel="import" href="../Scroller/scroller.html">
 <link rel="import" href="../SizeTracker/size-tracker.html">
 <link rel="import" href="../Spinner/spinner.html">
 <link rel="import" href="../SignIn/sign-in.html">
@@ -24,22 +43,9 @@
 
 <link rel="stylesheet" href="app-global.css">
 
-<dom-module id="vi-responsive-style-module">
-    <template>
-        <link rel="stylesheet" href="StyleModules/responsive.css">
-    </template>
-</dom-module>
-
-<dom-module id="vi-flex-layout-style-module">
-    <template>
-        <link rel="stylesheet" href="StyleModules/flex-layout.css">
-    </template>
-</dom-module>
-
 <dom-module id="vi-app-base">
     <template>
         <style include="vi-responsive-style-module"></style>
-        <style include="vi-flex-layout-style-module"></style>
         <link rel="stylesheet" href="app-base.css">
         <iron-a11y-keys keys="[[keys]]" on-keys-pressed="_keysPressed"></iron-a11y-keys>
         <iron-media-query query="(max-width: 479px)" query-matches="{{isPhone}}"></iron-media-query>

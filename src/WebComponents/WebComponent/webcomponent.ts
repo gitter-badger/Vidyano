@@ -447,45 +447,62 @@ namespace Vidyano.WebComponents {
             return results && results[1] || "";
         }
 
+        private static _addTemplateProperty(obj: Function, elementName: string) {
+            if (Vidyano.WebComponents.AppBase && obj.prototype instanceof Vidyano.WebComponents.AppBase) {
+                Object.defineProperty(obj, "template", {
+                    enumerable: false,
+                    configurable: false,
+                    get: () => {
+                        const appTemplate = <HTMLTemplateElement>(Polymer.DomModule.import("vi-app-base", "template")).cloneNode(true);
+                        const customTemplate = <HTMLTemplateElement>Polymer.DomModule.import(elementName, "template");
+
+                        appTemplate.content.appendChild(customTemplate.content);
+                        return appTemplate;
+                    }
+                });
+            }
+            else {
+                const componentTemplate = <HTMLTemplateElement>(Polymer.DomModule.import(elementName, "template"));
+                if (componentTemplate != null) {
+                    const userStyleModuleTemplate = <HTMLTemplateElement>Polymer.DomModule.import(`${elementName}-style-module`, "template");
+                    const userStyle = userStyleModuleTemplate != null ? userStyleModuleTemplate.content.querySelector("style") : null;
+
+                    Object.defineProperty(obj, "template", {
+                        enumerable: false,
+                        configurable: false,
+                        get: () => {
+                            const baseStyle = (<HTMLTemplateElement>Polymer.DomModule.import("vi-base-style-module", "template")).content.querySelector("style").cloneNode(true);
+                            // Add vi-base-style-module
+                            componentTemplate.content.insertBefore(baseStyle, componentTemplate.content.firstChild);
+
+                            // Add vi-flex-layout-style-module if template contains layout or flex class
+                            const temp = document.createElement("div");
+                            temp.appendChild(componentTemplate.cloneNode(true));
+                            if (/class="[^"]*?(layout|flex)[^"]*?"/.test(temp.innerHTML)) {
+                                const flexLayoutStyleModuleTemplate = <HTMLTemplateElement>Polymer.DomModule.import("vi-flex-layout-style-module", "template");
+                                const flexLayoutStyle = flexLayoutStyleModuleTemplate.content.querySelector("style");
+                                if (flexLayoutStyle != null)
+                                    baseStyle.parentNode.insertBefore(flexLayoutStyle.cloneNode(true), baseStyle.nextSibling);
+                            }
+
+                            if (userStyle != null)
+                                componentTemplate.content.appendChild(userStyle);
+
+                            return componentTemplate;
+                        }
+                    });
+                }
+            }
+        }
+
         private static _register(obj: Function, info: IWebComponentRegistrationInfo = {}, prefix: string = "vi", ns?: any) {
             const name = obj.name;
             const elementName = prefix + name.replace(/([A-Z])/g, m => "-" + m[0].toLowerCase());
 
             obj["is"] = elementName;
 
-            if (!obj.hasOwnProperty("template")) {
-                if (Vidyano.WebComponents.AppBase && obj.prototype instanceof Vidyano.WebComponents.AppBase) {
-                    Object.defineProperty(obj, "template", {
-                        enumerable: false,
-                        configurable: false,
-                        get: () => {
-                            const appTemplate = <HTMLTemplateElement>(Polymer.DomModule.import("vi-app-base", "template")).cloneNode(true);
-                            const customTemplate = <HTMLTemplateElement>Polymer.DomModule.import(elementName, "template");
-
-                            appTemplate.content.appendChild(customTemplate.content);
-                            return appTemplate;
-                        }
-                    });
-                }
-                else {
-                    const styleModuleTemplate = <HTMLTemplateElement>Polymer.DomModule.import(`${elementName}-style-module`, "template");
-                    if (styleModuleTemplate != null) {
-                        const style = styleModuleTemplate.content.querySelector("style");
-                        if (style != null) {
-                            Object.defineProperty(obj, "template", {
-                                enumerable: false,
-                                configurable: false,
-                                get: () => {
-                                    const componentTemplate = <HTMLTemplateElement>(Polymer.DomModule.import(elementName, "template")).cloneNode(true);
-                                    componentTemplate.content.appendChild(style);
-
-                                    return componentTemplate;
-                                }
-                            });
-                        }
-                    }
-                }
-            }
+            if (!obj.hasOwnProperty("template"))
+                Vidyano.WebComponents.WebComponent._addTemplateProperty(obj, elementName);
 
             info.properties = info.properties || {};
             obj["properties"] = info.properties;

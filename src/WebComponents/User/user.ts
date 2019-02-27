@@ -46,7 +46,7 @@ namespace Vidyano.WebComponents {
         ],
         sensitive: true
     })
-    export class User extends WebComponent {
+    export class User extends WebComponent<App> {
         readonly service: Vidyano.Service; private _setService: (service: Vidyano.Service) => void;
         readonly isSignedIn: boolean; private _setIsSignedIn: (val: boolean) => void;
         readonly hasSensitive: boolean; private _setHasSensitive: (val: boolean) => void;
