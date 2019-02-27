@@ -357,7 +357,7 @@ namespace Vidyano.WebComponents {
         }
 
         protected _focusElement(element: string | HTMLElement, maxAttempts?: number, interval?: number, attempt: number = 0) {
-            const input = typeof element === "string" ? <HTMLElement>this.querySelector(`#${element}`) : <HTMLElement>element;
+            const input = typeof element === "string" ? <HTMLElement>this.shadowRoot.querySelector(`#${element}`) : <HTMLElement>element;
             if (input) {
                 const activeElement = <HTMLElement>document.activeElement;
                 input.focus();
