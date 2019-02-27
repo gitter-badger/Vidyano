@@ -18,14 +18,19 @@ namespace Vidyano.WebComponents {
         ]
     })
     export class Icon extends ResourceBase {
+        private _iconStyle: HTMLStyleElement;
         private _source: string;
         source: string;
         readonly unresolved: boolean; private _setUnresolved: (unresolved: boolean) => void;
 
         private _load(source: string, isConnected: boolean) {
             if (isConnected) {
-                if (!source)
-                    this.shadowRoot.innerHTML = "";
+                if (!source && this._iconStyle !== undefined) {
+                    Array.from(this.shadowRoot.children).forEach(c => {
+                        if (c !== this._iconStyle)
+                            this.shadowRoot.removeChild(c);
+                    });
+                }
 
                 if (this._source === source)
                     return;
@@ -33,18 +38,21 @@ namespace Vidyano.WebComponents {
 
             const resource = Resource.Load("icon", this._source = source);
             this._setUnresolved(!resource);
+            if (this.unresolved)
+                return;
 
-            if (!this.unresolved) {
-                const fragment = document.createDocumentFragment();
-                const host = document.createElement("div");
-                fragment.appendChild(host);
+            if (!this._iconStyle)
+                this._iconStyle = this.shadowRoot.querySelector("style");
 
-                Array.from(resource.children).forEach((child: HTMLElement) => {
-                    host.appendChild(child.cloneNode(true));
-                });
+            const fragment = document.createDocumentFragment();
+            const host = document.createElement("div");
+            fragment.appendChild(host);
 
-                this.shadowRoot.appendChild(fragment);
-            }
+            Array.from(resource.children).forEach((child: HTMLElement) => {
+                host.appendChild(child.cloneNode(true));
+            });
+
+            this.shadowRoot.appendChild(fragment);
         }
     }
 }

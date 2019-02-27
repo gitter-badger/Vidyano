@@ -321,6 +321,32 @@
 </vi-resource>
 
 <vi-resource type="icon" name="Selected">
+    <style>
+        :host {
+            fill: var(--vi-icon-selected-unchecked-color, #bbb);
+        }
+
+        :host([is-selected]) #backdrop {
+            opacity: 1 !important;
+        }
+
+        :host([is-selected]) #check {
+            display: block;
+            fill: white;
+        }
+
+        :host([is-selected]:not([disabled])) #box, :host([is-selected]:not([disabled])) #backdrop {
+            fill: var(--vi-icon-selected-checked-color, var(--theme-color));
+        }
+
+        :host([is-selected][disabled]) #box, :host([is-selected][disabled]) #backdrop {
+            fill: var(--vi-icon-selected-disabled-color, #666);
+        }
+
+        :host(:not([is-selected])) #check {
+            display: none;
+        }
+    </style>
     <svg viewBox="0 0 32 32">
         <g>
             <path d="M 0,1e-7 0,32 32,32 32,1e-7 Z" id="backdrop" style="opacity:0;" />
@@ -331,6 +357,24 @@
 </vi-resource>
 
 <vi-resource type="icon" name="SelectedRadio">
+    <style>
+        :host {
+            fill: var(--vi-icon-selected-unchecked-color, var(--theme-dark-border));
+        }
+
+        :host([is-selected]) #check, :host([is-selected]) #box {
+            fill: var(--theme-color);
+        }
+
+        :host(:not([is-selected])) #check {
+            display: none;
+        }
+
+        :host([disabled]) {
+            fill: var(--vi-icon-selected-disabled-color, #666) !important;
+        }
+
+    </style>
     <svg viewBox="0 0 32 32">
         <g>
             <path d="M 16 0 C 7.192804 0 -1.9567658e-007 7.1928041 0 16 C 0 24.807195 7.1928041 32 16 32 C 24.807195 32 32 24.807195 32 16 C 32 7.1928041 24.807195 0 16 0 z M 16 4.8925781 C 22.163409 4.8925781 27.107422 9.8365909 27.107422 16 C 27.107422 22.163409 22.163409 27.107422 16 27.107422 C 9.836591 27.107422 4.8925781 22.163409 4.8925781 16 C 4.8925779 9.8365909 9.836591 4.8925781 16 4.8925781 z " id="box" />
