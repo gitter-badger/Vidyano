@@ -21,10 +21,10 @@
                     </div>
                     <dom-if if="[[!readOnly]]">
                         <template>
-                            <div slot="button" class="browse">
+                            <button slot="button" class="browse">
                                 <vi-icon source="ImageUpload"></vi-icon>
                                 <input type="file" accept="image/*" capture="environment" on-change="_change">
-                            </div>
+                            </button>
                             <dom-if if="[[hasValue]]" restamp>
                                 <template>
                                     <button slot="button" on-tap="_clear" tabindex="-1">

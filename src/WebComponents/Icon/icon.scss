@@ -19,6 +19,7 @@
     svg {
         width: var(--vi-icon-width, 16px);
         height: var(--vi-icon-height, 16px);
+        fill: var(--vi-icon-fill, inherit);
     }
 
     &.size-h1 svg {

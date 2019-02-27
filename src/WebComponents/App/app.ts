@@ -76,15 +76,6 @@ namespace Vidyano.WebComponents {
             this.path = pathExtended;
         }
 
-        static get template() {
-            const baseTemplate = <HTMLTemplateElement>(Polymer.DomModule.import("vi-app-base", "template")).cloneNode(true);
-            const defaultTemplate = <HTMLTemplateElement>Polymer.DomModule.import("vi-app", "template");
-
-            baseTemplate.content.appendChild(defaultTemplate.content);
-
-            return baseTemplate;
-        }
-
         private _computeProgramUnit(application: Vidyano.Application, path: string): ProgramUnit {
             path = this._convertPath(application, path);
 

@@ -92,6 +92,7 @@
         .buttons {
             @include layout-horizontal();
             background-color: white;
+            align-self: flex-start;
 
             ::slotted([slot="button"]) {
                 @include relative();
@@ -104,9 +105,6 @@
                 box-sizing: content-box;
                 text-align: center;
                 @include theme-color-button-inverse();
-                -moz-transition: background-color 0.1s ease-out;
-                -o-transition: background-color 0.1s ease-out;
-                -webkit-transition: background-color 0.1s ease-out;
                 transition: background-color 0.1s ease-out;
 
                 &::after {
@@ -116,9 +114,6 @@
                     right: 4px;
                     content: " ";
                     border-bottom: 1px solid var(--theme-light-border);
-                    -moz-transition: all 0.1s ease-in-out;
-                    -o-transition: all 0.1s ease-in-out;
-                    -webkit-transition: all 0.1s ease-out;
                     transition: all 0.1s ease-in-out;
                 }
 
@@ -136,14 +131,16 @@
                 vi-icon {
                     width: calc(var(--theme-h2) - 2px);
                     height: calc(var(--theme-h2) - 2px);
-
-                    svg {
-                        -moz-transition: fill 0.1s ease-out;
-                        -o-transition: fill 0.1s ease-out;
-                        -webkit-transition: fill 0.1s ease-out;
-                        transition: fill 0.1s ease-out;
-                    }
                 }
+            }
+
+            &:hover ::slotted([slot="button"]:hover) {
+                background-color: var(--theme-color-faint);
+                --vi-icon-fill: var(--theme-color);
+            }
+
+            &:hover ::slotted([slot="button"]:active) {
+                background-color: var(--theme-color-dark) !important;
             }
 
             &:hover ::slotted([slot="button"]) {
@@ -151,37 +148,25 @@
                     left: 0;
                     right: 0;
                 }
-
+    
                 &::before {
                     top: 0;
                     bottom: 0;
-                }
-
-                &:hover {
-                    background-color: var(--theme-color-faint) !important;
-
-                    > vi-icon {
-                        fill: var(--theme-color) !important;
-                    }
                 }
             }
         }
 
         &:not([reverse]) {
-            .buttons ::slotted([slot="button"]) {
-                &::before {
-                    left: 0;
-                    border-left: 1px solid var(--theme-light-border);
-                }
+            .buttons ::slotted([slot="button"])::before {
+                left: 0;
+                border-left: 1px solid var(--theme-light-border);
             }
         }
 
         &[reverse] {
-            .buttons > ::slotted([slot="button"]) {
-                &::before {
-                    right: 0;
-                    border-right: 1px solid var(--theme-light-border);
-                }
+            .buttons ::slotted([slot="button"])::before {
+                right: 0;
+                border-right: 1px solid var(--theme-light-border);
             }
         }
     }
@@ -190,21 +175,18 @@
         .box {
             border-color: var(--theme-color-lighter);
 
-            > .buttons ::slotted([slot="button"]) {
-                &::after, &::before {
+            .buttons {
+                ::slotted([slot="button"]) {
+                    --vi-icon-fill: var(--theme-color);
+                }
+
+                ::slotted([slot="button"]:hover) {
+                    background-color: var(--theme-color);
+                    --vi-icon-fill: white;
+                }
+
+                ::slotted([slot="button"])::after, ::slotted([slot="button"])::before {
                     border-color: var(--theme-color-lighter);
-                }
-
-                vi-icon {
-                    fill: var(--theme-color);
-                }
-
-                &:hover {
-                    background-color: var(--theme-color) !important;
-
-                    vi-icon {
-                        fill: white !important;
-                    }
                 }
             }
         }

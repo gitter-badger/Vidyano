@@ -20,7 +20,7 @@ namespace Vidyano.WebComponents.Attributes {
         private _inputAttribute: Vidyano.PersistentObjectAttribute;
 
         private async _change(e: Event) {
-            const targetInput = <HTMLInputElement>this.todo_checkEventTarget(e.target);
+            const targetInput = <HTMLInputElement>e.target;
             if (targetInput.files && targetInput.files.length > 0) {
                 this.value = targetInput.files[0].name;
                 if (this.attribute.triggersRefresh)

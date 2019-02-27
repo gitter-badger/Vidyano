@@ -21,7 +21,7 @@ namespace Vidyano.WebComponents {
             history.replaceState(null, null, `${hashBangParts[1]}${hashBangParts[2]}`);
     }
 
-    @WebComponent.register({
+    @WebComponent.registerAbstract({
         properties: {
             uri: {
                 type: String,
