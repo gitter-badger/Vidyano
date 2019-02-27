@@ -19,7 +19,7 @@
             <vi-app-route route=":programUnitName(/)" component="Vidyano.WebComponents.ProgramUnitPresenter"></vi-app-route>
             <vi-app-route class="fit" route="SignIn(/:stateOrReturnUrl*)(/:returnUrl*)" allow-signed-out>
                 <template>
-                    <vi-sign-in label="[[label]]" logo="[[signInLogo]]">
+                    <vi-sign-in label="[[app.label]]" logo="[[app.signInLogo]]">
                         <slot name="sign-in-background"></slot>
                         <slot name="sign-in-footer"></slot>
                     </vi-sign-in>
