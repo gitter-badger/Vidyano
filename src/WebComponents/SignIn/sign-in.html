@@ -1,12 +1,13 @@
 <link rel="import" href="../AttachedNotifier/attached-notifier.html" />
 <link rel="import" href="../Button/button.html" />
 <link rel="import" href="../Checkbox/checkbox.html" />
-<link rel="import" href="../Scroller/scroller.html" />
 
 <dom-module id="vi-sign-in">
     <template>
+        <style include="vi-flex-layout-style-module"></style>
         <link rel="stylesheet" href="sign-in.css" />
         <div id="background">
+            <slot name="sign-in-background"></slot>
             <div class="default fit">
                 <svg xmlns="https://www.w3.org/2000/svg" viewBox="0 0 1440 810" preserveAspectRatio="xMinYMin slice" aria-hidden="true">
                     <g>
@@ -21,7 +22,6 @@
                     </g>
                 </svg>
             </div>
-            <slot name="sign-in-background"></slot>
         </div>
         <div class="dialog">
             <div class="loader" hidden$="[[!isBusy]]"></div>
